@@ -1,0 +1,17 @@
+# 构建产物
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 运行时工作区
+.sableos/
+
+# 本地工具目录
+.qoder-credits/
+
+# 操作系统
+.DS_Store
+Thumbs.db
