@@ -20,7 +20,7 @@ SableOS 是一个**企业能完全掌控的、Java 原生的、私有可审计�
 
 - 仓库当前包含：`docs/` 六份文档、`README.md`、本文件，以及 **Maven 多模块骨架**（2026-09-27 初始化）：parent POM + 9 个核心模块（core / provider / memory / tool / channel-cli / web / storage / cli / boot），`mvn clean package` 可通过，`sableos-boot` 产出可执行 fat JAR。骨架只含模块结构、依赖拓扑与入口类（`SableOsApplication`、`SableOsCli`），**尚无业务代码**。
 - 骨架按《技术方案》第 13 章第一周的 9 模块口径落地；第 10 章的 14 模块清单（多 persona / knowledge / 三渠道模块）在实施到对应能力时再补模块。各模块依赖也按实施节奏补齐（provider 的 Spring AI Alibaba、storage 的 JPA/SQLite 尚未加入）。
-- 没有 `.specify/` 工作区，也尚未 `git init`。
+- `git` 仓库已初始化（main 分支）；没有 `.specify/` 工作区。
 - 文档在 2026-09-21 做过一次纯格式整理（统一标题层级、表格分隔符、引用块、列表空行），**内容与整理前逐字一致**，以当前版本为准。
 
 ## 3. 文档地图与阅读顺序
@@ -129,4 +129,4 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
 - **文档间修订不同步**（以《技术方案》为准）：
   - 模块数：`AiProgrammingGuide.md` 五处（第 35/176/204/405/481 行）与《技术方案》第 13 章第一周都还写 9 个模块，第 10 章已是 14 个（含 persona/knowledge/三渠道模块）。
   - CLI 子命令数：第 8.7 节写 12 个，第 10 章写 13 个（025 起加 `agent import`）。
-- **尚未初始化**：`.specify/` 工作区与 `git` 仓库还没有；Maven 工程骨架已于 2026-09-27 建好（9 模块，`mvn clean package` 可过），但主体开发第一步仍是准备阶段（Speckit init + constitution），骨架只是工程地基。
+- **尚未初始化**：`.specify/` 工作区还没有；Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过），但主体开发第一步仍是准备阶段（Speckit init + constitution），骨架只是工程地基。
