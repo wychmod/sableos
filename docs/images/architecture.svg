@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title">
+  <title id="title">SableOS 架构图：接入层 → 引擎层 → 能力层 → 基础层</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="560" fill="#ffffff"/>
+  <g font-family="'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', ui-sans-serif, sans-serif">
+
+    <!-- 层标签 -->
+    <g fill="#475569" font-size="15" font-weight="600" text-anchor="middle">
+      <rect x="40" y="60" width="104" height="44" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
+      <text x="92" y="88">接入层</text>
+      <rect x="40" y="188" width="104" height="44" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
+      <text x="92" y="216">引擎层</text>
+      <rect x="40" y="324" width="104" height="44" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
+      <text x="92" y="352">能力层</text>
+      <rect x="40" y="452" width="104" height="44" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
+      <text x="92" y="480">基础层</text>
+    </g>
+
+    <!-- 接入层 -->
+    <g filter="url(#shadow)" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5">
+      <rect x="168" y="36" width="312" height="92" rx="10"/>
+      <rect x="508" y="36" width="312" height="92" rx="10"/>
+      <rect x="848" y="36" width="312" height="92" rx="10"/>
+    </g>
+    <g text-anchor="middle" fill="#1e40af">
+      <text x="324" y="76" font-size="16" font-weight="600">CLI Channel</text>
+      <text x="664" y="76" font-size="16" font-weight="600">Web Service（REST API）</text>
+      <text x="1004" y="76" font-size="16" font-weight="600">AgentScheduler（cron 定时触发）</text>
+    </g>
+    <g text-anchor="middle" fill="#64748b" font-size="12.5">
+      <text x="324" y="102">本地交互与调试</text>
+      <text x="664" y="102">业务系统 REST 集成</text>
+      <text x="1004" y="102">到点自动触发</text>
+    </g>
+
+    <!-- 汇入引擎 -->
+    <g stroke="#94a3b8" stroke-width="2" fill="none">
+      <path d="M324,128 V150 M664,128 V150 M1004,128 V150 M324,150 H1004"/>
+      <line x1="384" y1="150" x2="384" y2="164" marker-end="url(#arrow)"/>
+    </g>
+
+    <!-- 引擎层 -->
+    <g filter="url(#shadow)">
+      <rect x="204" y="164" width="360" height="92" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
+      <rect x="644" y="164" width="480" height="92" rx="10" fill="#4f46e5" stroke="#4338ca" stroke-width="1.5"/>
+    </g>
+    <g text-anchor="middle">
+      <text x="384" y="204" font-size="16" font-weight="600" fill="#3730a3">AgentService（统一入口）</text>
+      <text x="384" y="230" font-size="12.5" fill="#64748b">三种触发源的统一入口</text>
+      <text x="884" y="204" font-size="16" font-weight="600" fill="#ffffff">ReActLoop（自实现）</text>
+      <text x="884" y="230" font-size="12.5" fill="#c7d2fe">PromptBuilder 组装上下文 · ToolExecutor 执行工具</text>
+    </g>
+    <line x1="564" y1="210" x2="644" y2="210" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <!-- 调度三块能力 -->
+    <g stroke="#94a3b8" stroke-width="2" fill="none">
+      <path d="M884,256 V278 H1004"/>
+      <path d="M324,278 H884"/>
+      <line x1="324" y1="278" x2="324" y2="300" marker-end="url(#arrow)"/>
+      <line x1="664" y1="278" x2="664" y2="300" marker-end="url(#arrow)"/>
+      <line x1="1004" y1="278" x2="1004" y2="300" marker-end="url(#arrow)"/>
+    </g>
+
+    <!-- 能力层 -->
+    <g filter="url(#shadow)" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1.5">
+      <rect x="168" y="300" width="312" height="92" rx="10"/>
+      <rect x="508" y="300" width="312" height="92" rx="10"/>
+      <rect x="848" y="300" width="312" height="92" rx="10"/>
+    </g>
+    <g text-anchor="middle" fill="#0f766e">
+      <text x="324" y="340" font-size="16" font-weight="600">ProviderService（对接 LLM）</text>
+      <text x="664" y="340" font-size="16" font-weight="600">MemoryService（记忆）</text>
+      <text x="1004" y="340" font-size="16" font-weight="600">ToolRegistry + Sandbox</text>
+    </g>
+    <g text-anchor="middle" fill="#64748b" font-size="12.5">
+      <text x="324" y="366">主流大模型与本地推理</text>
+      <text x="664" y="366">会话记忆 + 长期记忆</text>
+      <text x="1004" y="366">工具执行与白名单校验</text>
+    </g>
+
+    <!-- 收敛到基础层 -->
+    <g stroke="#94a3b8" stroke-width="2" fill="none">
+      <path d="M324,392 V414 M664,392 V414 M1004,392 V414 M324,414 H1004"/>
+      <line x1="664" y1="414" x2="664" y2="428" marker-end="url(#arrow)"/>
+    </g>
+
+    <!-- 基础层 -->
+    <g filter="url(#shadow)" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5">
+      <rect x="168" y="428" width="440" height="92" rx="10"/>
+      <rect x="720" y="428" width="440" height="92" rx="10"/>
+    </g>
+    <g text-anchor="middle" fill="#b45309">
+      <text x="388" y="468" font-size="16" font-weight="600">SQLite（会话与审计落库）</text>
+      <text x="940" y="468" font-size="16" font-weight="600">.sableos/ 文件系统</text>
+    </g>
+    <g text-anchor="middle" fill="#64748b" font-size="12.5">
+      <text x="388" y="494">Session · tool_invocations · llm_calls</text>
+      <text x="940" y="494">Agent 目录 · 记忆 · 配置</text>
+    </g>
+
+  </g>
+</svg>

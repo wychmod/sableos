@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">SableOS logo</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#332c27"/>
+      <stop offset="1" stop-color="#161311"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f2b441" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#f2b441" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="1.5" y="1.5" width="509" height="509" rx="110.5" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="3"/>
+  <circle cx="256" cy="256" r="168" fill="url(#glow)"/>
+
+  <g filter="url(#soft)" stroke="#f2b441" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <polyline points="164,168 260,256 164,344"/>
+    <line x1="284" y1="344" x2="348" y2="344"/>
+  </g>
+</svg>
