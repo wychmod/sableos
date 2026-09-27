@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.sableos</groupId>
+    <artifactId>sableos-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>sableos-tool</artifactId>
+  <name>sableos-tool</name>
+  <description>核心能力四：内置 Tool、MCP Client、ToolRegistry、Sandbox 与通知适配器（三合一模块）</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.sableos</groupId>
+      <artifactId>sableos-core</artifactId>
+    </dependency>
+  </dependencies>
+</project>
