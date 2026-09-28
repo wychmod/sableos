@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD033 MD041 -->
 
 <p align="center">
-  <img src="docs/images/logo.svg" alt="SableOS logo" width="120">
+  <img src="docs/images/logo.svg" alt="SableOS：Java 原生的私有 Agent OS" width="128">
 </p>
 
 <!-- markdownlint-enable MD033 MD041 -->

@@ -125,7 +125,7 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
 
 ## 9. 已知待办与文档漂移
 
-- **图片引用悬空**：`docs/` 里 12 处图片引用（`TechnicalSolution.md` 11 处 + `sableos.md` 1 处）指向 `../website/public/images/*.svg`，而本仓库没有 `website/` 目录。这些引用被有意保留，等网站仓库（或 `website/` 目录）落地后需要补齐这些 SVG。
+- **图片引用悬空**：`docs/` 里 12 处图片引用（`TechnicalSolution.md` 11 处 + `sableos.md` 1 处）现统一指向同目录下的 `images/*.svg`（与 `docs/images/architecture.svg` 同一约定，不再跨到 `website/`）。`images/logo.svg` 已于 2026-09-29 换为新标识；剩余 **11 张架构/流程图尚未绘制**，引用仍悬空。清单见 `design/README.md`「已知待办」。
 - **文档间修订不同步**（以《技术方案》为准）：
   - 模块数：`AiProgrammingGuide.md` 五处（第 35/176/204/405/481 行）与《技术方案》第 13 章第一周都还写 9 个模块，第 10 章已是 14 个（含 persona/knowledge/三渠道模块）。
   - CLI 子命令数：第 8.7 节写 12 个，第 10 章写 13 个（025 起加 `agent import`）。

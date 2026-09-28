@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SableOS · 设计方案评审台</title>
-<link rel="stylesheet" href="../site/assets/fonts/fonts.css">
+<link rel="stylesheet" href="../../website/assets/fonts/fonts.css">
 <style>
 :root {
   --bg: #0B0908;
@@ -277,13 +277,13 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
 
     <div class="grid g2">
       <div class="card">
-        <span class="tag">主交付物</span>
-        <h3>设计稿 · 首页原型</h3>
-        <p><code>design/site/index.html</code></p>
+        <span class="tag">线上站点</span>
+        <h3>首页 · 已上线路径</h3>
+        <p><code>website/index.html</code></p>
         <p style="margin-top:10px">
           11 个内容区块：Hero、为什么、定位、核心能力、特性、架构、快速开始、设计原则、路线图、生态、文档、CTA。含明暗双主题与响应式布局。
         </p>
-        <p style="margin-top:14px"><a href="../site/index.html">→ 打开首页原型</a></p>
+        <p style="margin-top:14px"><a href="../../website/index.html">→ 打开首页</a></p>
       </div>
       <div class="card">
         <span class="tag">本次</span>
@@ -435,7 +435,7 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
         <figcaption><b>logo-horizontal-dark.svg</b><span>用于社交封面、白皮书、幻灯片</span></figcaption>
       </figure>
       <figure class="shot">
-        <img src="../site/assets/img/og-cover.png" alt="社交分享封面">
+        <img src="../../website/assets/img/og-cover.png" alt="社交分享封面">
         <figcaption><b>og-cover.png</b><span>1200 × 630 · GitHub / 微信 / Twitter 分享卡</span></figcaption>
       </figure>
     </div>
@@ -579,41 +579,40 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
   <section id="structure">
     <h2><span>06</span> 产出物与文件结构</h2>
     <p class="lead">
-      四个环节的产出物都落在一个独立的 <code>design/</code> 目录里，不与现有代码、文档混放，评审通过后可整体迁移到 <code>website/</code>。
+      站点已经落到仓库根的 <code>website/</code>，随时可发布；<code>design/</code> 只留过程档（标识生成器、评审台、校验结果），不上线。
     </p>
 
     <div class="grid g2">
       <div class="card">
         <span class="tag">目录树</span>
-        <pre class="tree" style="border:none;padding:0;background:transparent">design/
-├── README.md                     <i># 设计方案说明（本次交付总览）</i>
-├── <b>site/</b>                          <i># 展示页面</i>
+        <pre class="tree" style="border:none;padding:0;background:transparent">sableos/
+├── <b>website/</b>                        <i># 线上站点（发布到 Pages）</i>
 │   ├── index.html                <i># 首页（11 个区块）</i>
 │   └── assets/
 │       ├── css/
 │       │   ├── <b>tokens.css</b>            <i># 设计变量（换肤只改这里）</i>
 │       │   └── <b>main.css</b>              <i># 组件与布局（19 节）</i>
 │       ├── js/site.js            <i># 渐进增强脚本（8 个模块）</i>
-│       └── img/
-│           ├── favicon.svg
-│           ├── apple-touch-icon.png
-│           ├── logo.svg / logo-mark-mono.svg
-│           └── og-cover.png      <i># 1200×630 分享封面</i>
-├── <b>assets/</b>                        <i># 标识资产</i>
-│   ├── make-logo.py              <i># 参数化生成器</i>
-│   ├── logo.svg                  <i># 主标识 512</i>
-│   ├── logo-mark.svg             <i># 无底版</i>
-│   ├── logo-mark-mono.svg        <i># 单色版</i>
-│   ├── favicon.svg               <i># 小尺寸简化版</i>
-│   ├── logo-horizontal-dark.svg  <i># 横向组合 · 深底</i>
-│   ├── logo-horizontal-light.svg <i># 横向组合 · 浅底</i>
-│   ├── og-cover.html             <i># 分享封面源文件</i>
-│   ├── _compare-marks.svg        <i># 参数对比图</i>
-│   └── logo-concepts/            <i># 备选概念（留档）</i>
-└── <b>preview/</b>                       <i># 评审与校验</i>
-    ├── index.html                <i># 评审台（你正在看的这一页）</i>
-    ├── audit.json                <i># 自动校验原始结果</i>
-    └── *.png                     <i># 按需生成的分区截图（已 gitignore）</i></pre>
+│       ├── fonts/                <i># 自托管字体（latin + latin-ext）</i>
+│       └── img/                  <i># favicon / 图标位图 / 分享封面</i>
+│
+├── <b>design/</b>                         <i># 设计过程留档（不上线）</i>
+│   ├── README.md                 <i># 方案说明（总览）</i>
+│   ├── <b>assets/</b>                     <i># 标识资产 + 生成脚本</i>
+│   │   ├── make-logo.py          <i># 标识参数化生成器</i>
+│   │   ├── make-compare.py       <i># 标识对照图生成器</i>
+│   │   ├── make-fonts.py         <i># 字体子集下载与 @font-face 生成</i>
+│   │   ├── logo*.svg             <i># 各变体</i>
+│   │   ├── og-cover.html         <i># 分享封面源文件</i>
+│   │   ├── _compare-logos.svg    <i># 五方案对照图</i>
+│   │   ├── _compare-marks.svg    <i># 参数精修对比图</i>
+│   │   └── logo-concepts/        <i># 备选概念（留档）</i>
+│   └── <b>preview/</b>                    <i># 评审与校验</i>
+│       ├── index.html            <i># 评审台（你正在看的这一页）</i>
+│       ├── audit.json            <i># 自动校验原始结果</i>
+│       └── *.png                 <i># 按需生成的分区截图（已 gitignore）</i>
+│
+└── .github/workflows/pages.yml   <i># Pages 部署 + 站点健全性校验</i></pre>
       </div>
 
       <div>
@@ -623,7 +622,7 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
           <ul class="plain" style="margin-top:14px">
             <li><b>① 定位梳理</b>　页面版块结构与叙事主线（第 02 节表格）</li>
             <li><b>② 设计系统</b>　<code>tokens.css</code> + <code>main.css</code>，22 组件、21 图标</li>
-            <li><b>③ 展示页面</b>　<code>site/index.html</code>，11 区块、明暗双主题、响应式</li>
+            <li><b>③ 展示页面</b>　<code>website/index.html</code>，11 区块、明暗双主题、响应式</li>
             <li><b>④ 标识体系</b>　7 个 SVG 资产 + 参数化生成器 + 3 套备选概念</li>
             <li><b>⑤ README 用法</b>　见第 08 节，含可复制的 Markdown 片段</li>
             <li><b>⑥ 质量校验</b>　<code>audit.json</code> + 逐项结论（第 07 节）</li>
@@ -635,8 +634,8 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
           <h3>为什么不用框架</h3>
           <ul class="plain" style="margin-top:14px">
             <li><b>零构建</b>：直接双击 <code>index.html</code> 就能看，无需 npm / 构建链</li>
-            <li><b>零依赖</b>：唯一外部请求是 Google Fonts，且失败时自动回退系统字体</li>
-            <li><b>好托管</b>：GitHub Pages 直接开箱，不需要 Actions（后续可选加）</li>
+            <li><b>零外部请求</b>：字体自托管（latin 子集）、图标内联为 SVG sprite，断网也能正常显示</li>
+            <li><b>好托管</b>：已配 <code>.github/workflows/pages.yml</code>，推送即发布（因 Pages 的分支模式不支持 <code>/website</code> 子目录，故走 Actions）</li>
             <li><b>易接手</b>：任何人（含 AI agent）改文案不必先学一套工具链</li>
             <li><b>可升级</b>：真需要博客 / 更新日志时，再引入 Astro 等 SSG，CSS 与 assets 可原样迁移</li>
           </ul>
@@ -672,7 +671,7 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
           <tr><td>对比度（深色主题）</td><td>同上</td><td><span class="pill ok"><span class="dot"></span>36 项全通过</span></td></tr>
           <tr><td>横向溢出</td><td>遍历全部元素，排除滚动容器；1440 / 768 / 390px 三档</td><td><span class="pill ok"><span class="dot"></span>scrollWidth = viewport</span></td></tr>
           <tr><td>未使用样式</td><td>CSS 声明类 vs DOM 实际使用类</td><td><span class="pill ok"><span class="dot"></span>0 个冗余</span></td></tr>
-          <tr><td>字体加载失败降级</td><td>拦截 Google Fonts 后比对几何</td><td><span class="pill ok"><span class="dot"></span>零布局位移</span></td></tr>
+          <tr><td>字体失败降级</td><td>自托管字体加载失败时回退系统字体（<code>font-display: swap</code>）</td><td><span class="pill ok"><span class="dot"></span>零布局位移</span></td></tr>
           <tr><td>无障碍</td><td>跳转链接、focus-visible、aria-label、tab 键盘操作、reduced-motion</td><td><span class="pill ok"><span class="dot"></span>已覆盖</span></td></tr>
           <tr><td>渐进增强</td><td>禁用 JS 后页面完整度</td><td><span class="pill ok"><span class="dot"></span>文案与结构完整可读</span></td></tr>
         </tbody>
@@ -690,10 +689,10 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
       <div class="liveCard">
         <div class="liveHead">
           <b>完整首页 · 浅色</b>
-          <a href="../site/index.html?theme=light" target="_blank" rel="noopener">新窗口打开 ↗</a>
+          <a href="../../website/index.html?theme=light" target="_blank" rel="noopener">新窗口打开 ↗</a>
         </div>
         <div class="liveFrame liveFrame--tall">
-          <iframe src="../site/index.html?theme=light" title="SableOS 首页原型（浅色主题）" loading="lazy"></iframe>
+          <iframe src="../../website/index.html?theme=light" title="SableOS 首页原型（浅色主题）" loading="lazy"></iframe>
         </div>
         <p class="liveFoot">整页滚动 · 11 个内容区块</p>
       </div>
@@ -701,10 +700,10 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
       <div class="liveCard">
         <div class="liveHead">
           <b>完整首页 · 深色</b>
-          <a href="../site/index.html?theme=dark" target="_blank" rel="noopener">新窗口打开 ↗</a>
+          <a href="../../website/index.html?theme=dark" target="_blank" rel="noopener">新窗口打开 ↗</a>
         </div>
         <div class="liveFrame liveFrame--tall">
-          <iframe src="../site/index.html?theme=dark" title="SableOS 首页原型（深色主题）" loading="lazy"></iframe>
+          <iframe src="../../website/index.html?theme=dark" title="SableOS 首页原型（深色主题）" loading="lazy"></iframe>
         </div>
         <p class="liveFoot">同一套代码，靠 <code>data-theme</code> 切换</p>
       </div>
@@ -714,40 +713,40 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
       <div class="liveCard">
         <div class="liveHead">
           <b>首屏 · 浅色（1440 宽视口）</b>
-          <a href="../site/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
+          <a href="../../website/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
         </div>
         <div class="liveFrame liveFrame--vp">
-          <iframe src="../site/index.html?theme=light#top" title="首屏浅色" loading="lazy"></iframe>
+          <iframe src="../../website/index.html?theme=light#top" title="首屏浅色" loading="lazy"></iframe>
         </div>
       </div>
 
       <div class="liveCard">
         <div class="liveHead">
           <b>首屏 · 深色（1440 宽视口）</b>
-          <a href="../site/index.html?theme=dark" target="_blank" rel="noopener">打开 ↗</a>
+          <a href="../../website/index.html?theme=dark" target="_blank" rel="noopener">打开 ↗</a>
         </div>
         <div class="liveFrame liveFrame--vp">
-          <iframe src="../site/index.html?theme=dark#top" title="首屏深色" loading="lazy"></iframe>
+          <iframe src="../../website/index.html?theme=dark#top" title="首屏深色" loading="lazy"></iframe>
         </div>
       </div>
 
       <div class="liveCard">
         <div class="liveHead">
           <b>首屏 · 移动端（390 宽视口）</b>
-          <a href="../site/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
+          <a href="../../website/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
         </div>
         <div class="liveFrame liveFrame--phone">
-          <iframe src="../site/index.html?theme=light#top" title="移动端首屏" loading="lazy"></iframe>
+          <iframe src="../../website/index.html?theme=light#top" title="移动端首屏" loading="lazy"></iframe>
         </div>
       </div>
 
       <div class="liveCard">
         <div class="liveHead">
           <b>首屏 · 平板（820 宽视口）</b>
-          <a href="../site/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
+          <a href="../../website/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
         </div>
         <div class="liveFrame liveFrame--tablet">
-          <iframe src="../site/index.html?theme=light#top" title="平板首屏" loading="lazy"></iframe>
+          <iframe src="../../website/index.html?theme=light#top" title="平板首屏" loading="lazy"></iframe>
         </div>
       </div>
     </div>
@@ -828,12 +827,16 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2v20M5 7l7-5 7 5M5 17l7 5 7-5"/></svg>
       </span>
       <div>
-        <b>落地时要改的路径</b>
+        <b>还差的一步：架构配图</b>
         <p>
-          现有 README 引用的是 <code>docs/images/logo.svg</code>，而 <code>docs/sableos.md</code> 与
-          《技术方案》共 12 处引用的是 <code>../website/public/images/*.svg</code>——<b>仓库里没有 website/ 目录，这些是悬空引用</b>。
-          建议随本次落地一并处理：在仓库根建 <code>website/</code>，把 <code>design/site/</code> 迁进去，
-          再把 12 处引用统一指向 <code>website/public/images/</code> 下的实际文件。这也是 CLAUDE.md 第 9 节登记的待办。
+          <code>website/</code> 已经建好、站点也已迁入，GitHub Pages 的部署链路是通的。
+          文档侧原本 12 处图片引用写的是 <code>../website/public/images/*.svg</code>（按「另有一个网站仓库」的设想留的跨目录引用，
+          且 <code>public/</code> 是构建期目录约定，本站零构建，并不适用），现已统一改为文档本地的
+          <code>docs/images/</code>，与既有的 <code>docs/images/architecture.svg</code> 一致。
+        </p>
+        <p>
+          其中 <code>docs/images/logo.svg</code> <b>已替换为新标识</b>；剩下 <b>11 张架构/流程图仍未绘制</b>，
+          引用依旧悬空。完整清单见 <code>design/README.md</code> 的「已知待办」表。
         </p>
       </div>
     </div>
@@ -904,41 +907,43 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
 
     <div class="grid g2">
       <div class="card">
-        <span class="tag">本次已做</span>
-        <h3>纯设计，不含开发</h3>
+        <span class="tag">已完成</span>
+        <h3>设计 + 落地，都已就位</h3>
         <ul class="plain" style="margin-top:12px">
           <li>定位梳理与页面叙事结构</li>
           <li>完整设计系统（变量 + 组件 + 图标）</li>
-          <li>首页原型（可打开、可交互、双主题）</li>
+          <li>首页站点（11 区块、明暗双主题、响应式）</li>
           <li>标识重新设计 + 全套资产 + 参数化生成器</li>
-          <li>README 使用方式（可复制片段）</li>
-          <li>质量校验与截图留档</li>
+          <li>站点迁入 <code>website/</code>，README 与引用路径同步修正</li>
+          <li>Pages 部署工作流 + 站点完整性校验</li>
         </ul>
       </div>
       <div class="card">
-        <span class="tag">待你确认</span>
-        <h3>需要拍板的几件事</h3>
+        <span class="tag">还需你决定</span>
+        <h3>剩下两件事</h3>
         <ul class="plain" style="margin-top:12px">
-          <li><b>标识方向</b>：接受「疾行 Prompt」，还是从备选概念里换一个</li>
-          <li><b>仓库地址</b>：<code>sable-labs/sableos</code> 是否正确（现集中在 <code>site.js</code> 顶部一处配置）</li>
-          <li><b>目录归属</b>：落在 <code>design/</code> 还是直接建 <code>website/</code></li>
-          <li><b>配色温度</b>：暖墨 + 燃金是否符合你对「专业感」的预期（也可换冷灰 + 蓝）</li>
-          <li><b>页面形态</b>：单页足够，还是需要多页文档站</li>
+          <li><b>Pages 开关</b>：Settings → Pages → Source 选 <code>GitHub Actions</code>（分支模式不支持 <code>/website</code>，只能选它）</li>
+          <li><b>默认分支</b>：Settings → Branches 把默认分支设为 <code>main</code></li>
         </ul>
+        <p style="margin-top:14px;color:var(--ink-2);font-size:13.5px">
+          标识方向、配色温度、单页/多页这几项，现按方案默认值落定了；若要调整，
+          <code>tokens.css</code> 与 logo 生成器都是单点，改完重跑即可。
+        </p>
       </div>
     </div>
 
-    <h3 style="margin:40px 0 18px;font-size:16px">确认之后我建议的落地顺序</h3>
+    <h3 style="margin:40px 0 18px;font-size:16px">落地进度</h3>
     <div class="tableWrap">
       <table>
-        <thead><tr><th>步骤</th><th>动作</th><th>产出</th></tr></thead>
+        <thead><tr><th>步骤</th><th>动作</th><th>状态</th></tr></thead>
         <tbody>
-          <tr><td class="num">1</td><td>拍板标识与配色</td><td>冻结 <code>tokens.css</code> 色阶与 logo 参数</td></tr>
-          <tr><td class="num">2</td><td>建 <code>website/</code> 并迁入</td><td>GitHub Pages 可访问的站点目录</td></tr>
-          <tr><td class="num">3</td><td>修掉 12 处悬空图片引用</td><td>《技术方案》与 sableos.md 的配图补齐</td></tr>
-          <tr><td class="num">4</td><td>更新 README 开头</td><td>标识块 + 徽标行 + 状态说明</td></tr>
-          <tr><td class="num">5</td><td>开 Pages + Actions（可选）</td><td>推送即发布</td></tr>
-          <tr><td class="num">6</td><td>随项目推进补内容</td><td>更新日志、示例集、对比表</td></tr>
+          <tr><td class="num">1</td><td>拍板标识与配色</td><td><span class="pill ok"><span class="dot"></span>按方案默认值落定</span></td></tr>
+          <tr><td class="num">2</td><td>建 <code>website/</code> 并迁入站点</td><td><span class="pill ok"><span class="dot"></span>已完成（<code>git mv</code>）</span></td></tr>
+          <tr><td class="num">3</td><td>修正站内路径与仓库地址</td><td><span class="pill ok"><span class="dot"></span>已完成</span></td></tr>
+          <tr><td class="num">4</td><td>配 Pages 部署工作流</td><td><span class="pill ok"><span class="dot"></span>已完成（待你在仓库开启）</span></td></tr>
+          <tr><td class="num">5</td><td>更新 README 开头（标识块）</td><td><span class="pill ok"><span class="dot"></span>已完成</span></td></tr>
+          <tr><td class="num">6</td><td>补齐 12 处文档配图</td><td><span class="pill warn"><span class="dot"></span>待办：1 张现成可补，11 张需绘制</span></td></tr>
+          <tr><td class="num">7</td><td>随项目推进补内容</td><td><span class="pill warn"><span class="dot"></span>更新日志、示例集、对比表</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -952,7 +957,8 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
         <p>
           设计上没有把 SableOS 包装成「又一个 Agent 框架」，而是紧扣它真正的主张——
           <b>守住运行时这一层、一群 Agent 而非一个、企业可控可审计</b>，用暖墨 + 燃金建立质感，
-          用一套变量化的设计系统保证它经得起长期迭代。所有校验项已通过，等你确认方向后再进入开发。
+          用一套变量化的设计系统保证它经得起长期迭代。设计已定稿、站点已迁入 <code>website/</code>、72 项校验全部通过；
+          下一步只剩你在仓库里把 Pages 的 Source 切到 <code>GitHub Actions</code>。
         </p>
       </div>
     </div>

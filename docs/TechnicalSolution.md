@@ -85,7 +85,7 @@ SableOS 的整体架构按"五大核心能力加支撑模块"组织。五大核�
 1. 所有能力收敛到一个引擎、一套存储、一个进程内，符合"单二进制、装好就跑"的定位，外部依赖（LLM 厂商 API、外部 MCP server）都在应用边界之外，SableOS 自身不绑定任何一家。
 2. 引擎和能力之间、能力和外部之间都通过抽象接口解耦，这让扩展阶段加新 Channel、新 Provider、新 Tool 时只需在边缘扩展，不动核心引擎。
 
-![SableOS 整体架构：接入层→Agent 层→引擎层→能力层→基础层](../website/public/images/docs-architecture-light.svg)
+![SableOS 整体架构：接入层→Agent 层→引擎层→能力层→基础层](images/docs-architecture-light.svg)
 
 ### 2.1 分层视图
 
@@ -120,7 +120,7 @@ LLM 调用的复杂度都被 **Spring AI Alibaba** 吸收掉了。SableOS 在其
 
 **Provider 配置模块。** 通过 `application.yaml` 配置 Provider 的 API key 和 base URL，Spring AI Alibaba 根据配置创建对应的 `ChatModel` Bean。
 
-![Provider 架构：ReAct 循环 → ProviderService → 显式映射的 ChatModel → 各家 LLM API](../website/public/images/docs-provider.svg)
+![Provider 架构：ReAct 循环 → ProviderService → 显式映射的 ChatModel → 各家 LLM API](images/docs-provider.svg)
 
 ### 3.2 Provider 名到 ChatModel 的显式映射
 
@@ -152,7 +152,7 @@ ReAct 是 **Reason** 加 **Act** 的简称。算法步骤：
 6. 回到组装 Prompt 步骤继续循环
 7. 达到最大迭代次数（默认 10 次）强制结束
 
-![ReAct 循环：Reason → Act → Observe，循环直到无工具调用或达到最大轮数](../website/public/images/docs-react-loop-detail.svg)
+![ReAct 循环：Reason → Act → Observe，循环直到无工具调用或达到最大轮数](images/docs-react-loop-detail.svg)
 
 ### 4.2 模块组成
 
@@ -189,7 +189,7 @@ Memory 是 Agent OS 区别于普通 chatbot 的核心能力。三层记忆是完
 
 **`MemoryService` 模块（统一门面）。** 对 ReAct 循环暴露统一的记忆读写接口。内部把会话记忆委托给 `SessionManager`（底层是 SQLite 的 Session 存储），把长期记忆委托给 `LongTermMemory`（底层是 `MEMORY.md` 文件）。ReAct 循环组装 prompt 时只调 `MemoryService` 一个接口拿到完整上下文。这是相对原设计的关键调整，避免 Memory 概念横跨两个模块却没有统一入口。
 
-![Memory 架构：MemoryService 门面统一收口 SessionManager 和 LongTermMemory](../website/public/images/docs-memory-service.svg)
+![Memory 架构：MemoryService 门面统一收口 SessionManager 和 LongTermMemory](images/docs-memory-service.svg)
 
 **`LongTermMemoryStore` 后端接口（可插拔）。** 长期记忆抽成一个后端接口，把"长期记忆的读写契约"和"具体存哪、怎么存"解耦——这是第 21 节评审那道"接口墙"在实现层的落地。对外三个方法：
 
@@ -217,7 +217,7 @@ Memory 是 Agent OS 区别于普通 chatbot 的核心能力。三层记忆是完
 
 默认后端的文件位置 `.sableos/memory/MEMORY.md`，内部用两个一级分区组织，每条记忆带日期 header：
 
-![MEMORY.md 内部结构：核心记忆区永远保留，截断和检索只作用在归档记忆区](../website/public/images/docs-memory-structure.svg)
+![MEMORY.md 内部结构：核心记忆区永远保留，截断和检索只作用在归档记忆区](images/docs-memory-structure.svg)
 
 格式不做更严格的规定，Agent 写什么 LLM 自己理解就行，简单但有效；两个分区只是组织方式上的区分。换到 `SqliteMemoryStore` 时同一套"核心/归档"语义落到 `memory_entries` 表的 `scope` 列，换到 `Mem0MemoryStore` 时落到 Mem0 的 metadata——分区约定不变，存储形态随后端而变。
 
@@ -264,7 +264,7 @@ SableOS 内部统一的 Tool 抽象接口。内置 Tool、`@Tool` 注解的 Plug
 
 `ToolResult` 包含成功标识、结果内容、错误信息、是否可重试。
 
-![Tool 调用流程：LLM 决定调用 → SableOS 执行 → 外部世界 → 结果回填](../website/public/images/docs-tool-flow.svg)
+![Tool 调用流程：LLM 决定调用 → SableOS 执行 → 外部世界 → 结果回填](images/docs-tool-flow.svg)
 
 ### 6.2 内置 Tool（九个）
 
@@ -278,7 +278,7 @@ SableOS 内部统一的 Tool 抽象接口。内置 Tool、`@Tool` 注解的 Plug
 
 这九个覆盖"让 Agent 能读写文件、跑命令、调外部 API、记事、往外推通知"的最短链路。
 
-![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](../website/public/images/docs-plugin-tool-tiers.svg)
+![Plugin Tool 三档：零代码 AGENT.md 目录+MCP、轻代码自写 MCP server、重代码 @Tool Java Bean，门槛从低到高](images/docs-plugin-tool-tiers.svg)
 
 ### 6.3 Plugin Tool 方式一：零代码 AGENT.md 目录 加复用 MCP
 
@@ -334,7 +334,7 @@ ActionType     = FILE_READ | FILE_WRITE | SHELL_COMMAND | HTTP_REQUEST
 
 `FileTools`、`ShellTools`、`HttpTools` 在各自 `execute` 方法开头调用 `sandbox.enforce(...)`，校验通过才执行真正的 IO：
 
-![Sandbox 校验流程：FileTools/ShellTools/HttpTools 调用 WhitelistSandbox.enforce，通过则继续执行，拒绝则抛异常并走既有审计路径](../website/public/images/docs-sandbox-flow.svg)
+![Sandbox 校验流程：FileTools/ShellTools/HttpTools 调用 WhitelistSandbox.enforce，通过则继续执行，拒绝则抛异常并走既有审计路径](images/docs-sandbox-flow.svg)
 
 **扩展阶段按信号驱动升级，接口不变，只新增实现类：**
 
@@ -376,7 +376,7 @@ NotifyTarget = { channelType: String, config: Map<String, String> }
 
 `channel` 参数是通知渠道的全局注册名。通知渠道通过 Web 管理台或 `/api/v1/notify-channels` 做 CRUD，持久化在 SQLite 的 `notify_channels` 表；每项包含 `name`、`type`、`url` 和可选的 `description`，以及承载类型相关多字段的 `config`（webhook/feishu 等 HTTP 类继续用 `url`，email 用 `config` 的 host/port/from/to 等）。Agent 在 `AGENT.md` 正文中用自然语言按名引用渠道，LLM 调用时传 `channel` 和 `content`，`NotifyTools` 再从注册表解析适配器和 URL。具体 webhook 地址不进入对话，增加或修改渠道也无需改 Agent；`AGENT.md` frontmatter 不包含 `notify_channels` 字段。
 
-![NotifyTools 设计：接口先行，核心阶段只实现 WebhookNotifyAdapter，扩展阶段新增专用渠道 Adapter](../website/public/images/docs-notify.svg)
+![NotifyTools 设计：接口先行，核心阶段只实现 WebhookNotifyAdapter，扩展阶段新增专用渠道 Adapter](images/docs-notify.svg)
 
 **跟已有机制的关系：**
 
@@ -500,7 +500,7 @@ Channel 是 Agent 对外的消息接入入口，主要解决"消息进来、响�
 
 定时任务不是新增的核心能力，而是给 `AgentService` 加第三条触发路径。CLI 和 Web Service 都是"人推"——需要有人发起一次调用；`AgentScheduler` 是"钟推"——按 cron 表达式到点自动生成一条消息，调用链路跟人推完全一样，`ReActLoop` 不感知消息从哪个入口来。
 
-![定时任务是第三种触发源：CLI/Web Service（人推）和 AgentScheduler（钟推）都调同一个 AgentService](../website/public/images/docs-scheduler.svg)
+![定时任务是第三种触发源：CLI/Web Service（人推）和 AgentScheduler（钟推）都调同一个 AgentService](images/docs-scheduler.svg)
 
 **`AgentScheduler` 模块（归 `sableos-core`）。** 基于 Spring 的 `ThreadPoolTaskScheduler` 加 `CronTrigger` 动态注册任务，不用静态的 `@Scheduled` 注解，因为触发规则要按 Profile 配置动态生成，编译期写死的注解做不到。Profile 新增 `schedules` 字段声明 cron 表达式、时区、要发给 Agent 的消息内容；SableOS 启动时扫描所有 Profile 的 `schedules` 字段逐个注册。
 
@@ -710,7 +710,7 @@ mvn clean package
 - `DELETE /api/v1/agents/{name}`：注销定时 → 移出索引 → **整个 Agent 目录**归档 `.sableos/archive/`（不物理删）
 - `POST /api/v1/agents/{name}/invoke`：已有的无状态调用端点，不变
 
-![两条录入路径一段注册代码：API 上传 create() 与手工丢目录 WorkspaceWatcher 都汇到 register(agentDir)，deriveProfile + 注册 + 注册定时，免重启即上线](../website/public/images/docs-agent-lifecycle.svg)
+![两条录入路径一段注册代码：API 上传 create() 与手工丢目录 WorkspaceWatcher 都汇到 register(agentDir)，deriveProfile + 注册 + 注册定时，免重启即上线](images/docs-agent-lifecycle.svg)
 
 写完 Agent 目录后走的 `AgentLoader.deriveProfile → ProfileRegistry.register → AgentScheduler.registerProfile`，与启动扫描是**同一段代码**——保证"API 建的 Agent 和手工丢目录建的 Agent 行为一模一样"。`ProfileRegistry`（`register`/`remove`/`exists`）和 `AgentScheduler`（`registerProfile`/`unregisterProfile` + `scheduledTasks` 句柄表）的运行时注册方法在核心阶段（课程第 29 节）就已立好，本阶段直接调；`generate` 走既有 `ProviderService`（并落 `llm_calls` 审计）。
 
