@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SableOS · Java 原生、私有可审计的 Agent OS</title>
+<meta name="description" content="SableOS 是一个企业能完全掌控的、Java 原生的、私有可审计的 Agent OS。一个目录定义一个 Agent，一个底座运行一群 Agent。">
+<meta name="theme-color" content="#1D1815">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SableOS">
+<meta property="og:title" content="SableOS · Java 原生、私有可审计的 Agent OS">
+<meta property="og:description" content="一个目录定义一个 Agent，一个底座运行一群 Agent。装在企业自己的基础设施上，数据不出域。">
+<meta property="og:image" content="assets/img/og-cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+
+<!--
+  字体策略
+  --------
+  Inter / JetBrains Mono 只是"锦上添花"：字体栈在两者之后紧跟
+  HarmonyOS Sans SC / PingFang SC / Microsoft YaHei 与 ui-monospace / Consolas，
+  中文与等宽字形在任何情况下都有本地字体兜底（已验证：字体加载失败时
+  hero 高度、标题盒子尺寸与正常加载完全一致，无布局位移）。
+
+  这里用 media="print" + onload 切换到 all 的写法，让字体请求不阻塞首屏渲染。
+  国内访问 Google Fonts 不稳定，若不需要这两款西文字体，直接删掉下面两行即可，
+  页面观感不受影响。若要更彻底，可把 woff2 自托管到 assets/fonts/ 并改用 @font-face。
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<noscript>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+</noscript>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body data-theme="light">
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></symbol>
+  <symbol id="i-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 0 7 4.5v.55A3.5 3.5 0 0 0 5 8.2 3.5 3.5 0 0 0 4 14.7V17a3 3 0 0 0 3 3h1.5a2 2 0 0 0 2-2V4.5A2.5 2.5 0 0 0 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 1 17 4.5v.55a3.5 3.5 0 0 1 2 3.15 3.5 3.5 0 0 1 1 6.5V17a3 3 0 0 1-3 3h-1.5a2 2 0 0 1-2-2V4.5A2.5 2.5 0 0 1 14.5 2z"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8z"/><path d="M12 17v5"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21 1 6"/><line x1="8" y1="3" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="21"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><polyline points="14 2 14 7 19 7"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13A4 4 0 0 1 16 11"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12" y2="8"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.24 2.76.12 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.4-5.26 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/></symbol>
+</svg>
+
+<a class="sd-skip" href="#main">跳到主要内容</a>
+
+<!-- ============================ 导航 ============================ -->
+<header class="sd-nav" data-scrolled="false">
+  <div class="sd-container sd-nav__inner">
+    <a class="sd-brand" href="#top" aria-label="SableOS 首页">
+      <svg class="sd-brand__mark" viewBox="0 0 64 64" aria-hidden="true">
+        <title>SableOS</title>
+        <g fill="none" stroke="#F2B441" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.10 23.75L22.90 28.00L18.10 32.25" stroke-opacity="0.42"/>
+          <path d="M23.90 27.75L28.70 32.00L23.90 36.25" stroke-opacity="0.68"/>
+          <path d="M29.70 31.75L34.50 36.00L29.70 40.25"/>
+          <path d="M38.90 36.00H45.90" stroke-opacity="0.95"/>
+        </g>
+      </svg>
+      <span class="sd-brand__name">SableOS</span>
+      <span class="sd-brand__tag">v0.1.0</span>
+    </a>
+
+    <nav class="sd-nav__links" aria-label="页面章节">
+      <a class="sd-nav__link" href="#why">为什么</a>
+      <a class="sd-nav__link" href="#positioning">定位</a>
+      <a class="sd-nav__link" href="#core">核心能力</a>
+      <a class="sd-nav__link" href="#architecture">架构</a>
+      <a class="sd-nav__link" href="#quickstart">快速开始</a>
+      <a class="sd-nav__link" href="#roadmap">路线图</a>
+      <a class="sd-nav__link" href="#docs">文档</a>
+    </nav>
+
+    <div class="sd-nav__actions">
+      <button class="sd-iconbtn" data-theme-toggle type="button" aria-label="切换深浅色">
+        <svg class="sd-themeIcon--sun" aria-hidden="true"><use href="#i-sun"/></svg>
+        <svg class="sd-themeIcon--moon" aria-hidden="true"><use href="#i-moon"/></svg>
+      </button>
+      <a class="sd-btn sd-btn--ghost sd-btn--sm" href="#" data-repo>
+        <svg class="sd-btn__icon" aria-hidden="true"><use href="#i-github"/></svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ============================ Hero ============================ -->
+<section class="sd-hero" id="top">
+  <div class="sd-container sd-hero__inner">
+    <div class="sd-hero__copy">
+      <div class="sd-hero__badges">
+        <span class="sd-badge sd-badge--accent"><span class="sd-badge__dot"></span>文档先行 · 预览稿</span>
+        <span class="sd-badge">Apache 2.0</span>
+        <span class="sd-badge">JDK 21 + Spring Boot 3.x</span>
+      </div>
+
+      <h1 class="sd-hero__title">让每一家企业，都能用自然语言<br>跑起来自己的 <em>Agent</em></h1>
+
+      <p class="sd-hero__slogan">一个目录定义一个 Agent，一个底座运行一群 Agent。</p>
+
+      <p class="sd-hero__lead">
+        SableOS 是一个<strong>企业能完全掌控的、Java 原生的、私有可审计的 Agent OS</strong>。
+        它装在企业自己的 K8s、服务器或物理机上，作为统一底座运行各类业务 Agent——
+        共享一套渠道接入、模型路由、记忆系统、工具调用与安全审计。
+        业务方不写 Agent 后端代码，只需要配置 Agent、编写 Tool。
+      </p>
+
+      <div class="sd-hero__tags">
+        <span class="sd-tag">自然语言 (md)</span>
+        <span class="sd-tag">Memory</span>
+        <span class="sd-tag">Tool</span>
+        <span class="sd-tag">MCP</span>
+        <span class="sd-tag">Skill</span>
+        <span class="sd-tag">知识库</span>
+        <span class="sd-tag">Notify</span>
+        <span class="sd-tag">= 一个 Agent</span>
+      </div>
+
+      <div class="sd-hero__actions">
+        <a class="sd-btn sd-btn--primary" href="#quickstart">
+          快速开始
+          <svg class="sd-btn__icon" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+        <a class="sd-btn sd-btn--onDark" href="#architecture">看架构</a>
+      </div>
+
+      <dl class="sd-hero__stats">
+        <div class="sd-stat">
+          <dd class="sd-stat__value">5<span>项</span></dd>
+          <dt class="sd-stat__label">核心能力</dt>
+        </div>
+        <div class="sd-stat">
+          <dd class="sd-stat__value">14<span>个</span></dd>
+          <dt class="sd-stat__label">Maven 模块</dt>
+        </div>
+        <div class="sd-stat">
+          <dd class="sd-stat__value">1<span>个</span></dd>
+          <dt class="sd-stat__label">可执行 JAR</dt>
+        </div>
+        <div class="sd-stat">
+          <dd class="sd-stat__value">0<span>行</span></dd>
+          <dt class="sd-stat__label">Agent 后端代码</dt>
+        </div>
+      </dl>
+    </div>
+
+    <div class="sd-hero__visual">
+      <figure class="sd-term" aria-label="SableOS 命令行示例">
+        <div class="sd-term__bar">
+          <span class="sd-term__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="sd-term__title">bash — sableos</span>
+        </div>
+        <div class="sd-term__body">
+          <div class="sd-term__line"><span class="sd-term__prompt">$</span><span class="sd-term__cmd">sableos init</span></div>
+          <div class="sd-term__line"><span class="sd-term__out">已初始化工作区 .sableos/</span></div>
+          <div class="sd-term__blank"></div>
+          <div class="sd-term__line"><span class="sd-term__prompt">$</span><span class="sd-term__cmd">sableos profile create ops-bot</span></div>
+          <div class="sd-term__line"><span class="sd-term__out">已生成 .sableos/agents/ops-bot/AGENT.md</span></div>
+          <div class="sd-term__blank"></div>
+          <div class="sd-term__line"><span class="sd-term__prompt">$</span><span class="sd-term__cmd">sableos chat</span></div>
+          <div class="sd-term__line"><span class="sd-term__out">› 帮我巡检一下线上服务</span></div>
+          <div class="sd-term__line"><span class="sd-term__out">· 调用工具 http_get …</span></div>
+          <div class="sd-term__line"><span class="sd-term__out">· 调用工具 http_get …</span></div>
+          <div class="sd-term__line"><span class="sd-term__ok">✓ 3 个服务中 1 个响应超时，已生成巡检报告</span></div>
+          <div class="sd-term__line"><span class="sd-term__prompt">$</span><span class="sd-term__caret"></span></div>
+        </div>
+      </figure>
+
+      <div class="sd-note" style="margin-top:var(--sp-5)">
+        <span class="sd-note__icon" aria-hidden="true"><svg><use href="#i-info"/></svg></span>
+        <div>
+          <p class="sd-note__title">当前处于文档先行阶段</p>
+          <p class="sd-note__text">以上命令以《技术方案》为准，核心阶段实现后可用。仓库现含 9 个模块骨架，<code class="sd-inline-code">mvn clean package</code> 可通过。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 为什么 ============================ -->
+<section class="sd-sec" id="why">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">为什么需要 SableOS</p>
+      <h2 class="sd-h2">Agent 大多停在 demo，卡在四道门槛上</h2>
+      <p class="sd-lead">SableOS 一次拆掉这四道门槛。更深一层的判断是：让 Agent 在生产环境可靠工作的瓶颈，通常不在模型本身，而在 Agent 的运行环境。</p>
+    </div>
+
+    <div class="sd-grid sd-grid--4">
+      <article class="sd-card sd-card--hover sd-pain sd-reveal">
+        <p class="sd-card__num">门槛 01</p>
+        <h3 class="sd-card__title">定义 Agent 要写代码</h3>
+        <p class="sd-pain__bad">最懂业务的人反而做不了，需求和技术之间隔着一条开发排期</p>
+        <p class="sd-pain__good">一个目录 + 一份 AGENT.md 就是一个 Agent，无需写代码</p>
+      </article>
+
+      <article class="sd-card sd-card--hover sd-pain sd-reveal">
+        <p class="sd-card__num">门槛 02</p>
+        <h3 class="sd-card__title">数据要被云平台拿走</h3>
+        <p class="sd-pain__bad">合规过不去，敏感业务根本没法上</p>
+        <p class="sd-pain__good">私有部署，数据不出域，不锁任何云生态</p>
+      </article>
+
+      <article class="sd-card sd-card--hover sd-pain sd-reveal">
+        <p class="sd-card__num">门槛 03</p>
+        <h3 class="sd-card__title">执行是个黑盒</h3>
+        <p class="sd-pain__bad">没有审计、没有白名单、没有审批，企业不敢上生产</p>
+        <p class="sd-pain__good">强制沙箱 + 全链路审计，安全从第一天就在架构里</p>
+      </article>
+
+      <article class="sd-card sd-card--hover sd-pain sd-reveal">
+        <p class="sd-card__num">门槛 04</p>
+        <h3 class="sd-card__title">跑一个容易，跑一群难</h3>
+        <p class="sd-pain__bad">缺一层管理「一群 Agent 的操作系统」</p>
+        <p class="sd-pain__good">为一整队 Agent 准备的生命周期与治理</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 定位 ============================ -->
+<section class="sd-sec sd-sec--subtle" id="positioning">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">生态分层</p>
+      <h2 class="sd-h2">SableOS 守住「运行时」这一层</h2>
+      <p class="sd-lead">框架给你代码、要你自己搭运行环境；编排平台给你流程、跑在运行时之上；SableOS 给的是运行时本身。</p>
+    </div>
+
+    <div class="sd-grid sd-grid--3">
+      <article class="sd-card sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-box"/></svg></span>
+        <h3 class="sd-card__title">框架层</h3>
+        <p class="sd-card__text">Spring AI、LangChain4j 等。提供 Provider 抽象、Tool schema 生成等代码积木。</p>
+        <p class="sd-pain__bad" style="margin-top:auto;padding-top:var(--sp-4)">运行环境、推理循环、工具治理、审计仍需自建</p>
+      </article>
+
+      <article class="sd-card sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-layers"/></svg></span>
+        <h3 class="sd-card__title">编排平台层</h3>
+        <p class="sd-card__text">Dify、Coze 等。提供可视化流程编排，跑在某个运行时之上。</p>
+        <p class="sd-pain__bad" style="margin-top:auto;padding-top:var(--sp-4)">私有化与合规受限，代码级扩展受限</p>
+      </article>
+
+      <article class="sd-card sd-card--accent sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-cpu"/></svg></span>
+        <h3 class="sd-card__title">运行时层 · SableOS</h3>
+        <p class="sd-card__text">让 Agent 能常驻、可治理、可审计地跑起来的底座，原生对接 MCP、A2A 等开放协议。</p>
+        <p class="sd-pain__good">你只需要写业务 Tool，其余交给底座</p>
+      </article>
+    </div>
+
+    <div class="sd-note sd-reveal" style="margin-top:var(--sp-6)">
+      <span class="sd-note__icon" aria-hidden="true"><svg><use href="#i-info"/></svg></span>
+      <div>
+        <p class="sd-note__title">为什么必须是 Java</p>
+        <p class="sd-note__text">业界已验证的两个开源 Agent OS——Node.js 的 OpenClaw、Python 的 Hermes Agent——都不是 Java。而 Java 是大量企业后端的事实标准：Spring Boot 与 Nacos、Sentinel、SkyWalking、Prometheus 等运维体系可直接复用；Tool 能直接调企业现有 Java 服务；严监管行业的私有部署与合规审计能走现有流程。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 核心能力 ============================ -->
+<section class="sd-sec" id="core">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">运行时内核</p>
+      <h2 class="sd-h2">五大核心能力</h2>
+      <p class="sd-lead">引擎与能力之间、能力与外部之间都通过抽象接口解耦。扩展阶段加新 Channel、新 Provider、新 Tool，只需在边缘扩展，不动核心引擎。</p>
+    </div>
+
+    <div class="sd-grid sd-grid--3">
+      <article class="sd-card sd-card--hover sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-plug"/></svg></span>
+        <h3 class="sd-card__title">对接 LLM</h3>
+        <p class="sd-card__text">Provider 抽象统一对接主流大模型与本地推理（Ollama、vLLM 等）。多 Provider 通过显式映射并存，运行时切换无锁定。</p>
+      </article>
+
+      <article class="sd-card sd-card--hover sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-terminal"/></svg></span>
+        <h3 class="sd-card__title">ReAct 循环</h3>
+        <p class="sd-card__text">自实现的推理引擎：LLM 决定调不调工具、调哪个，执行后回填结果继续推理，直到给出最终响应或达到最大迭代次数（默认 10）。</p>
+      </article>
+
+      <article class="sd-card sd-card--hover sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-brain"/></svg></span>
+        <h3 class="sd-card__title">Memory 记忆</h3>
+        <p class="sd-card__text">统一门面提供会话记忆与长期记忆。长期记忆默认落 <code class="sd-inline-code">.sableos/memory/MEMORY.md</code>，后端可插拔（Markdown / SQLite / 自托管 Mem0）。</p>
+      </article>
+
+      <article class="sd-card sd-card--hover sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-sliders"/></svg></span>
+        <h3 class="sd-card__title">Tool 体系</h3>
+        <p class="sd-card__text">九个内置 Tool 加 Plugin Tool 三档接入；MCP Client 对接外部工具。文件、Shell、HTTP 与通知类调用经 <code class="sd-inline-code">Sandbox</code> 白名单校验，全部调用落 <code class="sd-inline-code">tool_invocations</code> 审计。</p>
+      </article>
+
+      <article class="sd-card sd-card--hover sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-globe"/></svg></span>
+        <h3 class="sd-card__title">Web Service</h3>
+        <p class="sd-card__text">所有能力经 REST API 对外暴露，核心阶段 10 个端点。业务系统用任何语言经 HTTP 接入。</p>
+      </article>
+
+      <article class="sd-card sd-card--accent sd-reveal">
+        <span class="sd-card__icon" aria-hidden="true"><svg><use href="#i-map"/></svg></span>
+        <h3 class="sd-card__title">三条演进主线</h3>
+        <p class="sd-card__text">单机运行时内核 → 底座分布式 → 跨节点 Agent 协作。横向能力（多租户、SSO、完整审计查询、可观测）伴随各阶段补齐。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 特性 ============================ -->
+<section class="sd-sec sd-sec--subtle" id="features">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">核心特性</p>
+      <h2 class="sd-h2">九条产品主张</h2>
+      <p class="sd-lead">从定义方式、部署形态到安全边界，逐条对应设计原则。</p>
+    </div>
+
+    <div class="sd-grid sd-grid--3">
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">一个目录 = 一个 Agent</h3>
+        <p class="sd-card__text">一个包含 <code class="sd-inline-code">AGENT.md</code> 的目录定义一个 Agent，不用写代码，多个 Agent 在同一实例并存。</p>
+      </article>
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">Java 原生</h3>
+        <p class="sd-card__text">基于 JDK 21 与 Spring Boot 3.x，单可执行 JAR 部署，复用企业现有的 Java 运维工具链。</p>
+      </article>
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">私有可控</h3>
+        <p class="sd-card__text">装在企业自己的 K8s、虚拟机或物理机上，数据不出域，不锁任何云。</p>
+      </article>
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">安全隔离</h3>
+        <p class="sd-card__text">工具调用经文件、命令、网络白名单校验，强制沙箱隔离，凭证走企业密钥体系不落地，全链路可审计。</p>
+      </article>
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">自实现 ReAct</h3>
+        <p class="sd-card__text">核心推理循环自己实现，不套外部 Agent 框架，机制完全可控。</p>
+      </article>
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">对接开放标准</h3>
+        <p class="sd-card__text">工具用 MCP、Agent 协作用 A2A、Agent 目录借 Anthropic Agent Skills 的形态，与生态协同而不另立协议。</p>
+      </article>
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">三档工具扩展</h3>
+        <p class="sd-card__text">零代码 Agent 目录加复用 MCP、轻代码自写 MCP server、重代码原生 Java 方法，按门槛自由选择。</p>
+      </article>
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">跨对话记忆</h3>
+        <p class="sd-card__text">会话加长期两层记忆，长期记忆后端可插拔，让 Agent 记得住偏好与关键事实。</p>
+      </article>
+      <article class="sd-card sd-card--hover sd-reveal">
+        <h3 class="sd-card__title">无状态可扩展</h3>
+        <p class="sd-card__text">运行实例无状态、状态外置，从架构起为分布式演进留好路。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 架构 ============================ -->
+<section class="sd-sec" id="architecture">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">架构</p>
+      <h2 class="sd-h2">一次消息的处理链路，分四层</h2>
+      <p class="sd-lead">技术栈一句话：JDK 21 + Spring Boot 3.x + Spring AI Alibaba + 自实现 ReAct loop + SQLite + Picocli。</p>
+    </div>
+
+    <div class="sd-layers sd-reveal" role="list">
+      <div class="sd-layer" role="listitem">
+        <p class="sd-layer__name"><span class="sd-layer__idx">L1</span>接入层</p>
+        <div class="sd-layer__items">
+          <span class="sd-chip">CLI Channel</span>
+          <span class="sd-chip">Web Service（REST API）</span>
+          <span class="sd-chip">AgentScheduler（cron 定时触发）</span>
+        </div>
+      </div>
+      <div class="sd-layer" role="listitem">
+        <p class="sd-layer__name"><span class="sd-layer__idx">L2</span>引擎层</p>
+        <div class="sd-layer__items">
+          <span class="sd-chip">AgentService（统一入口）</span>
+          <span class="sd-chip">ReActLoop（自实现）</span>
+          <span class="sd-chip">PromptBuilder</span>
+          <span class="sd-chip">ToolExecutor</span>
+        </div>
+      </div>
+      <div class="sd-layer" role="listitem">
+        <p class="sd-layer__name"><span class="sd-layer__idx">L3</span>能力层</p>
+        <div class="sd-layer__items">
+          <span class="sd-chip">ProviderService</span>
+          <span class="sd-chip">MemoryService</span>
+          <span class="sd-chip">ToolRegistry + Sandbox</span>
+          <span class="sd-chip">KnowledgeService</span>
+          <span class="sd-chip">NotifyChannel</span>
+        </div>
+      </div>
+      <div class="sd-layer" role="listitem">
+        <p class="sd-layer__name"><span class="sd-layer__idx">L4</span>基础层</p>
+        <div class="sd-layer__items">
+          <span class="sd-chip">SQLite（Session / tool_invocations / llm_calls）</span>
+          <span class="sd-chip">.sableos/ 文件系统</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sd-h3 sd-reveal" style="margin-top:var(--sp-12);margin-bottom:var(--sp-5)">工程结构 · Maven 多模块</h3>
+
+    <div class="sd-tableWrap sd-reveal">
+      <table class="sd-table">
+        <caption>以《技术方案》第 10 章为准，目标是 14 个模块；当前骨架已落地 9 个。</caption>
+        <thead>
+          <tr><th scope="col">模块</th><th scope="col">职责</th><th scope="col">状态</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>sableos-core</code></td><td>核心抽象与接口：SableTool、Profile、ContextLoader、ReActLoop、PromptBuilder、ToolExecutor、AgentService、AgentScheduler</td><td>骨架</td></tr>
+          <tr><td><code>sableos-provider</code></td><td>Provider 服务、Function Calling 适配、provider name 到 ChatModel 的显式映射</td><td>骨架</td></tr>
+          <tr><td><code>sableos-memory</code></td><td>记忆统一门面、长期记忆、save_memory / recall_memory 工具</td><td>骨架</td></tr>
+          <tr><td><code>sableos-tool</code></td><td>内置 Tool、MCP Client、ToolRegistry、Sandbox 与通知适配器（三合一）</td><td>骨架</td></tr>
+          <tr><td><code>sableos-storage</code></td><td>持久化层：Session、Tool 调用与 LLM 调用审计落库</td><td>骨架</td></tr>
+          <tr><td><code>sableos-web</code></td><td>Web Server、六个 ApiController、OpenAPI 文档</td><td>骨架</td></tr>
+          <tr><td><code>sableos-cli</code></td><td>命令行入口：Picocli、ConfigLoader</td><td>骨架</td></tr>
+          <tr><td><code>sableos-channel-cli</code></td><td>CLI Channel：sableos chat 交互对话</td><td>骨架</td></tr>
+          <tr><td><code>sableos-boot</code></td><td>Spring Boot 启动模块：主类、自动配置、依赖聚合</td><td>骨架</td></tr>
+          <tr><td><code>sableos-persona</code></td><td>人格库：内置人格预设加自定义人格 CRUD</td><td>规划</td></tr>
+          <tr><td><code>sableos-knowledge</code></td><td>知识库：解析 / 切分 / 向量化流水线，双路召回加 RRF 融合检索</td><td>规划</td></tr>
+          <tr><td><code>sableos-channel-feishu</code></td><td>飞书入站渠道：长连接收事件、出站过沙箱、自动重连</td><td>规划</td></tr>
+          <tr><td><code>sableos-channel-wecom</code></td><td>企微入站渠道（对称飞书）</td><td>规划</td></tr>
+          <tr><td><code>sableos-channel-dingtalk</code></td><td>钉钉入站渠道（对称飞书 / 企微）</td><td>规划</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sd-note sd-reveal" style="margin-top:var(--sp-6)">
+      <span class="sd-note__icon" aria-hidden="true"><svg><use href="#i-shield"/></svg></span>
+      <div>
+        <p class="sd-note__title">模块之间通过接口解耦</p>
+        <p class="sd-note__text">扩展阶段加新 Channel 或新 Tool 实现，只加新模块，不改 core。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 快速开始 ============================ -->
+<section class="sd-sec sd-sec--subtle" id="quickstart">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">快速开始</p>
+      <h2 class="sd-h2">四条命令，从零到一个能对话的 Agent</h2>
+      <p class="sd-lead">需要 JDK 21 或更高、Maven，以及一个 LLM Provider——云端 API，或本地 Ollama / vLLM 等 OpenAI 兼容服务。</p>
+    </div>
+
+    <div class="sd-grid sd-grid--2" style="gap:var(--sp-10)">
+      <ol class="sd-steps sd-reveal">
+        <li class="sd-step">
+          <span class="sd-step__num">1</span>
+          <div>
+            <h3 class="sd-step__title">构建</h3>
+            <p class="sd-step__text">产出可执行 fat JAR。骨架阶段即可验证。</p>
+          </div>
+        </li>
+        <li class="sd-step">
+          <span class="sd-step__num">2</span>
+          <div>
+            <h3 class="sd-step__title">初始化工作区</h3>
+            <p class="sd-step__text">创建 <code class="sd-inline-code">.sableos/</code> 目录结构。</p>
+          </div>
+        </li>
+        <li class="sd-step">
+          <span class="sd-step__num">3</span>
+          <div>
+            <h3 class="sd-step__title">生成一个 Agent 目录</h3>
+            <p class="sd-step__text">得到 <code class="sd-inline-code">.sableos/agents/weather-bot/AGENT.md</code>。</p>
+          </div>
+        </li>
+        <li class="sd-step">
+          <span class="sd-step__num">4</span>
+          <div>
+            <h3 class="sd-step__title">对话，或对外服务</h3>
+            <p class="sd-step__text">本地 CLI 交互，或启动 REST API 与 Swagger UI（默认端口 8080）。</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="sd-reveal">
+        <div class="sd-code">
+          <div class="sd-code__bar">
+            <span class="sd-code__lang">bash</span>
+            <button class="sd-code__copy" data-copy type="button">
+              <svg aria-hidden="true"><use href="#i-copy"/></svg>
+              <span data-copy-label>复制</span>
+            </button>
+          </div>
+<pre><code><span class="sd-c-comment"># 1. 构建：产出可执行 fat JAR</span>
+mvn clean package
+
+<span class="sd-c-comment"># 2. 初始化工作区</span>
+sableos init
+
+<span class="sd-c-comment"># 3. 生成一个 Agent 目录</span>
+sableos profile create weather-bot
+
+<span class="sd-c-comment"># 4. 交互对话</span>
+sableos chat
+
+<span class="sd-c-comment"># 5. 启动 Web Service：REST API 与 Swagger UI</span>
+sableos serve</code></pre>
+        </div>
+
+        <h3 class="sd-h3" style="margin-top:var(--sp-8);margin-bottom:var(--sp-4)">一个最小 AGENT.md</h3>
+
+        <div class="sd-tabs">
+          <div class="sd-tabs__list" role="tablist" aria-label="AGENT.md 示例">
+            <button class="sd-tabs__tab" role="tab" aria-selected="true" type="button">定义</button>
+            <button class="sd-tabs__tab" role="tab" aria-selected="false" type="button">目录结构</button>
+          </div>
+          <div class="sd-tabs__panels">
+            <div role="tabpanel">
+              <div class="sd-code">
+                <div class="sd-code__bar">
+                  <span class="sd-code__lang">AGENT.md</span>
+                  <button class="sd-code__copy" data-copy type="button">
+                    <svg aria-hidden="true"><use href="#i-copy"/></svg>
+                    <span data-copy-label>复制</span>
+                  </button>
+                </div>
+<pre><code><span class="sd-c-key">name</span>: weather-bot
+<span class="sd-c-key">description</span>: 每天早上播报天气并给出穿搭建议
+
+<span class="sd-c-key">identity</span>:
+  <span class="sd-c-key">agent_name</span>: 天气助手
+  <span class="sd-c-key">prompt</span>: 你是天气播报助手，关注用户所在城市的天气变化
+
+<span class="sd-c-key">provider</span>:
+  <span class="sd-c-key">name</span>: deepseek
+  <span class="sd-c-key">model</span>: deepseek-chat
+  <span class="sd-c-key">temperature</span>: <span class="sd-c-num">0.7</span>
+
+<span class="sd-c-key">tools</span>:
+  - http_get
+  - notify
+
+<span class="sd-c-key">settings</span>:
+  <span class="sd-c-key">max_iterations</span>: <span class="sd-c-num">10</span>
+  <span class="sd-c-key">max_history_turns</span>: <span class="sd-c-num">20</span></code></pre>
+              </div>
+              <p class="sd-card__text" style="margin-top:var(--sp-4)">
+                正文写任务指令，frontmatter 是这个 Agent 的运行配置（派生成 <code class="sd-inline-code">Profile</code>）。
+                Skill 绑定通过 Agent 目录下 <code class="sd-inline-code">skills/</code> 的相对软连接表达，不写进 frontmatter。
+              </p>
+            </div>
+
+            <div role="tabpanel">
+              <div class="sd-code">
+                <div class="sd-code__bar">
+                  <span class="sd-code__lang">tree</span>
+                  <button class="sd-code__copy" data-copy type="button">
+                    <svg aria-hidden="true"><use href="#i-copy"/></svg>
+                    <span data-copy-label>复制</span>
+                  </button>
+                </div>
+<pre><code><span class="sd-c-comment"># 工作区</span>
+.sableos/
+├── agents/
+│   └── weather-bot/
+│       ├── AGENT.md          <span class="sd-c-comment"># 运行配置 + 任务指令</span>
+│       ├── REFERENCE.md      <span class="sd-c-comment"># 可选：参考资料</span>
+│       ├── skills/           <span class="sd-c-comment"># 相对软连接选择可见 Skill</span>
+│       └── scripts/          <span class="sd-c-comment"># 可选：脚本</span>
+├── skills/                   <span class="sd-c-comment"># 公共 Skill 库</span>
+├── personas/                 <span class="sd-c-comment"># 自定义人格</span>
+├── memory/
+│   └── MEMORY.md             <span class="sd-c-comment"># 长期记忆</span>
+└── config/</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="sd-h3" style="margin-top:var(--sp-8);margin-bottom:var(--sp-4)">三种运行模式</h3>
+        <div class="sd-tableWrap">
+          <table class="sd-table">
+            <thead>
+              <tr><th scope="col">命令</th><th scope="col">模式</th><th scope="col">说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>sableos chat</code></td><td>交互对话</td><td>本地 CLI 交互</td></tr>
+              <tr><td><code>sableos serve</code></td><td>Web Service</td><td>启动 REST API 服务，定时任务随之常驻调度</td></tr>
+              <tr><td><code>sableos gateway</code></td><td>守护进程</td><td>同时挂载多个渠道</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 设计原则 ============================ -->
+<section class="sd-sec" id="principles">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">设计原则</p>
+      <h2 class="sd-h2">七条不妥协的约束</h2>
+      <p class="sd-lead">这些原则写进了项目宪章，也是评审每一次架构升级的标尺。</p>
+    </div>
+
+    <div class="sd-principles">
+      <div class="sd-principle sd-reveal">
+        <span class="sd-principle__idx">01</span>
+        <div>
+          <h3 class="sd-principle__title">底座优先于 Agent</h3>
+          <p class="sd-principle__text">最重要的交付不是某个强大的 Agent，而是让任意 Agent 都能可靠运行的环境。</p>
+        </div>
+      </div>
+      <div class="sd-principle sd-reveal">
+        <span class="sd-principle__idx">02</span>
+        <div>
+          <h3 class="sd-principle__title">配置即 Agent</h3>
+          <p class="sd-principle__text">一个 Agent 由一份配置定义，而不是由代码写出。</p>
+        </div>
+      </div>
+      <div class="sd-principle sd-reveal">
+        <span class="sd-principle__idx">03</span>
+        <div>
+          <h3 class="sd-principle__title">自实现核心，可控优先</h3>
+          <p class="sd-principle__text">核心推理循环自己实现，底层模型协议适配复用成熟库，不重复造轮子。</p>
+        </div>
+      </div>
+      <div class="sd-principle sd-reveal">
+        <span class="sd-principle__idx">04</span>
+        <div>
+          <h3 class="sd-principle__title">对接开放标准</h3>
+          <p class="sd-principle__text">工具用 MCP、协作用 A2A、技能用开放格式，与生态协同。</p>
+        </div>
+      </div>
+      <div class="sd-principle sd-reveal">
+        <span class="sd-principle__idx">05</span>
+        <div>
+          <h3 class="sd-principle__title">无状态实例，状态外置</h3>
+          <p class="sd-principle__text">从单机平滑走向分布式的前提。</p>
+        </div>
+      </div>
+      <div class="sd-principle sd-reveal">
+        <span class="sd-principle__idx">06</span>
+        <div>
+          <h3 class="sd-principle__title">安全是地基不是补丁</h3>
+          <p class="sd-principle__text">工具来源受控、最小权限、强制沙箱、凭证不落地、全链路可审计。</p>
+        </div>
+      </div>
+      <div class="sd-principle sd-reveal">
+        <span class="sd-principle__idx">07</span>
+        <div>
+          <h3 class="sd-principle__title">分阶段克制</h3>
+          <p class="sd-principle__text">当前只做运行时内核的最小完备集，每次架构升级都用真实使用数据证明其必要性。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 路线图 ============================ -->
+<section class="sd-sec sd-sec--subtle" id="roadmap">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">路线图</p>
+      <h2 class="sd-h2">慢就是快，克制且聚焦</h2>
+      <p class="sd-lead">先把单机的运行时内核做扎实，让一个节点上运行和管理一群 Agent 真正可用，再在它之上逐步生长出分布式能力。</p>
+    </div>
+
+    <div class="sd-road">
+      <article class="sd-road__phase sd-reveal" data-state="now">
+        <span class="sd-road__label"><span class="sd-badge__dot"></span>当前</span>
+        <h3 class="sd-road__title">阶段一 · 单机运行时内核</h3>
+        <ul class="sd-road__list">
+          <li>五大核心能力跑通</li>
+          <li>配置即 Agent、多 Agent 并存</li>
+          <li>REST API 接入、对接 MCP</li>
+          <li>把单节点运行和管理一群 Agent 做到可用</li>
+        </ul>
+      </article>
+
+      <article class="sd-road__phase sd-reveal" data-state="next">
+        <span class="sd-road__label">规划</span>
+        <h3 class="sd-road__title">阶段二 · 底座分布式</h3>
+        <ul class="sd-road__list">
+          <li>节点无状态化</li>
+          <li>状态外置、多副本部署</li>
+          <li>支撑更大规模与高可用</li>
+        </ul>
+      </article>
+
+      <article class="sd-road__phase sd-reveal" data-state="vision">
+        <span class="sd-road__label">愿景</span>
+        <h3 class="sd-road__title">阶段三 · 跨节点 Agent 协作</h3>
+        <ul class="sd-road__list">
+          <li>引入 Agent 通信底座</li>
+          <li>对接 A2A 协议</li>
+          <li>多节点上的 Agent 跨节点发现、委托、可靠异步协同</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="sd-note sd-reveal" style="margin-top:var(--sp-6)">
+      <span class="sd-note__icon" aria-hidden="true"><svg><use href="#i-layers"/></svg></span>
+      <div>
+        <p class="sd-note__title">横向能力 · 伴随各阶段逐步补齐</p>
+        <p class="sd-note__text">多租户、SSO、完整审计查询、Tool 治理、可观测与 Web 管理台。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 生态 ============================ -->
+<section class="sd-sec" id="ecosystem">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">生态与标准</p>
+      <h2 class="sd-h2">与生态协同，而不另立协议</h2>
+      <p class="sd-lead">能复用的协议一律复用，只把力气花在别人没做的那一层。</p>
+    </div>
+
+    <div class="sd-eco sd-reveal">
+      <a class="sd-eco__item" href="https://modelcontextprotocol.io/" target="_blank" rel="noopener">
+        <p class="sd-eco__name">MCP <span class="sd-eco__ext" aria-hidden="true"><svg><use href="#i-external"/></svg></span></p>
+        <p class="sd-eco__desc">Model Context Protocol：LLM 与外部工具、数据源连接的开放协议，工具生态的事实标准。</p>
+        <p class="sd-eco__role">工具接入层</p>
+      </a>
+      <a class="sd-eco__item" href="https://agentskills.io/" target="_blank" rel="noopener">
+        <p class="sd-eco__name">Agent Skills <span class="sd-eco__ext" aria-hidden="true"><svg><use href="#i-external"/></svg></span></p>
+        <p class="sd-eco__desc">Skill 的开放目录格式，SableOS 的 Agent 目录借其形态。</p>
+        <p class="sd-eco__role">Agent 定义形态</p>
+      </a>
+      <a class="sd-eco__item" href="https://spring.io/projects/spring-ai" target="_blank" rel="noopener">
+        <p class="sd-eco__name">Spring AI <span class="sd-eco__ext" aria-hidden="true"><svg><use href="#i-external"/></svg></span></p>
+        <p class="sd-eco__desc">LLM Provider 抽象与主流模型 connector，SableOS 的底层 LLM 调用层。</p>
+        <p class="sd-eco__role">模型接入层</p>
+      </a>
+      <a class="sd-eco__item" href="https://java2ai.com/" target="_blank" rel="noopener">
+        <p class="sd-eco__name">Spring AI Alibaba <span class="sd-eco__ext" aria-hidden="true"><svg><use href="#i-external"/></svg></span></p>
+        <p class="sd-eco__desc">面向国内模型生态的 Spring AI 实现，提供主流大模型 connector。</p>
+        <p class="sd-eco__role">模型接入层</p>
+      </a>
+      <div class="sd-eco__item">
+        <p class="sd-eco__name">A2A（Agent2Agent）</p>
+        <p class="sd-eco__desc">面向 Agent 互操作的开放协议，用于跨节点 Agent 协作。</p>
+        <p class="sd-eco__role">阶段三 · 协作层</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 文档 ============================ -->
+<section class="sd-sec sd-sec--subtle" id="docs">
+  <div class="sd-container">
+    <div class="sd-head sd-reveal">
+      <p class="sd-eyebrow">文档</p>
+      <h2 class="sd-h2">六份文档，一份权威依据</h2>
+      <p class="sd-lead">文档之间若出现修订不同步，以《技术方案》为准。</p>
+    </div>
+
+    <div class="sd-docs sd-reveal">
+      <a class="sd-doc" href="#" data-doc="docs/IndustryResearch.md">
+        <span class="sd-doc__badge">01</span>
+        <span>
+          <span class="sd-doc__name">行业研究</span>
+          <span class="sd-doc__desc">Agent OS 行业格局、Java 生态缺位与 SableOS 定位</span>
+        </span>
+        <span class="sd-doc__arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+      </a>
+      <a class="sd-doc" href="#" data-doc="docs/DemandAnalysis.md">
+        <span class="sd-doc__badge">02</span>
+        <span>
+          <span class="sd-doc__name">需求分析</span>
+          <span class="sd-doc__desc">需求、数据模型、里程碑与验收标准</span>
+        </span>
+        <span class="sd-doc__arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+      </a>
+      <a class="sd-doc" href="#" data-doc="docs/TechnicalSolution.md">
+        <span class="sd-doc__badge">03</span>
+        <span>
+          <span class="sd-doc__name">技术方案 <span class="sd-doc__badge" style="margin-inline-start:.4rem">权威</span></span>
+          <span class="sd-doc__desc">架构、模块与接口，编码时的权威依据</span>
+        </span>
+        <span class="sd-doc__arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+      </a>
+      <a class="sd-doc" href="#" data-doc="docs/AiProgrammingGuide.md">
+        <span class="sd-doc__badge">04</span>
+        <span>
+          <span class="sd-doc__name">AI 编程指南</span>
+          <span class="sd-doc__desc">Spec-Kit 开发流程与 AI coding 协作方式</span>
+        </span>
+        <span class="sd-doc__arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+      </a>
+      <a class="sd-doc" href="#" data-doc="docs/sableos.md">
+        <span class="sd-doc__badge">05</span>
+        <span>
+          <span class="sd-doc__name">项目简介</span>
+          <span class="sd-doc__desc">项目对外简介（叙事向）</span>
+        </span>
+        <span class="sd-doc__arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+      </a>
+      <a class="sd-doc" href="#" data-doc="docs/sable-labs.md">
+        <span class="sd-doc__badge">06</span>
+        <span>
+          <span class="sd-doc__name">社区背景</span>
+          <span class="sd-doc__desc">sable-labs 社区介绍（叙事向）</span>
+        </span>
+        <span class="sd-doc__arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section class="sd-sec sd-sec--tight">
+  <div class="sd-container">
+    <div class="sd-cta sd-reveal">
+      <div class="sd-cta__inner">
+        <h2 class="sd-cta__title">欢迎围绕 Agent 方向，一起把这个底座做扎实</h2>
+        <p class="sd-cta__text">
+          SableOS 由 sable-labs 社区发起——一个 AI coding 驱动的 AI 探索社区。
+          当前处于文档先行阶段，欢迎通过 Issue / PR 参与讨论与共建。
+        </p>
+        <div class="sd-cta__actions">
+          <a class="sd-btn sd-btn--primary" href="#" data-repo>
+            <svg class="sd-btn__icon" aria-hidden="true"><use href="#i-github"/></svg>
+            Star on GitHub
+          </a>
+          <a class="sd-btn sd-btn--onDark" href="#" data-issues>提 Issue</a>
+          <a class="sd-btn sd-btn--onDark" href="#" data-doc="docs/TechnicalSolution.md">读技术方案</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================ Footer ============================ -->
+<footer class="sd-foot">
+  <div class="sd-container">
+    <div class="sd-foot__grid">
+      <div>
+        <p class="sd-foot__brandName">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <g fill="none" stroke="#F2B441" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.10 23.75L22.90 28.00L18.10 32.25" stroke-opacity="0.42"/>
+              <path d="M23.90 27.75L28.70 32.00L23.90 36.25" stroke-opacity="0.68"/>
+              <path d="M29.70 31.75L34.50 36.00L29.70 40.25"/>
+              <path d="M38.90 36.00H45.90" stroke-opacity="0.95"/>
+            </g>
+          </svg>
+          SableOS
+        </p>
+        <p class="sd-foot__desc">企业能完全掌控的、Java 原生的、私有可审计的 Agent OS。一个目录定义一个 Agent，一个底座运行一群 Agent。</p>
+      </div>
+
+      <nav class="sd-foot__col" aria-label="页面">
+        <p class="sd-foot__colTitle">页面</p>
+        <ul>
+          <li><a href="#why">为什么</a></li>
+          <li><a href="#positioning">定位</a></li>
+          <li><a href="#core">核心能力</a></li>
+          <li><a href="#architecture">架构</a></li>
+        </ul>
+      </nav>
+
+      <nav class="sd-foot__col" aria-label="上手">
+        <p class="sd-foot__colTitle">上手</p>
+        <ul>
+          <li><a href="#quickstart">快速开始</a></li>
+          <li><a href="#principles">设计原则</a></li>
+          <li><a href="#roadmap">路线图</a></li>
+          <li><a href="#docs">文档</a></li>
+        </ul>
+      </nav>
+
+      <nav class="sd-foot__col" aria-label="社区">
+        <p class="sd-foot__colTitle">社区</p>
+        <ul>
+          <li><a href="#" data-repo>GitHub 仓库</a></li>
+          <li><a href="#" data-issues>Issues / PR</a></li>
+          <li><a href="#ecosystem">生态与标准</a></li>
+          <li><a href="#" data-license>Apache 2.0</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="sd-foot__bottom">
+      <p>© <span data-year>2026</span> sable-labs · SableOS · 长期目标是走进 Apache 基金会</p>
+      <div class="sd-foot__links">
+        <span>JDK 21+</span>
+        <span>Apache 2.0</span>
+        <span>文档先行</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/site.js"></script>
+</body>
+</html>

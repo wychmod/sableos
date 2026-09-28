@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+  <title id="t">概念 C · 目录与派生（方块）</title>
+  <desc id="d">一个大方块代表 Agent 目录，内部箭头代表其中的 Agent 定义，右下角脱出的小方块代表派生出的一群 Agent。</desc>
+  <defs>
+    <linearGradient id="c-bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1D1815"/>
+      <stop offset="1" stop-color="#0D0B0A"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#c-bg)"/>
+  <rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="2"/>
+  <rect x="122" y="140" width="196" height="196" rx="44" fill="none" stroke="#F2B441" stroke-width="42"/>
+  <g stroke="#F2B441" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M188 208 L228 252 L188 296" stroke-width="34"/>
+  </g>
+  <g stroke="#F2B441" stroke-linecap="round" fill="none" opacity="0.85">
+    <line x1="256" y1="252" x2="292" y2="252" stroke-width="34"/>
+    <rect x="288" y="292" width="86" height="86" rx="24" stroke-width="34"/>
+    <rect x="316" y="328" width="86" height="86" rx="24" stroke-width="34"/>
+  </g>
+</svg>

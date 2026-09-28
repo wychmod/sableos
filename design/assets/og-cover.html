@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>SableOS · 社交分享封面 1200×630</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: Inter, "HarmonyOS Sans SC", "PingFang SC", system-ui, sans-serif;
+    background: radial-gradient(900px 460px at 80% -12%, rgba(242,180,65,.17), transparent 62%),
+                linear-gradient(168deg, #1D1815 0%, #0D0B0A 100%);
+    color: #F6F2ED;
+    display: flex;
+    align-items: center;
+    padding: 0 84px;
+  }
+  body::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: linear-gradient(to right, rgba(255,255,255,.028) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255,255,255,.028) 1px, transparent 1px);
+    background-size: 76px 76px;
+    -webkit-mask-image: radial-gradient(120% 80% at 50% 0%, #000 20%, transparent 78%);
+  }
+  .inner { position: relative; width: 100%; }
+  .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 40px; }
+  .brand svg { width: 46px; height: 46px; }
+  .brand b { font-size: 30px; font-weight: 600; letter-spacing: -1.2px; }
+  .brand span {
+    font-family: "JetBrains Mono", monospace; font-size: 13px; letter-spacing: 2.2px;
+    color: #A8A099; padding: 4px 12px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px;
+  }
+  h1 { font-size: 66px; font-weight: 600; line-height: 1.1; letter-spacing: -3px; max-width: 15ch; }
+  h1 em { font-style: normal; color: #F2B441; }
+  .sub {
+    margin-top: 26px; font-size: 25px; line-height: 1.55; color: #C9BFB3; max-width: 30ch;
+  }
+  .sub strong { color: #F6F2ED; font-weight: 500; }
+  .meta {
+    margin-top: 42px; display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .meta i {
+    font-style: normal; font-family: "JetBrains Mono", monospace; font-size: 15px;
+    color: #C9BFB3; padding: 8px 16px; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 10px; background: rgba(255,255,255,.035);
+  }
+  .meta i:first-child { border-color: rgba(242,180,65,.45); color: #F6C868; background: rgba(242,180,65,.09); }
+</style>
+</head>
+<body>
+  <div class="inner">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <g fill="none" stroke="#F2B441" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.10 23.75L22.90 28.00L18.10 32.25" stroke-opacity=".42"/>
+          <path d="M23.90 27.75L28.70 32.00L23.90 36.25" stroke-opacity=".68"/>
+          <path d="M29.70 31.75L34.50 36.00L29.70 40.25"/>
+          <path d="M38.90 36.00H45.90" stroke-opacity=".95"/>
+        </g>
+      </svg>
+      <b>SableOS</b>
+      <span>AGENT HARNESS OS</span>
+    </div>
+
+    <h1>让每一家企业，都能用自然语言跑起来自己的 <em>Agent</em></h1>
+
+    <p class="sub"><strong>一个目录定义一个 Agent，一个底座运行一群 Agent。</strong><br>Java 原生 · 私有可审计 · 数据不出域</p>
+
+    <div class="meta">
+      <i>Apache 2.0</i>
+      <i>JDK 21 + Spring Boot 3.x</i>
+      <i>MCP · A2A</i>
+      <i>单二进制部署</i>
+    </div>
+  </div>
+</body>
+</html>

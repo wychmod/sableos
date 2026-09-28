@@ -1,0 +1,858 @@
+{
+  "console": [
+    {
+      "theme": "light",
+      "errors": []
+    },
+    {
+      "theme": "dark",
+      "errors": [
+        "reqfail: https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+        "Failed to load resource: net::ERR_CONNECTION_TIMED_OUT",
+        "reqfail: https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+        "Failed to load resource: net::ERR_CONNECTION_TIMED_OUT"
+      ]
+    }
+  ],
+  "images": [],
+  "links": [
+    {
+      "href": "#main",
+      "text": "跳到主要内容"
+    },
+    {
+      "href": "#top",
+      "text": "SableOS\n        \n       "
+    },
+    {
+      "href": "#why",
+      "text": "为什么"
+    },
+    {
+      "href": "#positioning",
+      "text": "定位"
+    },
+    {
+      "href": "#core",
+      "text": "核心能力"
+    },
+    {
+      "href": "#architecture",
+      "text": "架构"
+    },
+    {
+      "href": "#quickstart",
+      "text": "快速开始"
+    },
+    {
+      "href": "#roadmap",
+      "text": "路线图"
+    },
+    {
+      "href": "#docs",
+      "text": "文档"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos",
+      "text": "GitHub"
+    },
+    {
+      "href": "#quickstart",
+      "text": "快速开始"
+    },
+    {
+      "href": "#architecture",
+      "text": "看架构"
+    },
+    {
+      "href": "https://modelcontextprotocol.io/",
+      "text": "MCP \n        Model Conte"
+    },
+    {
+      "href": "https://agentskills.io/",
+      "text": "Agent Skills \n        Sk"
+    },
+    {
+      "href": "https://spring.io/projects/spring-ai",
+      "text": "Spring AI \n        LLM P"
+    },
+    {
+      "href": "https://java2ai.com/",
+      "text": "Spring AI Alibaba \n     "
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/blob/main/docs/IndustryResearch.md",
+      "text": "01\n        \n          行业"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/blob/main/docs/DemandAnalysis.md",
+      "text": "02\n        \n          需求"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/blob/main/docs/TechnicalSolution.md",
+      "text": "03\n        \n          技术"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/blob/main/docs/AiProgrammingGuide.md",
+      "text": "04\n        \n          AI"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/blob/main/docs/sableos.md",
+      "text": "05\n        \n          项目"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/blob/main/docs/sable-labs.md",
+      "text": "06\n        \n          社区"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos",
+      "text": "Star on GitHub"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/issues",
+      "text": "提 Issue"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/blob/main/docs/TechnicalSolution.md",
+      "text": "读技术方案"
+    },
+    {
+      "href": "#why",
+      "text": "为什么"
+    },
+    {
+      "href": "#positioning",
+      "text": "定位"
+    },
+    {
+      "href": "#core",
+      "text": "核心能力"
+    },
+    {
+      "href": "#architecture",
+      "text": "架构"
+    },
+    {
+      "href": "#quickstart",
+      "text": "快速开始"
+    },
+    {
+      "href": "#principles",
+      "text": "设计原则"
+    },
+    {
+      "href": "#roadmap",
+      "text": "路线图"
+    },
+    {
+      "href": "#docs",
+      "text": "文档"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos",
+      "text": "GitHub 仓库"
+    },
+    {
+      "href": "https://github.com/sable-labs/sableos/issues",
+      "text": "Issues / PR"
+    },
+    {
+      "href": "#ecosystem",
+      "text": "生态与标准"
+    },
+    {
+      "href": "https://www.apache.org/licenses/LICENSE-2.0",
+      "text": "Apache 2.0"
+    }
+  ],
+  "contrast": [
+    {
+      "theme": "light",
+      "items": [
+        {
+          "label": "hero 大标题",
+          "sel": ".sd-hero__title",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "66.4px",
+          "weight": "600"
+        },
+        {
+          "label": "hero 正文",
+          "sel": ".sd-hero__lead",
+          "fg": "rgb(201, 191, 179)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "20px",
+          "weight": "400"
+        },
+        {
+          "label": "hero 标语",
+          "sel": ".sd-hero__slogan",
+          "fg": "rgb(246, 200, 104)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "20.8px",
+          "weight": "400"
+        },
+        {
+          "label": "hero 标签",
+          "sel": ".sd-hero .sd-tag",
+          "fg": "rgb(201, 191, 179)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "13px",
+          "weight": "500"
+        },
+        {
+          "label": "hero 统计标签",
+          "sel": ".sd-stat__label",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "终端正文",
+          "sel": ".sd-term__body",
+          "fg": "rgb(201, 191, 179)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "终端输出行",
+          "sel": ".sd-term__out",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "终端提示符",
+          "sel": ".sd-term__prompt",
+          "fg": "rgb(242, 180, 65)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "区块标题",
+          "sel": ".sd-head .sd-h2",
+          "fg": "rgb(19, 17, 16)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "34.4px",
+          "weight": "600"
+        },
+        {
+          "label": "区块导语",
+          "sel": ".sd-head .sd-lead",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "20px",
+          "weight": "400"
+        },
+        {
+          "label": "卡片正文",
+          "sel": ".sd-card__text",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "卡片编号",
+          "sel": ".sd-card__num",
+          "fg": "rgb(138, 90, 11)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "13px",
+          "weight": "500"
+        },
+        {
+          "label": "痛点描述",
+          "sel": ".sd-pain__bad",
+          "fg": "rgb(111, 102, 94)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "解法强调",
+          "sel": ".sd-pain__good",
+          "fg": "rgb(19, 17, 16)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "15px",
+          "weight": "500"
+        },
+        {
+          "label": "眉标",
+          "sel": ".sd-eyebrow",
+          "fg": "rgb(138, 90, 11)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "13px",
+          "weight": "600"
+        },
+        {
+          "label": "主按钮",
+          "sel": ".sd-btn--primary",
+          "fg": "rgb(11, 9, 8)",
+          "bg": "rgb(242, 180, 65)",
+          "size": "15px",
+          "weight": "600"
+        },
+        {
+          "label": "次按钮",
+          "sel": ".sd-btn--ghost",
+          "fg": "rgb(19, 17, 16)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "13px",
+          "weight": "600"
+        },
+        {
+          "label": "深底按钮",
+          "sel": ".sd-btn--onDark",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "15px",
+          "weight": "600"
+        },
+        {
+          "label": "表格正文",
+          "sel": ".sd-table td",
+          "fg": "rgb(19, 17, 16)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "15px",
+          "weight": "500"
+        },
+        {
+          "label": "表头",
+          "sel": ".sd-table thead th",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(250, 247, 243)",
+          "size": "13px",
+          "weight": "600"
+        },
+        {
+          "label": "行内代码",
+          "sel": ".sd-inline-code",
+          "fg": "rgb(138, 90, 11)",
+          "bg": "rgb(250, 247, 243)",
+          "size": "12.6px",
+          "weight": "400"
+        },
+        {
+          "label": "导航链接",
+          "sel": ".sd-nav__link",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "15px",
+          "weight": "500"
+        },
+        {
+          "label": "页脚链接",
+          "sel": ".sd-foot__col a",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(250, 247, 243)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "页脚版权",
+          "sel": ".sd-foot__bottom",
+          "fg": "rgb(111, 102, 94)",
+          "bg": "rgb(250, 247, 243)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "层名",
+          "sel": ".sd-layer__name",
+          "fg": "rgb(19, 17, 16)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "15px",
+          "weight": "600"
+        },
+        {
+          "label": "能力标签",
+          "sel": ".sd-chip",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(250, 247, 243)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "徽标",
+          "sel": ".sd-badge",
+          "fg": "rgb(246, 200, 104)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "13px",
+          "weight": "500"
+        },
+        {
+          "label": "路线图条目",
+          "sel": ".sd-road__list li",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(253, 248, 236)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "原则说明",
+          "sel": ".sd-principle__text",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "生态说明",
+          "sel": ".sd-eco__desc",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "生态角色",
+          "sel": ".sd-eco__role",
+          "fg": "rgb(138, 90, 11)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "13px",
+          "weight": "500"
+        },
+        {
+          "label": "提示正文",
+          "sel": ".sd-note__text",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(253, 248, 236)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "代码正文",
+          "sel": ".sd-code pre",
+          "fg": "rgb(228, 220, 209)",
+          "bg": "rgb(11, 9, 8)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "代码注释",
+          "sel": ".sd-c-comment",
+          "fg": "rgb(138, 130, 122)",
+          "bg": "rgb(11, 9, 8)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "文档说明",
+          "sel": ".sd-doc__desc",
+          "fg": "rgb(90, 82, 75)",
+          "bg": "rgb(255, 255, 255)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "文档序号",
+          "sel": ".sd-doc__badge",
+          "fg": "rgb(111, 102, 94)",
+          "bg": "rgb(250, 247, 243)",
+          "size": "11px",
+          "weight": "400"
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "items": [
+        {
+          "label": "hero 大标题",
+          "sel": ".sd-hero__title",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "66.4px",
+          "weight": "600"
+        },
+        {
+          "label": "hero 正文",
+          "sel": ".sd-hero__lead",
+          "fg": "rgb(201, 191, 179)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "20px",
+          "weight": "400"
+        },
+        {
+          "label": "hero 标语",
+          "sel": ".sd-hero__slogan",
+          "fg": "rgb(246, 200, 104)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "20.8px",
+          "weight": "400"
+        },
+        {
+          "label": "hero 标签",
+          "sel": ".sd-hero .sd-tag",
+          "fg": "rgb(201, 191, 179)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "13px",
+          "weight": "500"
+        },
+        {
+          "label": "hero 统计标签",
+          "sel": ".sd-stat__label",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "终端正文",
+          "sel": ".sd-term__body",
+          "fg": "rgb(201, 191, 179)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "终端输出行",
+          "sel": ".sd-term__out",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "终端提示符",
+          "sel": ".sd-term__prompt",
+          "fg": "rgb(242, 180, 65)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "区块标题",
+          "sel": ".sd-head .sd-h2",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(19, 17, 16)",
+          "size": "34.4px",
+          "weight": "600"
+        },
+        {
+          "label": "区块导语",
+          "sel": ".sd-head .sd-lead",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(19, 17, 16)",
+          "size": "20px",
+          "weight": "400"
+        },
+        {
+          "label": "卡片正文",
+          "sel": ".sd-card__text",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "卡片编号",
+          "sel": ".sd-card__num",
+          "fg": "rgb(242, 180, 65)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "13px",
+          "weight": "500"
+        },
+        {
+          "label": "痛点描述",
+          "sel": ".sd-pain__bad",
+          "fg": "rgb(144, 136, 127)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "解法强调",
+          "sel": ".sd-pain__good",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "15px",
+          "weight": "500"
+        },
+        {
+          "label": "眉标",
+          "sel": ".sd-eyebrow",
+          "fg": "rgb(242, 180, 65)",
+          "bg": "rgb(19, 17, 16)",
+          "size": "13px",
+          "weight": "600"
+        },
+        {
+          "label": "主按钮",
+          "sel": ".sd-btn--primary",
+          "fg": "rgb(11, 9, 8)",
+          "bg": "rgb(242, 180, 65)",
+          "size": "15px",
+          "weight": "600"
+        },
+        {
+          "label": "次按钮",
+          "sel": ".sd-btn--ghost",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(19, 17, 16)",
+          "size": "13px",
+          "weight": "600"
+        },
+        {
+          "label": "深底按钮",
+          "sel": ".sd-btn--onDark",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "15px",
+          "weight": "600"
+        },
+        {
+          "label": "表格正文",
+          "sel": ".sd-table td",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "15px",
+          "weight": "500"
+        },
+        {
+          "label": "表头",
+          "sel": ".sd-table thead th",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(26, 22, 20)",
+          "size": "13px",
+          "weight": "600"
+        },
+        {
+          "label": "行内代码",
+          "sel": ".sd-inline-code",
+          "fg": "rgb(242, 180, 65)",
+          "bg": "rgb(26, 22, 20)",
+          "size": "12.6px",
+          "weight": "400"
+        },
+        {
+          "label": "导航链接",
+          "sel": ".sd-nav__link",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(19, 17, 16)",
+          "size": "15px",
+          "weight": "500"
+        },
+        {
+          "label": "页脚链接",
+          "sel": ".sd-foot__col a",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(26, 22, 20)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "页脚版权",
+          "sel": ".sd-foot__bottom",
+          "fg": "rgb(144, 136, 127)",
+          "bg": "rgb(26, 22, 20)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "层名",
+          "sel": ".sd-layer__name",
+          "fg": "rgb(246, 242, 237)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "15px",
+          "weight": "600"
+        },
+        {
+          "label": "能力标签",
+          "sel": ".sd-chip",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(26, 22, 20)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "徽标",
+          "sel": ".sd-badge",
+          "fg": "rgb(246, 200, 104)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "13px",
+          "weight": "500"
+        },
+        {
+          "label": "路线图条目",
+          "sel": ".sd-road__list li",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(26, 22, 20)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "原则说明",
+          "sel": ".sd-principle__text",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(19, 17, 16)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "生态说明",
+          "sel": ".sd-eco__desc",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "生态角色",
+          "sel": ".sd-eco__role",
+          "fg": "rgb(242, 180, 65)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "13px",
+          "weight": "500"
+        },
+        {
+          "label": "提示正文",
+          "sel": ".sd-note__text",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(63, 50, 33)",
+          "size": "15px",
+          "weight": "400"
+        },
+        {
+          "label": "代码正文",
+          "sel": ".sd-code pre",
+          "fg": "rgb(228, 220, 209)",
+          "bg": "rgb(11, 9, 8)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "代码注释",
+          "sel": ".sd-c-comment",
+          "fg": "rgb(138, 130, 122)",
+          "bg": "rgb(11, 9, 8)",
+          "size": "14px",
+          "weight": "400"
+        },
+        {
+          "label": "文档说明",
+          "sel": ".sd-doc__desc",
+          "fg": "rgb(168, 160, 153)",
+          "bg": "rgb(32, 28, 26)",
+          "size": "13px",
+          "weight": "400"
+        },
+        {
+          "label": "文档序号",
+          "sel": ".sd-doc__badge",
+          "fg": "rgb(144, 136, 127)",
+          "bg": "rgb(26, 22, 20)",
+          "size": "11px",
+          "weight": "400"
+        }
+      ]
+    }
+  ],
+  "overflow": [
+    {
+      "theme": "light",
+      "vw": 1440,
+      "docW": 1440,
+      "count": 0,
+      "sample": []
+    },
+    {
+      "theme": "mobile-390",
+      "vw": 390,
+      "docW": 390,
+      "count": 0,
+      "sample": []
+    },
+    {
+      "theme": "dark",
+      "vw": 1440,
+      "docW": 1440,
+      "count": 0,
+      "sample": []
+    }
+  ],
+  "geometry": {
+    "navH": 69,
+    "docH": 13103,
+    "bodyFont": "Inter, \"HarmonyOS Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+    "bodySize": "16px",
+    "secs": [
+      {
+        "id": "top",
+        "h": 1194,
+        "padTop": "0px"
+      },
+      {
+        "id": "why",
+        "h": 767,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "positioning",
+        "h": 931,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "core",
+        "h": 968,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "features",
+        "h": 969,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "architecture",
+        "h": 2203,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "quickstart",
+        "h": 2051,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "principles",
+        "h": 862,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "roadmap",
+        "h": 856,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "ecosystem",
+        "h": 628,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "docs",
+        "h": 675,
+        "padTop": "126.4px"
+      },
+      {
+        "id": "",
+        "h": 573,
+        "padTop": "72px"
+      }
+    ],
+    "cardHeights": [
+      299,
+      299,
+      299
+    ],
+    "cardCount": 22
+  },
+  "sprites": {
+    "defined": 21,
+    "used": 31,
+    "missing": []
+  }
+}

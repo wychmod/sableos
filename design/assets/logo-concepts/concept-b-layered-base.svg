@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+  <title id="t">概念 B · 底座与 Agent（层叠）</title>
+  <desc id="d">下层三条平台线代表运行底座，上方一个箭头代表在底座上运行的 Agent。</desc>
+  <defs>
+    <linearGradient id="b-bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1D1815"/>
+      <stop offset="1" stop-color="#0D0B0A"/>
+    </linearGradient>
+    <linearGradient id="b-glyph" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#F9D68F"/>
+      <stop offset="1" stop-color="#D4921C"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#b-bg)"/>
+  <rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="2"/>
+  <path d="M156 148 L232 236 L156 324" fill="none" stroke="url(#b-glyph)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <g stroke="#F2B441" stroke-linecap="round" fill="none">
+    <line x1="290" y1="168" x2="356" y2="168" stroke-width="30" stroke-opacity="0.9"/>
+    <line x1="290" y1="236" x2="356" y2="236" stroke-width="30" stroke-opacity="0.58"/>
+    <line x1="290" y1="304" x2="356" y2="304" stroke-width="30" stroke-opacity="0.3"/>
+  </g>
+</svg>

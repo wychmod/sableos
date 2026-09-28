@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+  <title id="t">SableOS</title>
+  <desc id="d">疾行 Prompt：三枚级联箭头表示一群 Agent 并行推进，收束短横表示交付一个结果。</desc>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1E1915"/>
+      <stop offset="1" stop-color="#0D0B0A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.44" r="0.5">
+      <stop offset="0" stop-color="#F2B441" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#F2B441" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="forge" x1="0.10" y1="0" x2="0.90" y2="1">
+      <stop offset="0" stop-color="#FADFA6"/>
+      <stop offset="0.45" stop-color="#F2B441"/>
+      <stop offset="1" stop-color="#CE8B12"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#tile)"/>
+  <rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="2"/>
+  <circle cx="256" cy="238" r="180" fill="url(#glow)"/>
+  <g transform="scale(8)">
+  <g fill="none" stroke="url(#forge)" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18.10 23.75L22.90 28.00L18.10 32.25" stroke-opacity="0.42"/>
+    <path d="M23.90 27.75L28.70 32.00L23.90 36.25" stroke-opacity="0.68"/>
+    <path d="M29.70 31.75L34.50 36.00L29.70 40.25"/>
+    <path d="M38.90 36.00H45.90" stroke-opacity="0.95"/>
+  </g>
+  </g>
+</svg>

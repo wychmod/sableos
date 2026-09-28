@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" role="img" aria-labelledby="t d">
+  <title id="t">SableOS 横向组合标识</title>
+  <desc id="d">标识与字标水平排列，字标下方为英文定位语。</desc>
+  <defs>
+    <linearGradient id="forge" x1="0.10" y1="0" x2="0.90" y2="1">
+      <stop offset="0" stop-color="#FADFA6"/>
+      <stop offset="0.45" stop-color="#F2B441"/>
+      <stop offset="1" stop-color="#CE8B12"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(28 30) scale(1.55)">
+  <g fill="none" stroke="url(#forge)" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18.10 23.75L22.90 28.00L18.10 32.25" stroke-opacity="0.42"/>
+    <path d="M23.90 27.75L28.70 32.00L23.90 36.25" stroke-opacity="0.68"/>
+    <path d="M29.70 31.75L34.50 36.00L29.70 40.25"/>
+    <path d="M38.90 36.00H45.90" stroke-opacity="0.95"/>
+  </g>
+  </g>
+  <g font-family="Inter, 'HarmonyOS Sans SC', system-ui, 'Segoe UI', sans-serif">
+    <text x="148" y="74" font-size="46" font-weight="600" letter-spacing="-1.6" fill="#131110">SableOS</text>
+    <text x="150" y="102" font-size="14" letter-spacing="2.4" fill="#5A524B">AGENT HARNESS OS for JAVA</text>
+  </g>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+  <title id="t">R1 · 疾行 Prompt（三枚级联 + 交付线）</title>
+  <desc id="d">三枚斜向级联的 chevron 表示一群 Agent 并行推进，右侧短横表示交付一个结果。</desc>
+  <defs>
+    <linearGradient id="r1-bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1D1815"/>
+      <stop offset="1" stop-color="#0D0B0A"/>
+    </linearGradient>
+    <linearGradient id="r1-g" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#FADFA6"/>
+      <stop offset="0.45" stop-color="#F2B441"/>
+      <stop offset="1" stop-color="#CE8B12"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#r1-bg)"/>
+  <rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="2"/>
+  <g fill="none" stroke="url(#r1-g)" stroke-width="40" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M149 190 L187 224 L149 258" stroke-opacity="0.42"/>
+    <path d="M195 222 L233 256 L195 290" stroke-opacity="0.68"/>
+    <path d="M241 254 L279 288 L241 322" stroke-opacity="1"/>
+  </g>
+  <line x1="307" y1="288" x2="363" y2="288" stroke="url(#r1-g)" stroke-width="38" stroke-linecap="round" stroke-opacity="0.95"/>
+</svg>

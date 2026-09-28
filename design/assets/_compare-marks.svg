@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="240" viewBox="0 0 960 240" role="img" aria-labelledby="t d">
+  <title id="t">SableOS 标识精修候选 R1 / R3 / R4</title>
+  <desc id="d">三枚级联箭头方案的三种描边与间距参数对比。</desc>
+  <defs>
+    <linearGradient id="forge" x1="0.10" y1="0" x2="0.90" y2="1">
+      <stop offset="0" stop-color="#FADFA6"/>
+      <stop offset="0.45" stop-color="#F2B441"/>
+      <stop offset="1" stop-color="#CE8B12"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="240" rx="20" fill="#131110"/>
+  <g transform="translate(60 34) scale(1.62)">
+  <g fill="none" stroke="url(#forge)" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18.10 23.75L22.90 28.00L18.10 32.25" stroke-opacity="0.42"/>
+    <path d="M23.90 27.75L28.70 32.00L23.90 36.25" stroke-opacity="0.68"/>
+    <path d="M29.70 31.75L34.50 36.00L29.70 40.25"/>
+    <path d="M38.90 36.00H45.90" stroke-opacity="0.95"/>
+  </g>
+  </g>
+  <text x="68" y="158" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="600" fill="#F6F2ED">R1 · 三枚级联</text>
+  <text x="68" y="180" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#A8A099">推荐：一群 Agent 推进 → 交付</text>
+  <g transform="translate(360 34) scale(1.62)">
+  <g fill="none" stroke="url(#forge)" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16.70 23.00L21.50 27.60L16.70 32.20" stroke-opacity="0.42"/>
+    <path d="M23.10 27.40L27.90 32.00L23.10 36.60" stroke-opacity="0.68"/>
+    <path d="M29.50 31.80L34.30 36.40L29.50 41.00"/>
+    <path d="M39.30 36.40H47.30" stroke-opacity="0.95"/>
+  </g>
+  </g>
+  <text x="368" y="158" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="600" fill="#F6F2ED">R3 · 级联（更舒展）</text>
+  <text x="368" y="180" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#A8A099">间距加大，小尺寸更清晰</text>
+  <g transform="translate(660 34) scale(1.62)">
+  <g fill="none" stroke="url(#forge)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14.50 22.20L20.10 27.10L14.50 32.00" stroke-opacity="0.42"/>
+    <path d="M21.90 27.10L27.50 32.00L21.90 36.90" stroke-opacity="0.68"/>
+    <path d="M29.30 32.00L34.90 36.90L29.30 41.80"/>
+    <path d="M40.50 36.90H49.50" stroke-opacity="0.95"/>
+  </g>
+  </g>
+  <text x="668" y="158" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="600" fill="#F6F2ED">R4 · 级联（更细）</text>
+  <text x="668" y="180" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#A8A099">描边更细，气质更书卷</text>
+</svg>

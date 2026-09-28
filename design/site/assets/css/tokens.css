@@ -1,0 +1,234 @@
+/* ==========================================================================
+   SableOS Design Tokens
+   --------------------------------------------------------------------------
+   唯一的设计变量来源。改这里就能整体换肤，组件样式一律引用变量、不写死数值。
+   命名约定：
+     --sable-*  品牌墨色阶（主题底色）
+     --ember-*  品牌燃金色阶（强调色）
+     --fs-*     字号
+     --sp-*     间距（4px 基准）
+     --r-*      圆角
+     --sh-*     阴影
+   语义变量（--bg / --text / --border ...）在 body[data-theme] 下切换明暗。
+   ========================================================================== */
+
+:root {
+  /* ---------- 品牌色：sable（黑貂墨） ---------- */
+  --sable-950: #0B0908;
+  --sable-900: #131110;
+  --sable-850: #1A1614;
+  --sable-800: #221D1A;
+  --sable-700: #2E2823;
+  --sable-600: #443C35;
+  --sable-500: #5A5049;
+  --sable-400: #7A6E64;
+  --sable-300: #A2968A;
+  --sable-200: #C9BFB3;
+  --sable-100: #E4DCD1;
+  --sable-050: #F4EFE8;
+
+  /* ---------- 品牌色：ember（燃金） ---------- */
+  --ember-050: #FDF8EC;
+  --ember-100: #FBEED1;
+  --ember-200: #F7D68C;
+  --ember-300: #F6C868;
+  --ember-400: #F2B441;
+  --ember-500: #E0A020;
+  --ember-600: #B87A14;
+  --ember-700: #8A5A0B;
+  --ember-800: #5E3C06;
+  --ember-900: #3A2504;
+
+  /* ---------- 功能色（明暗各取一档，保证对比度） ---------- */
+  --ok-light: #3B6D11;
+  --ok-dark: #5FAE7A;
+  --warn-light: #8A5A0B;
+  --warn-dark: #E0A020;
+  --err-light: #A32D2D;
+  --err-dark: #E2685E;
+  --info-light: #185FA5;
+  --info-dark: #7C96B8;
+
+  /* ---------- 深色“墨底”表面的前景色 ----------
+     hero 与 CTA 用同一套墨底渐变，其最亮点约为 #3F3221（渐变顶 + 燃金光晕 + 网格）。
+     以下取值均已在该最亮点上验证对比度，换渐变参数时必须重新验证。 */
+  --hero-surface-top: #1D1815;
+  --hero-surface-bottom: #0D0B0A;
+  --hero-amber-wash: 0.13;
+  --hero-ink-hero: #F6F2ED;     /* 11.2:1 · 大标题 */
+  --hero-ink: #C9BFB3;          /*  6.9:1 · 正文、标签、终端 */
+  --hero-ink-3: #A8A099;        /*  4.8:1 · 次级说明 */
+  --hero-accent-soft: #F6C868;  /*  8.0:1 · 标语 */
+  --hero-accent: #F2B441;       /*  6.8:1 · 强调 */
+  --hero-rule: rgba(255, 255, 255, 0.1);
+  --hero-chip-bd: rgba(255, 255, 255, 0.16);
+  --hero-chip-bg: rgba(255, 255, 255, 0.03);
+
+  /* 代码块（近黑底）前景 */
+  --code-ink: #E4DCD1;          /* 14.6:1 */
+  --code-ink-3: #8A827A;        /*  5.3:1 · 注释 */
+  --code-key: #F6C868;
+  --code-str: #9FD3B4;
+  --code-num: #D9C08A;
+  --code-fn: #A8C6E8;
+
+  /* ---------- 字体 ---------- */
+  --font-sans: "Inter", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei",
+    system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono",
+    Consolas, "Liberation Mono", monospace;
+  --font-serif: "Source Han Serif SC", "Songti SC", Georgia, serif;
+
+  /* ---------- 字号（含流式，小屏自动降级） ---------- */
+  --fs-display: clamp(2.35rem, 1.35rem + 3.4vw, 4.15rem);
+  --fs-h1: clamp(1.9rem, 1.35rem + 1.9vw, 2.75rem);
+  --fs-h2: clamp(1.55rem, 1.2rem + 1.25vw, 2.15rem);
+  --fs-h3: 1.1875rem;
+  --fs-lead: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+  --fs-body: 1rem;
+  --fs-sm: 0.9375rem;
+  --fs-xs: 0.8125rem;
+  --fs-mono: 0.875rem;
+
+  /* ---------- 字重（只用两档，保持克制） ---------- */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  /* ---------- 间距（4px 基准） ---------- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+  --sp-8: 2rem;
+  --sp-10: 2.5rem;
+  --sp-12: 3rem;
+  --sp-16: 4rem;
+  --sp-20: 5rem;
+  --sp-24: 6rem;
+  --sp-32: 8rem;
+
+  /* 区块纵向节奏 */
+  --sec-y: clamp(4rem, 2.5rem + 6vw, 8rem);
+  --sec-y-tight: clamp(2.75rem, 2rem + 3vw, 4.5rem);
+
+  /* ---------- 圆角 ---------- */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-2xl: 32px;
+  --r-full: 999px;
+
+  /* ---------- 版心 ---------- */
+  --w-content: 1160px;
+  --w-text: 68ch;
+
+  /* ---------- 动效 ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 140ms;
+  --dur: 240ms;
+  --dur-slow: 520ms;
+}
+
+/* ==========================================================================
+   Light theme（默认）
+   ========================================================================== */
+body[data-theme="light"] {
+  --bg: #FFFFFF;
+  --bg-subtle: #FAF7F3;
+  --bg-elevated: #FFFFFF;
+  --bg-inverse: var(--sable-900);
+  --bg-accent-soft: var(--ember-050);
+  --bg-code: var(--sable-950);
+
+  --text: #131110;          /* 18.8:1 */
+  --text-2: #5A524B;        /* 7.7:1  */
+  --text-3: #6F665E;        /* AA 正文可用 */
+  --text-inverse: #F6F2ED;
+  --text-inverse-2: #A8A099;
+  --text-accent: #8A5A0B;   /* 5.9:1  */
+
+  --border: #E7E0D7;
+  --border-strong: #D2C8BB;
+  --border-accent: #E8C88A;
+
+  --accent: #B87A14;
+  --accent-hover: #8A5A0B;
+  --accent-surface: var(--ember-050);
+
+  --ok: var(--ok-light);
+  --err: var(--err-light);
+  --info: var(--info-light);
+
+  --sh-sm: 0 1px 2px rgba(19, 17, 16, 0.05);
+  --sh-md: 0 2px 4px -1px rgba(19, 17, 16, 0.06),
+    0 6px 16px -4px rgba(19, 17, 16, 0.08);
+  --sh-lg: 0 4px 8px -2px rgba(19, 17, 16, 0.06),
+    0 16px 40px -8px rgba(19, 17, 16, 0.12);
+  --sh-accent: 0 6px 20px -6px rgba(184, 122, 20, 0.35);
+
+  --hero-bg: radial-gradient(
+      1100px 520px at 78% -10%,
+      rgba(242, 180, 65, var(--hero-amber-wash)),
+      transparent 62%
+    ),
+    linear-gradient(
+      168deg,
+      var(--hero-surface-top) 0%,
+      var(--hero-surface-bottom) 100%
+    );
+  --hero-grid: rgba(255, 255, 255, 0.028);
+}
+
+/* ==========================================================================
+   Dark theme
+   ========================================================================== */
+body[data-theme="dark"] {
+  --bg: var(--sable-900);
+  --bg-subtle: var(--sable-850);
+  --bg-elevated: #201C1A;
+  --bg-inverse: var(--sable-050);
+  --bg-accent-soft: rgba(242, 180, 65, 0.09);
+  --bg-code: #0B0908;
+
+  --text: #F6F2ED;          /* 16.9:1 */
+  --text-2: #A8A099;        /* 7.3:1  */
+  --text-3: #90887F;        /* 5.3:1  */
+  --text-inverse: #131110;
+  --text-inverse-2: #5A5049;
+  --text-accent: #F2B441;   /* 10.2:1 */
+
+  --border: #2E2823;
+  --border-strong: #443C35;
+  --border-accent: #5E3C06;
+
+  --accent: #F2B441;
+  --accent-hover: #F6C868;
+  --accent-surface: rgba(242, 180, 65, 0.08);
+
+  --ok: var(--ok-dark);
+  --err: var(--err-dark);
+  --info: var(--info-dark);
+
+  --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sh-md: 0 2px 6px rgba(0, 0, 0, 0.45);
+  --sh-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --sh-accent: 0 6px 24px -8px rgba(242, 180, 65, 0.4);
+
+  --hero-bg: radial-gradient(
+      1100px 520px at 78% -10%,
+      rgba(242, 180, 65, var(--hero-amber-wash)),
+      transparent 62%
+    ),
+    linear-gradient(
+      168deg,
+      var(--hero-surface-top) 0%,
+      var(--hero-surface-bottom) 100%
+    );
+  --hero-grid: rgba(255, 255, 255, 0.028);
+}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="t d">
+  <title id="t">SableOS</title>
+  <desc id="d">favicon：简化两枚箭头加收束短横。</desc>
+  <defs>
+    <linearGradient id="forge" x1="0.10" y1="0" x2="0.90" y2="1">
+      <stop offset="0" stop-color="#FADFA6"/>
+      <stop offset="0.45" stop-color="#F2B441"/>
+      <stop offset="1" stop-color="#CE8B12"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#forge)" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20.10 27.40L25.30 32.00L20.10 36.60" stroke-opacity="0.5"/>
+    <path d="M26.70 27.40L31.90 32.00L26.70 36.60"/>
+    <path d="M36.50 32.00H43.90" stroke-opacity="0.95"/>
+  </g>
+</svg>

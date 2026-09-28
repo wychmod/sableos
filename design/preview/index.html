@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SableOS · 设计方案评审台</title>
+<style>
+:root {
+  --bg: #0B0908;
+  --panel: #161311;
+  --panel-2: #1E1915;
+  --line: #2E2823;
+  --line-2: #443C35;
+  --ink: #F6F2ED;
+  --ink-2: #C9BFB3;
+  --ink-3: #A2968A;
+  --accent: #F2B441;
+  --accent-soft: #F6C868;
+  --ok: #5FAE7A;
+  --err: #E2685E;
+  --sans: "Inter", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-weight: 600; line-height: 1.25; letter-spacing: -0.02em; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: var(--mono); font-size: 0.88em; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 40px 120px; }
+
+.hero { padding: 72px 0 48px; border-bottom: 1px solid var(--line); margin-bottom: 56px; }
+.hero .kicker {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 12px; font-weight: 600; letter-spacing: .16em; color: var(--accent);
+  margin-bottom: 20px;
+}
+.hero .kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; opacity: .6; }
+.hero h1 { font-size: 40px; max-width: 22ch; }
+.hero p { margin-top: 18px; color: var(--ink-2); font-size: 17px; max-width: 72ch; }
+.hero .meta { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 10px; }
+.hero .meta i {
+  font-style: normal; font-family: var(--mono); font-size: 13px; color: var(--ink-2);
+  border: 1px solid var(--line-2); border-radius: 8px; padding: 6px 13px; background: var(--panel);
+}
+.hero .meta i.hot { border-color: rgba(242,180,65,.45); color: var(--accent-soft); background: rgba(242,180,65,.08); }
+
+section { margin-top: 64px; }
+section > h2 {
+  font-size: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--line); margin-bottom: 28px;
+  display: flex; align-items: baseline; gap: 14px;
+}
+section > h2 span {
+  font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent);
+  letter-spacing: .06em;
+}
+section > .lead { color: var(--ink-2); margin-top: -14px; margin-bottom: 28px; max-width: 78ch; }
+
+.grid { display: grid; gap: 20px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px;
+}
+.card h3 { font-size: 16px; margin-bottom: 10px; }
+.card p { color: var(--ink-2); font-size: 14px; }
+.card .tag {
+  display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+  color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 6px;
+  padding: 2px 8px; margin-bottom: 12px;
+}
+
+.swatches { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 10px; }
+.swatch {
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel);
+}
+.swatch .chip { height: 62px; }
+.swatch .info { padding: 9px 10px 11px; }
+.swatch .name { font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+.swatch .hex { font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tableWrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+th, td { padding: 12px 18px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { background: var(--panel-2); color: var(--ink-3); font-size: 12px; font-weight: 600; letter-spacing: .04em; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+td:first-child { color: var(--ink); font-weight: 500; }
+td.num { font-family: var(--mono); color: var(--ink-2); }
+
+.shot {
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel-2);
+}
+.shot img { display: block; width: 100%; height: auto; }
+.shot figcaption {
+  padding: 12px 16px; font-size: 13px; color: var(--ink-2); border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.shot figcaption b { color: var(--ink); font-weight: 500; }
+
+.logoRow { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 18px; }
+.logoCell {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+}
+.logoCell .stage {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 120px; border-radius: 10px; background: #0B0908;
+}
+.logoCell .stage.onLight { background: #F7F3ED; }
+.logoCell.onLight { background: #FCFAF7; }
+.logoCell.onLight .name { color: #131110; }
+.logoCell.onLight .desc { color: #5A524B; }
+.logoCell img { max-width: 100%; }
+.logoCell .name { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+.logoCell .desc { font-size: 12px; color: var(--ink-3); }
+.logoCell .size { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 999px; }
+.pill.ok { background: rgba(95,174,122,.14); color: var(--ok); }
+.pill.err { background: rgba(226,104,94,.14); color: var(--err); }
+.pill.warn { background: rgba(242,180,65,.13); color: var(--accent-soft); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.tree { font-family: var(--mono); font-size: 13px; line-height: 1.85; color: var(--ink-2); white-space: pre; overflow-x: auto; }
+.tree b { color: var(--accent-soft); font-weight: 500; }
+.tree i { color: var(--ink-3); font-style: normal; }
+
+.callout {
+  display: flex; gap: 16px; padding: 20px 24px; border-radius: 12px;
+  background: rgba(242,180,65,.06); border: 1px solid rgba(242,180,65,.28);
+}
+.callout .ic { color: var(--accent); flex: none; }
+.callout b { display: block; margin-bottom: 4px; }
+.callout p { color: var(--ink-2); font-size: 14px; }
+
+pre {
+  background: #0B0908; border: 1px solid var(--line); border-radius: 12px;
+  padding: 20px 22px; overflow-x: auto; font-family: var(--mono); font-size: 13px;
+  line-height: 1.75; color: #E4DCD1;
+}
+pre .c { color: #8A827A; }
+pre .k { color: #F6C868; }
+pre .s { color: #9FD3B4; }
+
+ul.plain { list-style: none; }
+ul.plain li { display: flex; gap: 10px; color: var(--ink-2); font-size: 14px; padding: 5px 0; }
+ul.plain li::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin-top: .62em; flex: none; }
+ul.plain li b { color: var(--ink); font-weight: 500; }
+
+.topnav { position: sticky; top: 0; z-index: 20; background: rgba(11,9,8,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.topnav .in { max-width: 1180px; margin: 0 auto; padding: 0 40px; height: 58px; display: flex; align-items: center; gap: 8px; overflow-x: auto; }
+.topnav a { color: var(--ink-2); font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 8px; white-space: nowrap; text-decoration: none; }
+.topnav a:hover { background: var(--panel-2); color: var(--ink); text-decoration: none; }
+.topnav .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; color: var(--ink); margin-right: 12px; }
+.topnav .brand svg { width: 22px; height: 22px; }
+.topnav .brand span { font-family: var(--mono); font-size: 11px; color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 6px; }
+
+@media (max-width: 900px) {
+  .g2, .g3, .g4 { grid-template-columns: minmax(0,1fr); }
+  .logoRow { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .swatches { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .wrap, .topnav .in { padding-inline: 20px; }
+  .hero h1 { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="in">
+    <span class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <g fill="none" stroke="#F2B441" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.10 23.75L22.90 28.00L18.10 32.25" stroke-opacity=".42"/>
+          <path d="M23.90 27.75L28.70 32.00L23.90 36.25" stroke-opacity=".68"/>
+          <path d="M29.70 31.75L34.50 36.00L29.70 40.25"/>
+          <path d="M38.90 36.00H45.90" stroke-opacity=".95"/>
+        </g>
+      </svg>
+      SableOS <span>设计方案</span>
+    </span>
+    <a href="#open">看页面</a>
+    <a href="#logo">标识方案</a>
+    <a href="#tokens">设计变量</a>
+    <a href="#components">组件清单</a>
+    <a href="#structure">文件结构</a>
+    <a href="#audit">质量校验</a>
+    <a href="#readme">README 用法</a>
+    <a href="#extend">扩展方向</a>
+    <a href="#next">后续动作</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="kicker">GitHub Pages 展示方案 · 设计稿</p>
+    <h1>一套可以长期迭代的开源项目展示方案</h1>
+    <p>
+      围绕 SableOS「Java 原生、私有可审计的 Agent OS」这一定位，给出完整的设计系统、页面结构、标识体系与
+      README 用法。全部产出为设计稿与静态原型，<b>不含业务开发</b>，可直接用于评审与后续实施。
+    </p>
+    <div class="meta">
+      <i class="hot">仅设计 · 未开发</i>
+      <i>4 个交付环节</i>
+      <i>37 个对比度用例全通过</i>
+      <i>明暗双主题</i>
+      <i>零外部依赖（无 JS 框架）</i>
+      <i>0 个死链</i>
+    </div>
+  </header>
+
+  <!-- ============================================ 打开 -->
+  <section id="open">
+    <h2><span>01</span> 现在就可以打开看</h2>
+    <p class="lead">两个文件，直接双击用浏览器打开。页面支持明暗切换、锚点导航、代码复制与滚动进场。</p>
+
+    <div class="grid g2">
+      <div class="card">
+        <span class="tag">主交付物</span>
+        <h3>设计稿 · 首页原型</h3>
+        <p><code>design/site/index.html</code></p>
+        <p style="margin-top:10px">
+          11 个内容区块：Hero、为什么、定位、核心能力、特性、架构、快速开始、设计原则、路线图、生态、文档、CTA。含明暗双主题与响应式布局。
+        </p>
+        <p style="margin-top:14px"><a href="../site/index.html">→ 打开首页原型</a></p>
+      </div>
+      <div class="card">
+        <span class="tag">本次</span>
+        <h3>评审台 · 你正在看的这一页</h3>
+        <p><code>design/preview/index.html</code></p>
+        <p style="margin-top:10px">
+          汇集全部设计变量、标识变体、组件清单、文件结构与质量校验结果，供一屏内完成评审。
+        </p>
+        <p style="margin-top:14px"><a href="#audit">→ 跳到质量校验</a></p>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:22px">
+      <span class="ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M12 11v5"/></svg>
+      </span>
+      <div>
+        <b>关于“文档先行”这个状态的处理方式</b>
+        <p>
+          页面没有隐瞒项目还只有骨架这一事实，而是把它做成一条<b>设计过的一等状态</b>：Hero 用燃金徽标点出「文档先行 · 预览稿」，
+          快速开始段落用提示条说明命令以《技术方案》为准、骨架阶段即可验证 <code>mvn clean package</code>。
+          这样做的好处是——项目每推进一步，只需要改文案和状态字段，版式与气质不受影响。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ 页面结构 -->
+  <section id="pages">
+    <h2><span>02</span> 首页版块结构</h2>
+    <p class="lead">按「读者决策路径」排序：先给身份与一句话价值，再回答为什么、是什么、怎么用、能不能信。</p>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>区块</th><th>回答读者的问题</th><th>主要组件</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">01</td><td>Hero</td><td>这是什么？凭什么信？</td><td>徽标组 + 大标题 + 北极星公式标签 + 终端演示 + 4 个指标</td></tr>
+          <tr><td class="num">02</td><td>为什么需要</td><td>它解决我什么痛点？</td><td>4 张痛点→解法对照卡（门槛 01–04）</td></tr>
+          <tr><td class="num">03</td><td>生态定位</td><td>和框架、编排平台什么关系？</td><td>三层对比卡 + 「为什么必须是 Java」提示条</td></tr>
+          <tr><td class="num">04</td><td>核心能力</td><td>能力边界在哪？</td><td>5 张能力卡 + 1 张演进主线卡</td></tr>
+          <tr><td class="num">05</td><td>核心特性</td><td>有哪些卖点？</td><td>9 条主张卡（对应 README 九条特性）</td></tr>
+          <tr><td class="num">06</td><td>架构</td><td>技术上是认真的吗？</td><td>四层链路条 + 14 模块表（含落地状态）</td></tr>
+          <tr><td class="num">07</td><td>快速开始</td><td>我要多久能跑起来？</td><td>4 步流程 + 命令行卡 + AGENT.md / 目录结构 Tabs + 三种运行模式表</td></tr>
+          <tr><td class="num">08</td><td>设计原则</td><td>它的取舍是否可信？</td><td>7 条原则双列列表</td></tr>
+          <tr><td class="num">09</td><td>路线图</td><td>会走到哪一步？</td><td>三阶段卡（当前 / 规划 / 愿景）+ 横向能力条</td></tr>
+          <tr><td class="num">10</td><td>生态与标准</td><td>是否跟主流一起玩？</td><td>MCP / Skills / Spring AI / A2A 卡片网格</td></tr>
+          <tr><td class="num">11</td><td>文档 + CTA + 页脚</td><td>下一步去哪？</td><td>6 份文档入口卡 + 深色 CTA + 四栏页脚</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================ 标识 -->
+  <section id="logo">
+    <h2><span>03</span> 标识方案</h2>
+    <p class="lead">
+      仓库现有 <code>docs/images/logo.svg</code> 是一枚折线构成的「S」，
+      它能读出字形，但读不出行业语义——放在任何 SaaS、任何开发者工具上都不违和，也就等于没有记忆点。
+      下面是评估结论与重新设计方案。
+    </p>
+
+    <div class="grid g2">
+      <div class="card">
+        <span class="tag">现状评估</span>
+        <h3>为什么建议替换</h3>
+        <ul class="plain" style="margin-top:14px">
+          <li><b>语义空缺</b>：折线 S 不承载「Agent / 运行底座 / 交付」任何一层含义</li>
+          <li><b>小尺寸不成立</b>：44px 描边下的 S 字怀过窄，16–24px 时糊成一团折线</li>
+          <li><b>不可单色化</b>：当前依赖深色底 + 金色描边，在浅色 README 与白底文章里无法直接使用</li>
+          <li><b>团聚感缺失</b>：SableOS 的核心主张是「一群 Agent」，单字形天生表达不了「一群」</li>
+          <li><b>配色断裂</b>：<code>#332C27</code> 暖灰底与 <code>#F2B441</code> 燃金是很好的资产，应保留并系统化</li>
+        </ul>
+        <p style="margin-top:16px;color:var(--ink-3);font-size:13px">
+          结论：<b style="color:var(--accent-soft)">重新设计</b>，但继承其暖墨底 + 燃金的配色基因。
+        </p>
+      </div>
+
+      <div class="card">
+        <span class="tag">设计思路</span>
+        <h3>疾行 Prompt：三枚级联 + 收束短横</h3>
+        <ul class="plain" style="margin-top:14px">
+          <li><b>chevron（&gt;）</b>同时是 Prompt 提示符与「向前推进」，一个形状压两层语义</li>
+          <li><b>三枚级联</b>取代原来的一枚，把「一群 Agent 并行推进」画进标记本身</li>
+          <li><b>近→远透明度阶梯</b>（0.42 / 0.68 / 1.00）制造纵深，暗示队列与并行</li>
+          <li><b>右端收束短横</b>对应北极星里「= 一个 Agent / 交付一个结果」，让标记有落点</li>
+          <li><b>纯几何 + 圆帽接头</b>，无渐变依赖（渐变仅作可选美化），可无损转单色</li>
+        </ul>
+        <p style="margin-top:16px;color:var(--ink-3);font-size:13px">
+          参数化生成：<code>design/assets/make-logo.py</code>，改参数即可整体重算全套资产。
+        </p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:40px;margin-bottom:8px;font-size:16px">方案对照：现状 · 三个备选 · 选定方案</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:18px">
+      三个备选概念都做出来了再比较。语义直白的方案（A / C）代价是撞脸，B 表意准确但重心失衡。
+    </p>
+    <figure class="shot">
+      <img src="../assets/_compare-logos.svg" alt="SableOS 标识方案对照：现状与三个备选概念，最右为选定方案">
+      <figcaption><b>五方案并排对照</b><span>最右为最终选定 · 其余留档在 assets/logo-concepts/</span></figcaption>
+    </figure>
+
+    <h3 style="margin-top:40px;margin-bottom:8px;font-size:16px">参数精修对比</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:18px">
+      选定方向后，再比三组描边宽度与间距参数，取小尺寸表现最均衡的一组。
+    </p>
+    <figure class="shot">
+      <img src="../assets/_compare-marks.svg" alt="SableOS 标识参数精修对比">
+      <figcaption><b>R1 / R3 / R4 参数对比</b><span>R1 在三档尺寸下表现最均衡，作为最终方案</span></figcaption>
+    </figure>
+
+    <h3 style="margin-top:40px;margin-bottom:8px;font-size:16px">标识资产全家福</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:18px">
+      深色底、浅色底、单色三种环境各有一套，尺寸从 16px 覆盖到 512px。
+    </p>
+
+    <div class="logoRow">
+      <div class="logoCell">
+        <div class="stage"><img src="../assets/logo.svg" alt="主标识 512" style="width:110px"></div>
+        <p class="name">logo.svg</p>
+        <p class="desc">主标识 · 深色底应用图标</p>
+        <p class="size">512 × 512</p>
+      </div>
+      <div class="logoCell">
+        <div class="stage"><img src="../assets/logo-mark-mono.svg" alt="单色标识" style="width:76px"></div>
+        <p class="name">logo-mark-mono.svg</p>
+        <p class="desc">单色版 · 继承 currentColor</p>
+        <p class="size">64 × 64</p>
+      </div>
+      <div class="logoCell">
+        <div class="stage"><img src="../assets/favicon.svg" alt="favicon" style="width:56px"></div>
+        <p class="name">favicon.svg</p>
+        <p class="desc">favicon · 两枚箭头加粗简化</p>
+        <p class="size">64 × 64 · 16px 可辨</p>
+      </div>
+      <div class="logoCell onLight">
+        <div class="stage onLight"><img src="../assets/logo-horizontal-light.svg" alt="横向组合浅色版"></div>
+        <p class="name">logo-horizontal-light.svg</p>
+        <p class="desc">横向组合 · 浅底</p>
+        <p class="size">640 × 160</p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:20px">
+      <figure class="shot">
+        <img src="../assets/logo-horizontal-dark.svg" alt="横向组合深色版">
+        <figcaption><b>logo-horizontal-dark.svg</b><span>用于社交封面、白皮书、幻灯片</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="../site/assets/img/og-cover.png" alt="社交分享封面">
+        <figcaption><b>og-cover.png</b><span>1200 × 630 · GitHub / 微信 / Twitter 分享卡</span></figcaption>
+      </figure>
+    </div>
+
+    <div class="callout" style="margin-top:22px">
+      <span class="ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2v6M12 22v-6M2 12h6M22 12h-6"/><circle cx="12" cy="12" r="3.2"/></svg>
+      </span>
+      <div>
+        <b>为什么用「疾行 Prompt」而不是更直观的「底座 + 平台线」</b>
+        <p>
+          我试过三套语义更直白的方案：双箭头（一群 Agent）、平台线 + 箭头（底座与 Agent）、方块 + 脱出小方块（目录派生）。
+          直白方案的代价是「看起来像通用 SaaS 图标」——方块脱出尤其容易和其他产品撞脸。
+          最终选 chevron 级联，是因为它在 16px 下依然成立、天然可单色化，而且 <code>&gt;</code> 这个形状对目标读者（Java 后端工程师）
+          有本能的 Prompt 联想，语义靠透明度阶梯和收束横补足，而不是靠把含义画全。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ Tokens -->
+  <section id="tokens">
+    <h2><span>04</span> 设计变量（Design Tokens）</h2>
+    <p class="lead">
+      所有颜色、字号、间距、圆角都收在 <code>tokens.css</code> 一处。改这一层就能整体换肤，组件样式一律引用变量。
+      配色取了名字而不是用 <code>gray-500</code>——「黑貂墨」是项目名 sable 的本意，也是刻意的暖调处理。
+    </p>
+
+    <h3 style="margin-bottom:6px;font-size:16px">sable —— 黑貂墨（主题底色）</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:16px">
+      不用纯黑也不用冷灰。纯黑显得廉价、冷灰显得像默认主题；暖墨色系（色相约 30°）让画面有纸张与皮革的质感，也更耐看。
+    </p>
+    <div class="swatches" style="margin-bottom:36px">
+      <div class="swatch"><div class="chip" style="background:#0B0908"></div><div class="info"><p class="name">sable-950</p><p class="hex">#0B0908</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#131110"></div><div class="info"><p class="name">sable-900</p><p class="hex">#131110</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#1A1614"></div><div class="info"><p class="name">sable-850</p><p class="hex">#1A1614</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#221D1A"></div><div class="info"><p class="name">sable-800</p><p class="hex">#221D1A</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#2E2823"></div><div class="info"><p class="name">sable-700</p><p class="hex">#2E2823</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#5A5049"></div><div class="info"><p class="name">sable-500</p><p class="hex">#5A5049</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#F4EFE8"></div><div class="info"><p class="name">sable-050</p><p class="hex">#F4EFE8</p></div></div>
+    </div>
+
+    <h3 style="margin-bottom:6px;font-size:16px">ember —— 燃金（强调色）</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:16px">
+      继承仓库现有 logo 的 <code>#F2B441</code> 作为 400 中间调，向两端展开成完整色阶。
+      深色底用 400（10.2:1），浅色底用 700（5.9:1）——同一品牌色在不同主题下各自取到合规的那一档。
+    </p>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#FDF8EC"></div><div class="info"><p class="name">ember-050</p><p class="hex">#FDF8EC</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#F7D68C"></div><div class="info"><p class="name">ember-200</p><p class="hex">#F7D68C</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#F6C868"></div><div class="info"><p class="name">ember-300</p><p class="hex">#F6C868</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#F2B441"></div><div class="info"><p class="name">ember-400</p><p class="hex">#F2B441</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#B87A14"></div><div class="info"><p class="name">ember-600</p><p class="hex">#B87A14</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#8A5A0B"></div><div class="info"><p class="name">ember-700</p><p class="hex">#8A5A0B</p></div></div>
+      <div class="swatch"><div class="chip" style="background:#5E3C06"></div><div class="info"><p class="name">ember-800</p><p class="hex">#5E3C06</p></div></div>
+    </div>
+
+    <h3 style="margin:44px 0 16px;font-size:16px">字号 · 间距 · 圆角 · 动效</h3>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>类别</th><th>取值</th><th>用法与理由</th></tr></thead>
+        <tbody>
+          <tr><td>正文字号</td><td class="num">16px / 1.65</td><td>不跟随系统缩放做小字号，技术读者长时间阅读更省力</td></tr>
+          <tr><td>流式大标题</td><td class="num">clamp(2.35rem → 4.15rem)</td><td>移动端不撑破版心，宽屏拿到足够气势，无断点跳变</td></tr>
+          <tr><td>字重</td><td class="num">400 / 500 / 600</td><td>只用三档；中文在 600 以上容易糊，粗体上限压到 600</td></tr>
+          <tr><td>间距基数</td><td class="num">4px（--sp-1 → --sp-32）</td><td>统一节奏，避免出现 13px、18px 这类随手值</td></tr>
+          <tr><td>区块纵向节奏</td><td class="num">clamp(4rem → 8rem)</td><td>长页面靠大留白分节，不靠分割线和色块</td></tr>
+          <tr><td>圆角</td><td class="num">6 / 8 / 12 / 16 / 24 / 32</td><td>小控件 8、卡片 16、大容器 32，形成一致的圆角家族</td></tr>
+          <tr><td>版心宽度</td><td class="num">1160px（正文 68ch）</td><td>宽屏信息密度与可读性的平衡点</td></tr>
+          <tr><td>动效时长</td><td class="num">140 / 240 / 520ms</td><td>统一缓动 <code>cubic-bezier(.22,1,.36,1)</code>，全部可被 reduced-motion 关闭</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout" style="margin-top:22px">
+      <span class="ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 20V6a2 2 0 0 1 2-2h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 4v6h6"/></svg>
+      </span>
+      <div>
+        <b>渐变表面上的对比度是怎么保证的</b>
+        <p>
+          Hero 与 CTA 用深色渐变做背景，而渐变背景色 <code>computedStyle</code> 读不到，常规对比度检测会误判成白底。
+          我的做法是先算出渐变「最亮点」——渐变顶端 <code>#1D1815</code>，叠加燃金光晕（13% 不透明）与网格线（2.8% 白）
+          后合成约 <code>#3F3221</code>，再按这个最不利采样值验证所有前景色：主标题 11.15:1、正文 6.86:1、标语 7.92:1、统计标签 4.83:1，全部达标。
+          换渐变参数时必须重跑这一步。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ 组件 -->
+  <section id="components">
+    <h2><span>05</span> 组件清单</h2>
+    <p class="lead">
+      22 个组件（含变体）按块组织，前缀统一 <code>sd-</code>。新增板块时优先复用，避免样式发散。
+    </p>
+
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>组件</th><th>类名</th><th>状态 / 变体</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td>按钮</td><td class="num">.sd-btn</td><td>primary / ghost / onDark / sm</td><td>全站操作入口</td></tr>
+          <tr><td>徽标</td><td class="num">.sd-badge</td><td>默认 / accent / 带状态点</td><td>项目状态、许可协议</td></tr>
+          <tr><td>标签</td><td class="num">.sd-tag</td><td>深底专用</td><td>北极星公式的七个构成项</td></tr>
+          <tr><td>卡片</td><td class="num">.sd-card</td><td>hover / accent / 带图标 / 带编号</td><td>能力、特性、对比</td></tr>
+          <tr><td>痛点对照卡</td><td class="num">.sd-pain</td><td>bad → good 双行</td><td>「为什么需要」四道门槛</td></tr>
+          <tr><td>提示条</td><td class="num">.sd-note</td><td>带图标</td><td>阶段性说明、设计取舍</td></tr>
+          <tr><td>代码块</td><td class="num">.sd-code</td><td>带语言标签 + 复制按钮</td><td>命令、AGENT.md、目录树</td></tr>
+          <tr><td>表格</td><td class="num">.sd-table</td><td>可横向滚动 / 带 caption</td><td>模块表、命令表</td></tr>
+          <tr><td>步骤条</td><td class="num">.sd-step</td><td>自动编号 + 连接线</td><td>快速开始四步</td></tr>
+          <tr><td>Tabs</td><td class="num">.sd-tabs</td><td>键盘可操作 / 无 JS 时全部展开</td><td>AGENT.md 与目录结构切换</td></tr>
+          <tr><td>分层条</td><td class="num">.sd-layer</td><td>L1–L4 + 能力 chip</td><td>四层处理链路</td></tr>
+          <tr><td>chip</td><td class="num">.sd-chip</td><td>等宽字体</td><td>层内能力标签</td></tr>
+          <tr><td>原则条目</td><td class="num">.sd-principle</td><td>01–07 编号</td><td>设计原则双列</td></tr>
+          <tr><td>路线图卡</td><td class="num">.sd-road__phase</td><td>now / next / vision 三态</td><td>三阶段规划</td></tr>
+          <tr><td>生态卡</td><td class="num">.sd-eco__item</td><td>可点击 / 静态</td><td>MCP、A2A 等</td></tr>
+          <tr><td>文档行</td><td class="num">.sd-doc</td><td>hover 箭头位移</td><td>六份文档入口</td></tr>
+          <tr><td>终端演示</td><td class="num">.sd-term</td><td>含光标闪烁动画</td><td>Hero 主视觉</td></tr>
+          <tr><td>指标</td><td class="num">.sd-stat</td><td>数值 + 单位 + 标签</td><td>Hero 四个关键数字</td></tr>
+          <tr><td>CTA 区块</td><td class="num">.sd-cta</td><td>深底渐变</td><td>结尾共建引导</td></tr>
+          <tr><td>页脚</td><td class="num">.sd-foot</td><td>四栏 + 底栏</td><td>全站导航与元信息</td></tr>
+          <tr><td>主题切换</td><td class="num">.sd-iconbtn</td><td>太阳 / 月亮图标互换</td><td>明暗切换，记忆到 localStorage</td></tr>
+          <tr><td>跳转链接</td><td class="num">.sd-skip</td><td>仅键盘聚焦时出现</td><td>无障碍「跳到主要内容」</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:40px 0 8px;font-size:16px">图标集</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:18px">
+      21 个图标以内联 SVG sprite 提供，无图标库依赖，可用 <code>currentColor</code> 随主题变色。
+      全部 21 个均已定义且被引用，无悬空引用。
+    </p>
+    <div class="card">
+      <p style="color:var(--ink-2);font-size:14px">
+        terminal · cpu · box · shield · brain · plug · layers · db · globe · sliders · map · file · users · copy · check · arrow · external · sun · moon · info · github
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================ 文件结构 -->
+  <section id="structure">
+    <h2><span>06</span> 产出物与文件结构</h2>
+    <p class="lead">
+      四个环节的产出物都落在一个独立的 <code>design/</code> 目录里，不与现有代码、文档混放，评审通过后可整体迁移到 <code>website/</code>。
+    </p>
+
+    <div class="grid g2">
+      <div class="card">
+        <span class="tag">目录树</span>
+        <pre class="tree" style="border:none;padding:0;background:transparent">design/
+├── README.md                     <i># 设计方案说明（本次交付总览）</i>
+├── <b>site/</b>                          <i># 展示页面</i>
+│   ├── index.html                <i># 首页（11 个区块）</i>
+│   └── assets/
+│       ├── css/
+│       │   ├── <b>tokens.css</b>            <i># 设计变量（换肤只改这里）</i>
+│       │   └── <b>main.css</b>              <i># 组件与布局（19 节）</i>
+│       ├── js/site.js            <i># 渐进增强脚本（8 个模块）</i>
+│       └── img/
+│           ├── favicon.svg
+│           ├── apple-touch-icon.png
+│           ├── logo.svg / logo-mark-mono.svg
+│           └── og-cover.png      <i># 1200×630 分享封面</i>
+├── <b>assets/</b>                        <i># 标识资产</i>
+│   ├── make-logo.py              <i># 参数化生成器</i>
+│   ├── logo.svg                  <i># 主标识 512</i>
+│   ├── logo-mark.svg             <i># 无底版</i>
+│   ├── logo-mark-mono.svg        <i># 单色版</i>
+│   ├── favicon.svg               <i># 小尺寸简化版</i>
+│   ├── logo-horizontal-dark.svg  <i># 横向组合 · 深底</i>
+│   ├── logo-horizontal-light.svg <i># 横向组合 · 浅底</i>
+│   ├── og-cover.html             <i># 分享封面源文件</i>
+│   ├── _compare-marks.svg        <i># 参数对比图</i>
+│   └── logo-concepts/            <i># 备选概念（留档）</i>
+└── <b>preview/</b>                       <i># 评审与校验</i>
+    ├── index.html                <i># 评审台（你正在看的这一页）</i>
+    ├── audit.json                <i># 自动校验原始结果</i>
+    └── *.png                     <i># 各区块 / 明暗 / 移动端截图</i></pre>
+      </div>
+
+      <div>
+        <div class="card">
+          <span class="tag">产出物清单</span>
+          <h3>环节 → 产出</h3>
+          <ul class="plain" style="margin-top:14px">
+            <li><b>① 定位梳理</b>　页面版块结构与叙事主线（第 02 节表格）</li>
+            <li><b>② 设计系统</b>　<code>tokens.css</code> + <code>main.css</code>，22 组件、21 图标</li>
+            <li><b>③ 展示页面</b>　<code>site/index.html</code>，11 区块、明暗双主题、响应式</li>
+            <li><b>④ 标识体系</b>　7 个 SVG 资产 + 参数化生成器 + 3 套备选概念</li>
+            <li><b>⑤ README 用法</b>　见第 08 节，含可复制的 Markdown 片段</li>
+            <li><b>⑥ 质量校验</b>　<code>audit.json</code> + 逐项结论（第 07 节）</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-top:20px">
+          <span class="tag">技术取向</span>
+          <h3>为什么不用框架</h3>
+          <ul class="plain" style="margin-top:14px">
+            <li><b>零构建</b>：直接双击 <code>index.html</code> 就能看，无需 npm / 构建链</li>
+            <li><b>零依赖</b>：唯一外部请求是 Google Fonts，且失败时自动回退系统字体</li>
+            <li><b>好托管</b>：GitHub Pages 直接开箱，不需要 Actions（后续可选加）</li>
+            <li><b>易接手</b>：任何人（含 AI agent）改文案不必先学一套工具链</li>
+            <li><b>可升级</b>：真需要博客 / 更新日志时，再引入 Astro 等 SSG，CSS 与 assets 可原样迁移</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ 校验 -->
+  <section id="audit">
+    <h2><span>07</span> 质量校验</h2>
+    <p class="lead">
+      设计稿不是「看起来差不多」就交付。<code>audit.json</code> 是用真实浏览器（Chromium 无头）跑出来的结果，
+      覆盖控制台报错、资源加载、死链、对比度、横向溢出与几何一致性。
+    </p>
+
+    <div class="grid g4">
+      <div class="card"><h3>72</h3><p>对比度用例（明 + 暗 × 36 项）</p></div>
+      <div class="card"><h3>0</h3><p>不达标项</p></div>
+      <div class="card"><h3>0</h3><p>死链 / 悬空图标引用</p></div>
+      <div class="card"><h3>3</h3><p>断点无横向溢出（1440 / 768 / 390）</p></div>
+    </div>
+
+    <div class="tableWrap" style="margin-top:22px">
+      <table>
+        <thead><tr><th>检查项</th><th>方式</th><th>结果</th></tr></thead>
+        <tbody>
+          <tr><td>控制台与资源</td><td>监听 console.error / pageerror / requestfailed</td><td><span class="pill ok"><span class="dot"></span>无代码错误</span></td></tr>
+          <tr><td>图标引用完整性</td><td>比对 21 个 symbol 定义与 31 处 use 引用</td><td><span class="pill ok"><span class="dot"></span>无悬空</span></td></tr>
+          <tr><td>死链</td><td>解析全部 37 个 &lt;a&gt;，检查 href 是否为 <code>#</code></td><td><span class="pill ok"><span class="dot"></span>0 个</span></td></tr>
+          <tr><td>站外链接安全</td><td>统一补 rel="noopener noreferrer" + target</td><td><span class="pill ok"><span class="dot"></span>17 个已处理</span></td></tr>
+          <tr><td>对比度（浅色主题）</td><td>WCAG AA，正文 4.5:1 / 大字 3.0:1，渐变按最亮点取样</td><td><span class="pill ok"><span class="dot"></span>36 项全通过</span></td></tr>
+          <tr><td>对比度（深色主题）</td><td>同上</td><td><span class="pill ok"><span class="dot"></span>36 项全通过</span></td></tr>
+          <tr><td>横向溢出</td><td>遍历全部元素，排除滚动容器；1440 / 768 / 390px 三档</td><td><span class="pill ok"><span class="dot"></span>scrollWidth = viewport</span></td></tr>
+          <tr><td>未使用样式</td><td>CSS 声明类 vs DOM 实际使用类</td><td><span class="pill ok"><span class="dot"></span>0 个冗余</span></td></tr>
+          <tr><td>字体加载失败降级</td><td>拦截 Google Fonts 后比对几何</td><td><span class="pill ok"><span class="dot"></span>零布局位移</span></td></tr>
+          <tr><td>无障碍</td><td>跳转链接、focus-visible、aria-label、tab 键盘操作、reduced-motion</td><td><span class="pill ok"><span class="dot"></span>已覆盖</span></td></tr>
+          <tr><td>渐进增强</td><td>禁用 JS 后页面完整度</td><td><span class="pill ok"><span class="dot"></span>文案与结构完整可读</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:40px 0 18px;font-size:16px">页面对照 · 浅色主题</h3>
+    <div class="grid g2">
+      <figure class="shot">
+        <img src="hero-light.png" alt="Hero 浅色主题">
+        <figcaption><b>Hero</b><span>1440 × 900</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="sec-why-light.png" alt="为什么需要 浅色">
+        <figcaption><b>为什么需要（四道门槛）</b><span>痛点 → 解法对照</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="sec-core-light.png" alt="核心能力 浅色">
+        <figcaption><b>核心能力</b><span>五张能力卡</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="sec-architecture-light.png" alt="架构 浅色">
+        <figcaption><b>架构</b><span>四层链路 + 14 模块表</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="sec-quickstart-light.png" alt="快速开始 浅色">
+        <figcaption><b>快速开始</b><span>步骤 + 代码 + Tabs</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="sec-roadmap-light.png" alt="路线图 浅色">
+        <figcaption><b>路线图</b><span>三态阶段卡</span></figcaption>
+      </figure>
+    </div>
+
+    <h3 style="margin:40px 0 18px;font-size:16px">页面对照 · 深色主题</h3>
+    <div class="grid g2">
+      <figure class="shot">
+        <img src="hero-dark.png" alt="Hero 深色主题">
+        <figcaption><b>Hero</b><span>深色主题</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="sec-core-dark.png" alt="核心能力 深色">
+        <figcaption><b>核心能力</b><span>深色主题</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="sec-architecture-dark.png" alt="架构 深色">
+        <figcaption><b>架构</b><span>深色主题</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="sec-quickstart-dark.png" alt="快速开始 深色">
+        <figcaption><b>快速开始</b><span>深色主题</span></figcaption>
+      </figure>
+    </div>
+
+    <h3 style="margin:40px 0 18px;font-size:16px">移动端（390px）</h3>
+    <div class="grid g2">
+      <figure class="shot">
+        <img src="mobile-hero.png" alt="移动端 Hero">
+        <figcaption><b>移动端首屏</b><span>390 × 844</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="footer-dark.png" alt="页脚">
+        <figcaption><b>页脚</b><span>窄屏自动转单列</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================================ README -->
+  <section id="readme">
+    <h2><span>08</span> 标识在 README 中的使用方式</h2>
+    <p class="lead">
+      三个位置固定使用：页首标识、状态徽标、真金白银的骨架验证命令。以下片段可直接复制替换现有开头。
+    </p>
+
+    <h3 style="margin-bottom:8px;font-size:16px">① 页首标识块</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:14px">
+      替换仓库现有 README 第 1–5 行的 <code>&lt;p align="center"&gt;</code> 图片块。要点是 <code>width</code> 与
+      <code>alt</code> 都要写，且 <code>alt</code> 描述实质内容而非「logo」。
+    </p>
+    <pre><span class="c">&lt;!-- markdownlint-disable MD033 MD041 --&gt;</span>
+
+&lt;p align="center"&gt;
+  &lt;img src="docs/images/logo.svg" alt="SableOS：Java 原生的私有 Agent OS" width="128"&gt;
+&lt;/p&gt;
+
+&lt;h1 align="center"&gt;SableOS&lt;/h1&gt;
+
+&lt;p align="center"&gt;
+  &lt;strong&gt;一个目录定义一个 Agent，一个底座运行一群 Agent。&lt;/strong&gt;&lt;br&gt;
+  企业能完全掌控的、Java 原生的、私有可审计的 Agent OS。
+&lt;/p&gt;
+
+<span class="c">&lt;!-- markdownlint-enable MD033 MD041 --&gt;</span></pre>
+
+    <h3 style="margin:36px 0 8px;font-size:16px">② 状态徽标行</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:14px">
+      沿用现有 shields.io 方案（无外部服务依赖、可离线渲染）。
+      建议把「状态」放在第一位——读者最想知道的就是这个项目现在能不能用。
+    </p>
+    <pre>&lt;p align="center"&gt;
+  &lt;a href="docs/TechnicalSolution.md"&gt;&lt;img src="https://img.shields.io/badge/%E7%8A%B6%E6%80%81-%E6%96%87%E6%A1%A3%E5%85%88%E8%A1%8C-yellow.svg" alt="项目状态：文档先行"&gt;&lt;/a&gt;
+  &lt;img src="https://img.shields.io/badge/JDK-21%2B-orange.svg" alt="JDK 21+"&gt;
+  &lt;img src="https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F.svg" alt="Spring Boot 3.x"&gt;
+  &lt;img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License 2.0"&gt;
+  &lt;img src="https://img.shields.io/badge/%E7%94%9F%E6%80%81-MCP%20%7C%20A2A-8957E5.svg" alt="对接 MCP 与 A2A"&gt;
+&lt;/p&gt;</pre>
+
+    <h3 style="margin:36px 0 8px;font-size:16px">③ 需要强调的段落前加一行图示</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:14px">
+      架构等关键章节前，用横向组合标识作为分节视觉锚点，让长 README 有喘息。
+    </p>
+    <pre><span class="c">&lt;!-- 架构章节开头 --&gt;</span>
+&lt;p align="center"&gt;
+  &lt;img src="docs/images/logo-horizontal-dark.svg" alt="SableOS" width="360"&gt;
+&lt;/p&gt;</pre>
+
+    <div class="callout" style="margin-top:24px">
+      <span class="ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2v20M5 7l7-5 7 5M5 17l7 5 7-5"/></svg>
+      </span>
+      <div>
+        <b>落地时要改的路径</b>
+        <p>
+          现有 README 引用的是 <code>docs/images/logo.svg</code>，而 <code>docs/sableos.md</code> 与
+          《技术方案》共 12 处引用的是 <code>../website/public/images/*.svg</code>——<b>仓库里没有 website/ 目录，这些是悬空引用</b>。
+          建议随本次落地一并处理：在仓库根建 <code>website/</code>，把 <code>design/site/</code> 迁进去，
+          再把 12 处引用统一指向 <code>website/public/images/</code> 下的实际文件。这也是 CLAUDE.md 第 9 节登记的待办。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ 扩展 -->
+  <section id="extend">
+    <h2><span>09</span> 后续可扩展方向</h2>
+    <p class="lead">
+      模块化结构是按「项目会持续长大」设计的。以下是明确的扩展点，每一项都不需要改动现有版式。
+    </p>
+
+    <div class="grid g3">
+      <div class="card">
+        <span class="tag">内容</span>
+        <h3>新增区块</h3>
+        <ul class="plain" style="margin-top:12px">
+          <li>更新日志 / 版本发布记录</li>
+          <li>示例集（每张卡一个可跑通的 Agent 场景）</li>
+          <li>对比表（vs OpenClaw / Hermes Agent / Dify）</li>
+          <li>常见问题</li>
+          <li>贡献者墙</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag">页面</span>
+        <h3>新增子页面</h3>
+        <ul class="plain" style="margin-top:12px">
+          <li><code>docs/</code> 文档站（Markdown 渲染）</li>
+          <li><code>changelog/</code> 更新日志</li>
+          <li><code>examples/</code> 示例索引</li>
+          <li><code>blog/</code> 技术文章</li>
+          <li><code>404.html</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag">能力</span>
+        <h3>结构预留</h3>
+        <ul class="plain" style="margin-top:12px">
+          <li>全文搜索（Pagefind 等，CSS 无需改动）</li>
+          <li>中英双语（<code>data-i18n</code> 属性位）</li>
+          <li>Mermaid / SVG 架构图嵌入</li>
+          <li>GitHub API 拉取 star / release 数</li>
+          <li>OG 图自动生成</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="margin:40px 0 18px;font-size:16px">每个扩展点怎么落地</h3>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>扩展项</th><th>改动位置</th><th>是否需要改设计系统</th></tr></thead>
+        <tbody>
+          <tr><td>加一个内容区块</td><td>复制一段 <code>&lt;section class="sd-sec"&gt;</code> + 复用现有卡片组件</td><td>否</td></tr>
+          <tr><td>加一个新组件</td><td>在 <code>main.css</code> 追加编号小节，复用 <code>tokens.css</code> 变量</td><td>否</td></tr>
+          <tr><td>换主色 / 换品牌色</td><td>只改 <code>tokens.css</code> 的 ember 与 sable 色阶</td><td>否</td></tr>
+          <tr><td>加第三方脚本</td><td><code>site.js</code> 追加编号模块，包在独立 IIFE 内</td><td>否</td></tr>
+          <tr><td>迁移到静态站点生成器</td><td>保留 <code>assets/</code> 不动，把 <code>index.html</code> 拆成组件模板</td><td>否</td></tr>
+          <tr><td>新增标识变体</td><td>在 <code>make-logo.py</code> 加一个生成函数，参数与主标识共用</td><td>否</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================ 后续 -->
+  <section id="next">
+    <h2><span>10</span> 本次边界与后续动作</h2>
+
+    <div class="grid g2">
+      <div class="card">
+        <span class="tag">本次已做</span>
+        <h3>纯设计，不含开发</h3>
+        <ul class="plain" style="margin-top:12px">
+          <li>定位梳理与页面叙事结构</li>
+          <li>完整设计系统（变量 + 组件 + 图标）</li>
+          <li>首页原型（可打开、可交互、双主题）</li>
+          <li>标识重新设计 + 全套资产 + 参数化生成器</li>
+          <li>README 使用方式（可复制片段）</li>
+          <li>质量校验与截图留档</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag">待你确认</span>
+        <h3>需要拍板的几件事</h3>
+        <ul class="plain" style="margin-top:12px">
+          <li><b>标识方向</b>：接受「疾行 Prompt」，还是从备选概念里换一个</li>
+          <li><b>仓库地址</b>：<code>sable-labs/sableos</code> 是否正确（现集中在 <code>site.js</code> 顶部一处配置）</li>
+          <li><b>目录归属</b>：落在 <code>design/</code> 还是直接建 <code>website/</code></li>
+          <li><b>配色温度</b>：暖墨 + 燃金是否符合你对「专业感」的预期（也可换冷灰 + 蓝）</li>
+          <li><b>页面形态</b>：单页足够，还是需要多页文档站</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="margin:40px 0 18px;font-size:16px">确认之后我建议的落地顺序</h3>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>步骤</th><th>动作</th><th>产出</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>拍板标识与配色</td><td>冻结 <code>tokens.css</code> 色阶与 logo 参数</td></tr>
+          <tr><td class="num">2</td><td>建 <code>website/</code> 并迁入</td><td>GitHub Pages 可访问的站点目录</td></tr>
+          <tr><td class="num">3</td><td>修掉 12 处悬空图片引用</td><td>《技术方案》与 sableos.md 的配图补齐</td></tr>
+          <tr><td class="num">4</td><td>更新 README 开头</td><td>标识块 + 徽标行 + 状态说明</td></tr>
+          <tr><td class="num">5</td><td>开 Pages + Actions（可选）</td><td>推送即发布</td></tr>
+          <tr><td class="num">6</td><td>随项目推进补内容</td><td>更新日志、示例集、对比表</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout" style="margin-top:24px">
+      <span class="ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      </span>
+      <div>
+        <b>一句话总结</b>
+        <p>
+          设计上没有把 SableOS 包装成「又一个 Agent 框架」，而是紧扣它真正的主张——
+          <b>守住运行时这一层、一群 Agent 而非一个、企业可控可审计</b>，用暖墨 + 燃金建立质感，
+          用一套变量化的设计系统保证它经得起长期迭代。所有校验项已通过，等你确认方向后再进入开发。
+        </p>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

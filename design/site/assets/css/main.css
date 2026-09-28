@@ -1,0 +1,1629 @@
+/* ==========================================================================
+   SableOS · Components & Layout
+   --------------------------------------------------------------------------
+   依赖 tokens.css。所有颜色/尺寸走语义变量，组件按块（block）组织，
+   命名前缀统一为 sd-（sable design），便于后续新增板块而不互相污染。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Reset & base
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: 1.65;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
+  font-feature-settings: normal;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--r-xs);
+}
+
+::selection {
+  background: var(--ember-400);
+  color: var(--sable-950);
+}
+
+/* 跳转链接 */
+.sd-skip {
+  position: absolute;
+  left: var(--sp-4);
+  top: -100px;
+  z-index: 200;
+  padding: 0.6rem 1rem;
+  background: var(--accent);
+  color: var(--sable-950);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  transition: top var(--dur-fast) var(--ease-out);
+}
+
+.sd-skip:focus {
+  top: var(--sp-4);
+}
+
+.sd-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   2. Layout primitives
+   -------------------------------------------------------------------------- */
+.sd-container {
+  width: 100%;
+  max-width: var(--w-content);
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 0.5rem + 3vw, 2.5rem);
+}
+
+.sd-sec {
+  padding-block: var(--sec-y);
+}
+
+.sd-sec--tight {
+  padding-block: var(--sec-y-tight);
+}
+
+.sd-sec--subtle {
+  background: var(--bg-subtle);
+  border-block: 1px solid var(--border);
+}
+
+/* --------------------------------------------------------------------------
+   3. 区块标头（sd-head）
+   -------------------------------------------------------------------------- */
+.sd-head {
+  max-width: 62ch;
+  margin-bottom: var(--sp-10);
+}
+
+.sd-head--center {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.sd-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  color: var(--text-accent);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.14em;
+}
+
+.sd-eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.sd-head--center .sd-eyebrow::after {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.sd-h2 {
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-semibold);
+  line-height: 1.24;
+  letter-spacing: -0.018em;
+}
+
+.sd-h3 {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semibold);
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.sd-lead {
+  margin-top: var(--sp-5);
+  color: var(--text-2);
+  font-size: var(--fs-lead);
+  line-height: 1.7;
+}
+
+/* --------------------------------------------------------------------------
+   4. 按钮（sd-btn）
+   -------------------------------------------------------------------------- */
+.sd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: 0.72rem 1.35rem;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+}
+
+.sd-btn:active {
+  transform: translateY(1px);
+}
+
+.sd-btn--primary {
+  background: var(--ember-400);
+  color: var(--sable-950);
+  box-shadow: var(--sh-accent);
+}
+
+.sd-btn--primary:hover {
+  background: var(--ember-300);
+}
+
+.sd-btn--ghost {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.sd-btn--ghost:hover {
+  background: var(--bg-subtle);
+  border-color: var(--text-3);
+}
+
+.sd-btn--onDark {
+  border-color: var(--hero-chip-bd);
+  color: var(--hero-ink-hero);
+}
+
+.sd-btn--onDark:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.sd-btn--sm {
+  padding: 0.5rem 0.95rem;
+  font-size: var(--fs-xs);
+}
+
+.sd-btn__icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* --------------------------------------------------------------------------
+   5. 顶部导航（sd-nav）
+   -------------------------------------------------------------------------- */
+.sd-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom: 1px solid transparent;
+  backdrop-filter: saturate(1.6) blur(14px);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
+  transition: border-color var(--dur) var(--ease-out),
+    background-color var(--dur) var(--ease-out);
+}
+
+.sd-nav[data-scrolled="true"] {
+  border-bottom-color: var(--border);
+}
+
+.sd-nav__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  height: 68px;
+}
+
+.sd-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: none;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.02em;
+}
+
+.sd-brand__mark {
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+
+.sd-brand__name {
+  font-size: 1.0625rem;
+}
+
+.sd-brand__tag {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-xs);
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: var(--fw-medium);
+}
+
+.sd-nav__links {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-inline-start: var(--sp-8);
+  flex: 1;
+}
+
+.sd-nav__link {
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--r-xs);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.sd-nav__link:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+.sd-nav__link[aria-current="true"] {
+  color: var(--text-accent);
+}
+
+.sd-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: none;
+}
+
+.sd-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.sd-iconbtn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--bg-subtle);
+}
+
+.sd-iconbtn svg {
+  width: 17px;
+  height: 17px;
+}
+
+body[data-theme="light"] .sd-themeIcon--moon,
+body[data-theme="dark"] .sd-themeIcon--sun {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. Hero（sd-hero）
+   -------------------------------------------------------------------------- */
+.sd-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--hero-bg);
+  color: var(--hero-ink-hero);
+}
+
+.sd-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      to right,
+      var(--hero-grid) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, var(--hero-grid) 1px, transparent 1px);
+  background-size: 76px 76px;
+  mask-image: radial-gradient(120% 78% at 50% 0%, #000 20%, transparent 76%);
+  -webkit-mask-image: radial-gradient(
+    120% 78% at 50% 0%,
+    #000 20%,
+    transparent 76%
+  );
+  pointer-events: none;
+}
+
+.sd-hero__inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+  gap: clamp(2.5rem, 1rem + 5vw, 4.5rem);
+  align-items: center;
+  padding-block: clamp(4rem, 2rem + 7vw, 7.5rem) clamp(4.5rem, 2rem + 8vw, 8rem);
+}
+
+.sd-hero__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: var(--sp-6);
+}
+
+.sd-hero__title {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-semibold);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.sd-hero__title em {
+  font-style: normal;
+  color: var(--hero-accent);
+  background: linear-gradient(
+    100deg,
+    var(--ember-300) 0%,
+    var(--ember-400) 46%,
+    var(--ember-600) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.sd-hero__slogan {
+  margin-top: var(--sp-5);
+  color: var(--hero-accent-soft);
+  font-family: var(--font-serif);
+  font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.3rem);
+  letter-spacing: 0.01em;
+}
+
+.sd-hero__lead {
+  max-width: 54ch;
+  margin-top: var(--sp-6);
+  color: var(--hero-ink);
+  font-size: var(--fs-lead);
+  line-height: 1.72;
+}
+
+.sd-hero__lead strong {
+  color: var(--hero-ink-hero);
+  font-weight: var(--fw-medium);
+}
+
+.sd-hero__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: var(--sp-6);
+}
+
+.sd-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-8);
+}
+
+.sd-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  margin-top: var(--sp-10);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--hero-rule);
+}
+
+.sd-stat__value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  color: var(--hero-ink-hero);
+  font-size: 1.5rem;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.02em;
+}
+
+.sd-stat__value span {
+  color: var(--hero-accent);
+  font-size: 0.9rem;
+  font-weight: var(--fw-medium);
+}
+
+.sd-stat__label {
+  color: var(--hero-ink-3);
+  font-size: var(--fs-xs);
+}
+
+/* 状态徽标（sd-badge） */
+.sd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-full);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+
+.sd-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex: none;
+}
+
+.sd-hero .sd-badge {
+  border-color: var(--hero-chip-bd);
+  color: var(--hero-ink);
+  background: var(--hero-chip-bg);
+}
+
+.sd-hero .sd-badge--accent {
+  border-color: rgba(242, 180, 65, 0.4);
+  color: var(--hero-accent-soft);
+  background: rgba(242, 180, 65, 0.08);
+}
+
+.sd-tag {
+  padding: 0.28rem 0.7rem;
+  border: 1px solid var(--hero-chip-bd);
+  border-radius: var(--r-sm);
+  background: var(--hero-chip-bg);
+  color: var(--hero-ink);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+
+/* --------------------------------------------------------------------------
+   7. Hero 终端（sd-term）
+   -------------------------------------------------------------------------- */
+.sd-term {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--r-lg);
+  background: rgba(8, 7, 6, 0.62);
+  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+
+.sd-term__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sd-term__dots {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.sd-term__dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.sd-term__title {
+  margin-inline-start: var(--sp-2);
+  color: var(--hero-ink-3);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.sd-term__body {
+  padding: var(--sp-5) var(--sp-5) var(--sp-6);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  line-height: 1.85;
+  color: var(--hero-ink);
+  overflow-x: auto;
+}
+
+.sd-term__line {
+  display: flex;
+  gap: 0.65rem;
+  white-space: pre;
+}
+
+.sd-term__prompt {
+  color: var(--hero-accent);
+  user-select: none;
+}
+
+.sd-term__cmd {
+  color: var(--hero-ink-hero);
+}
+
+.sd-term__out {
+  color: var(--hero-ink-3);
+}
+
+.sd-term__ok {
+  color: var(--ok-dark);
+}
+
+.sd-term__blank {
+  height: 0.6em;
+}
+
+.sd-term__caret {
+  display: inline-block;
+  width: 8px;
+  height: 1.05em;
+  margin-inline-start: 2px;
+  background: var(--ember-400);
+  vertical-align: text-bottom;
+  animation: sd-blink 1.15s steps(1, end) infinite;
+}
+
+@keyframes sd-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-term__caret {
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. 卡片体系（sd-card / sd-bento）
+   -------------------------------------------------------------------------- */
+.sd-grid {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.sd-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sd-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sd-grid--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sd-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-6);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-elevated);
+  transition: border-color var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out);
+}
+
+.sd-card--hover:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--sh-md);
+  transform: translateY(-2px);
+}
+
+.sd-card--accent {
+  border-color: var(--border-accent);
+  background: var(--bg-accent-soft);
+}
+
+.sd-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-subtle);
+  color: var(--text-accent);
+  flex: none;
+}
+
+.sd-card__icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.sd-card__title {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semibold);
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.sd-card__text {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+}
+
+.sd-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: var(--sp-4);
+}
+
+/* 有序功能卡：编号 */
+.sd-card__num {
+  color: var(--text-accent);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.06em;
+}
+
+/* 痛点 → 解法 对照卡 */
+.sd-pain {
+  border-color: var(--border);
+}
+
+.sd-pain__bad {
+  display: flex;
+  gap: 0.55rem;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+
+.sd-pain__bad::before {
+  content: "—";
+  color: var(--err);
+  flex: none;
+}
+
+.sd-pain__good {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: auto;
+  padding-top: var(--sp-4);
+  border-top: 1px dashed var(--border);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+.sd-pain__good::before {
+  content: "→";
+  color: var(--text-accent);
+  flex: none;
+}
+
+/* 版本化公告条 */
+.sd-note {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: flex-start;
+  padding: var(--sp-5) var(--sp-6);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--r-lg);
+  background: var(--bg-accent-soft);
+}
+
+.sd-note__icon {
+  color: var(--text-accent);
+  flex: none;
+  margin-top: 2px;
+}
+
+.sd-note__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sd-note__title {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.sd-note__text {
+  margin-top: 0.25rem;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+/* --------------------------------------------------------------------------
+   9. 快速开始（sd-steps + sd-tabs）
+   -------------------------------------------------------------------------- */
+.sd-steps {
+  counter-reset: sd-step;
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.sd-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+  padding-bottom: var(--sp-5);
+}
+
+.sd-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 44px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.sd-step__num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-accent);
+  border-radius: var(--r-full);
+  background: var(--bg-accent-soft);
+  color: var(--text-accent);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  flex: none;
+}
+
+.sd-step__title {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semibold);
+  padding-top: 0.35rem;
+}
+
+.sd-step__text {
+  margin-top: 0.3rem;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+/* Tabs —— 默认全部展开（无 JS 也可读），由 JS 收敛为切换式 */
+.sd-tabs {
+  position: relative;
+}
+
+.sd-tabs__list {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-subtle);
+  margin-bottom: var(--sp-4);
+}
+
+.sd-tabs__tab {
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--r-xs);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.sd-tabs__tab:hover {
+  color: var(--text);
+}
+
+.sd-tabs__tab[aria-selected="true"] {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+}
+
+.sd-tabs__tab[aria-selected="true"]:hover {
+  color: var(--text);
+}
+
+.js .sd-tabs__panel[hidden] {
+  display: none;
+}
+
+.sd-tabs__panel > * + * {
+  margin-top: var(--sp-5);
+}
+
+/* --------------------------------------------------------------------------
+   10. 代码块（sd-code）
+   -------------------------------------------------------------------------- */
+.sd-code {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-code);
+  overflow: hidden;
+}
+
+body[data-theme="light"] .sd-code {
+  border-color: #2E2823;
+}
+
+.sd-code__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 0.6rem 0.85rem 0.6rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sd-code__lang {
+  color: #90887F;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sd-code__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--r-xs);
+  color: #A8A099;
+  font-size: 0.6875rem;
+  font-weight: var(--fw-medium);
+  transition: color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.sd-code__copy:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+  color: #F6F2ED;
+}
+
+.sd-code__copy svg {
+  width: 13px;
+  height: 13px;
+}
+
+.sd-code__copy[data-copied="true"] {
+  border-color: rgba(95, 174, 122, 0.5);
+  color: var(--ok-dark);
+}
+
+.sd-code pre {
+  margin: 0;
+  padding: var(--sp-5) var(--sp-5) var(--sp-6);
+  overflow-x: auto;
+  font-size: var(--fs-mono);
+  line-height: 1.8;
+  color: var(--code-ink);
+  tab-size: 2;
+}
+
+.sd-code pre code {
+  white-space: pre;
+}
+
+/* 极简语法着色（不带高亮库）；对比度以 --bg-code #0B0908 为底验证 */
+.sd-c-comment {
+  color: var(--code-ink-3);   /* 5.3:1 */
+}
+.sd-c-key {
+  color: var(--code-key);
+}
+.sd-c-str {
+  color: var(--code-str);
+}
+.sd-c-num {
+  color: var(--code-num);
+}
+.sd-c-fn {
+  color: var(--code-fn);
+}
+
+/* --------------------------------------------------------------------------
+   11. 表格（sd-table）
+   -------------------------------------------------------------------------- */
+.sd-tableWrap {
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg-elevated);
+}
+
+.sd-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.sd-table caption {
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  text-align: start;
+}
+
+.sd-table th,
+.sd-table td {
+  padding: 0.85rem var(--sp-5);
+  text-align: start;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.sd-table thead th {
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.sd-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.sd-table td:first-child {
+  color: var(--text);
+  font-weight: var(--fw-medium);
+}
+
+.sd-table td code,
+.sd-inline-code {
+  padding: 0.1rem 0.36rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: var(--bg-subtle);
+  color: var(--text-accent);
+  font-size: 0.84em;
+}
+
+/* --------------------------------------------------------------------------
+   12. 分层架构条（sd-layers）
+   -------------------------------------------------------------------------- */
+.sd-layers {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.sd-layer {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: center;
+  padding: var(--sp-5) var(--sp-6);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elevated);
+  transition: border-color var(--dur) var(--ease-out);
+}
+
+.sd-layer:hover {
+  border-color: var(--border-accent);
+}
+
+.sd-layer__name {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.sd-layer__idx {
+  color: var(--text-accent);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.sd-layer__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.sd-chip {
+  padding: 0.24rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+/* --------------------------------------------------------------------------
+   13. 原则列表（sd-principles）
+   -------------------------------------------------------------------------- */
+.sd-principles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--sp-10);
+}
+
+.sd-principle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sp-5);
+  padding-block: var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.sd-principle__idx {
+  color: var(--text-accent);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  padding-top: 0.3rem;
+}
+
+.sd-principle__title {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.sd-principle__text {
+  margin-top: 0.2rem;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.68;
+}
+
+/* --------------------------------------------------------------------------
+   14. 路线图（sd-road）
+   -------------------------------------------------------------------------- */
+.sd-road {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-5);
+}
+
+.sd-road__phase {
+  position: relative;
+  padding: var(--sp-6);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-elevated);
+}
+
+.sd-road__phase[data-state="now"] {
+  border-color: var(--border-accent);
+  background: var(--bg-accent-soft);
+}
+
+.sd-road__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--r-full);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+
+.sd-road__phase[data-state="now"] .sd-road__label {
+  background: var(--ember-400);
+  color: var(--sable-950);
+}
+
+.sd-road__phase[data-state="next"] .sd-road__label,
+.sd-road__phase[data-state="vision"] .sd-road__label {
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+}
+
+.sd-road__title {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semibold);
+}
+
+.sd-road__list {
+  margin-top: var(--sp-4);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sd-road__list li {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+.sd-road__list li::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  margin-top: 0.62em;
+  border-radius: 50%;
+  background: var(--text-3);
+  flex: none;
+}
+
+/* --------------------------------------------------------------------------
+   15. 生态（sd-eco）
+   -------------------------------------------------------------------------- */
+.sd-eco {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-4);
+}
+
+.sd-eco__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elevated);
+  transition: border-color var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out);
+}
+
+.sd-eco__item:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-2px);
+}
+
+.sd-eco__name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.sd-eco__ext svg {
+  width: 12px;
+  height: 12px;
+  color: var(--text-3);
+}
+
+.sd-eco__desc {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  line-height: 1.62;
+}
+
+.sd-eco__role {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  color: var(--text-accent);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+
+/* --------------------------------------------------------------------------
+   16. 文档 / 社区列表（sd-list）
+   -------------------------------------------------------------------------- */
+.sd-docs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.sd-doc {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--sp-4);
+  align-items: center;
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elevated);
+  transition: border-color var(--dur) var(--ease-out),
+    background-color var(--dur) var(--ease-out);
+}
+
+.sd-doc:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-subtle);
+}
+
+.sd-doc__badge {
+  padding: 0.18rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: var(--bg-subtle);
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+.sd-doc__name {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.sd-doc__desc {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+.sd-doc__arrow {
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+
+.sd-doc:hover .sd-doc__arrow {
+  transform: translateX(3px);
+  color: var(--text-accent);
+}
+
+.sd-doc__arrow svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* --------------------------------------------------------------------------
+   17. CTA & Footer
+   -------------------------------------------------------------------------- */
+.sd-cta {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2.5rem, 1.5rem + 4vw, 4.5rem);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--r-2xl);
+  background: var(--hero-bg);
+  color: var(--hero-ink-hero);
+  text-align: center;
+}
+
+.sd-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      to right,
+      var(--hero-grid) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, var(--hero-grid) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(90% 90% at 50% 0%, #000 10%, transparent 72%);
+  -webkit-mask-image: radial-gradient(
+    90% 90% at 50% 0%,
+    #000 10%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+.sd-cta__inner {
+  position: relative;
+  max-width: 56ch;
+  margin-inline: auto;
+}
+
+.sd-cta__title {
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-semibold);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.sd-cta__text {
+  margin-top: var(--sp-4);
+  color: var(--hero-ink);
+  font-size: var(--fs-lead);
+}
+
+.sd-cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  justify-content: center;
+  margin-top: var(--sp-8);
+}
+
+.sd-foot {
+  padding-block: var(--sp-16) var(--sp-8);
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+.sd-foot__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  gap: var(--sp-10);
+  padding-bottom: var(--sp-10);
+}
+
+.sd-foot__brandName {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.0625rem;
+  font-weight: var(--fw-semibold);
+}
+
+.sd-foot__brandName svg {
+  width: 26px;
+  height: 26px;
+}
+
+.sd-foot__desc {
+  margin-top: var(--sp-4);
+  max-width: 38ch;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+.sd-foot__colTitle {
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+}
+
+.sd-foot__col ul {
+  margin-top: var(--sp-4);
+  display: grid;
+  gap: 0.6rem;
+}
+
+.sd-foot__col a {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.sd-foot__col a:hover {
+  color: var(--text-accent);
+}
+
+.sd-foot__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+
+.sd-foot__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+}
+
+.sd-foot__links a:hover {
+  color: var(--text-accent);
+}
+
+/* --------------------------------------------------------------------------
+   18. 滚动进场（.sd-reveal）—— 仅 JS 可用时启用，避免无 JS 白屏
+   -------------------------------------------------------------------------- */
+.js .sd-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.js .sd-reveal[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .sd-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   19. 响应式
+   -------------------------------------------------------------------------- */
+@media (max-width: 1080px) {
+  .sd-hero__inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-12);
+  }
+  .sd-grid--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sd-foot__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .sd-nav__links {
+    display: none;
+  }
+  .sd-nav__inner {
+    justify-content: space-between;
+  }
+  .sd-grid--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sd-road,
+  .sd-principles,
+  .sd-docs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sd-principles {
+    gap: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .sd-grid--2,
+  .sd-grid--3,
+  .sd-grid--4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sd-layer {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+  .sd-brand__tag {
+    display: none;
+  }
+  .sd-hero__stats {
+    gap: var(--sp-6);
+  }
+  .sd-cta {
+    border-radius: var(--r-xl);
+  }
+  .sd-table th,
+  .sd-table td {
+    padding: 0.7rem var(--sp-4);
+  }
+  /* 页脚在窄屏改为单列，避免品牌描述被挤成窄条 */
+  .sd-foot__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-8);
+  }
+}
+
+/* 打印：隐去导航等装饰，保留内容 */
+@media print {
+  .sd-nav,
+  .sd-cta,
+  .sd-code__copy {
+    display: none;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .sd-hero {
+    background: #fff;
+    color: #000;
+  }
+  .sd-hero__lead,
+  .sd-hero__slogan {
+    color: #333;
+  }
+}

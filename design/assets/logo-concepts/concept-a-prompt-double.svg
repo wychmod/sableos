@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+  <title id="t">概念 A · 疾行 Prompt（双箭头）</title>
+  <desc id="d">两个并排的右向箭头，表达一群 Agent 在同一底座上并行运行。</desc>
+  <defs>
+    <linearGradient id="a-bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1D1815"/>
+      <stop offset="1" stop-color="#0D0B0A"/>
+    </linearGradient>
+    <linearGradient id="a-glyph" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#F9D68F"/>
+      <stop offset="0.5" stop-color="#F2B441"/>
+      <stop offset="1" stop-color="#D4921C"/>
+    </linearGradient>
+    <radialGradient id="a-glow" cx="0.5" cy="0.46" r="0.46">
+      <stop offset="0" stop-color="#F2B441" stop-opacity="0.17"/>
+      <stop offset="1" stop-color="#F2B441" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#a-bg)"/>
+  <rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="2"/>
+  <circle cx="256" cy="240" r="176" fill="url(#a-glow)"/>
+  <g fill="none" stroke="url(#a-glyph)" stroke-width="50" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M155 164 L228 256 L155 348"/>
+    <path d="M284 164 L357 256 L284 348" stroke-opacity="0.8"/>
+  </g>
+</svg>

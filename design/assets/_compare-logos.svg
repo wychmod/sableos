@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1246" height="330" viewBox="0 0 1246 330" role="img" aria-labelledby="t d">
+  <title id="t">SableOS 标识方案对照：现状与三个备选概念，最后为选定方案</title>
+  <desc id="d">左侧为仓库现有折线 S 标识与三个备选概念，均标注不足之处；最右侧为最终选定的疾行 Prompt 方案。</desc>
+  <rect width="1246" height="330" fill="none"/>
+  <rect x="26" y="26" width="192" height="192" rx="22" fill="#0B0908" stroke="#2E2823"/>
+  <g transform="translate(74.0 74.0)">
+    <g fill="none" stroke="#F2B441" stroke-width="8.2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="31,31 54,48 31,65"/>
+      <line x1="60" y1="65" x2="72" y2="65"/>
+    </g>
+  </g>
+  <text x="26" y="256" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="600" fill="#C9BFB3">现状</text>
+  <text x="26" y="280" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" fill="#8A827A">docs/images/logo.svg</text>
+  <text x="26" y="304" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" font-weight="500" fill="#E2685E">折线 S：语义空缺、小尺寸糊、不可单色化</text>
+  <line x1="243" y1="26" x2="243" y2="304" stroke="#2E2823"/>
+  <rect x="270" y="26" width="192" height="192" rx="22" fill="#0B0908" stroke="#2E2823"/>
+  <g transform="translate(318.0 74.0)">
+    <g fill="none" stroke="#F2B441" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M27 27 L40 48 L27 69"/>
+      <path d="M52 27 L65 48 L52 69" stroke-opacity="0.8"/>
+    </g>
+  </g>
+  <text x="270" y="256" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="600" fill="#C9BFB3">概念 A</text>
+  <text x="270" y="280" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" fill="#8A827A">双箭头 · 一群 Agent</text>
+  <text x="270" y="304" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" font-weight="500" fill="#A2968A">语义直白，但更像通用流程图标</text>
+  <line x1="487" y1="26" x2="487" y2="304" stroke="#2E2823"/>
+  <rect x="514" y="26" width="192" height="192" rx="22" fill="#0B0908" stroke="#2E2823"/>
+  <g transform="translate(562.0 74.0)">
+    <g fill="none" stroke="#F2B441" stroke-width="9.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M26 24 L44 44 L26 64"/>
+      <line x1="56" y1="30" x2="70" y2="30" stroke-width="6.4" stroke-opacity="0.9"/>
+      <line x1="56" y1="44" x2="70" y2="44" stroke-width="6.4" stroke-opacity="0.58"/>
+      <line x1="56" y1="58" x2="70" y2="58" stroke-width="6.4" stroke-opacity="0.3"/>
+    </g>
+  </g>
+  <text x="514" y="256" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="600" fill="#C9BFB3">概念 B</text>
+  <text x="514" y="280" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" fill="#8A827A">平台线 + 箭头 · 底座与 Agent</text>
+  <text x="514" y="304" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" font-weight="500" fill="#A2968A">表意准确，主体偏左、重心失衡</text>
+  <line x1="731" y1="26" x2="731" y2="304" stroke="#2E2823"/>
+  <rect x="758" y="26" width="192" height="192" rx="22" fill="#0B0908" stroke="#2E2823"/>
+  <g transform="translate(806.0 74.0)">
+    <g fill="none" stroke="#F2B441" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="21" y="26" width="38" height="38" rx="9" stroke-width="8"/>
+      <path d="M34 39 L41 45 L34 51" stroke-width="6.6"/>
+      <rect x="53" y="55" width="17" height="17" rx="5" stroke-width="6.6" stroke-opacity="0.85"/>
+      <rect x="59" y="62" width="17" height="17" rx="5" stroke-width="6.6" stroke-opacity="0.55"/>
+    </g>
+  </g>
+  <text x="758" y="256" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="600" fill="#C9BFB3">概念 C</text>
+  <text x="758" y="280" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" fill="#8A827A">方块 + 脱出 · 目录派生</text>
+  <text x="758" y="304" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" font-weight="500" fill="#A2968A">与通用 App 图标撞脸概率高</text>
+  <line x1="975" y1="26" x2="975" y2="304" stroke="#2E2823"/>
+  <rect x="1002" y="26" width="192" height="192" rx="22" fill="#0B0908" stroke="#2E2823"/>
+  <g transform="translate(1050.0 74.0)">
+    <g fill="none" stroke="#F2B441" stroke-width="7.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M27.15 35.02L34.25 41.00L27.15 46.98" stroke-opacity="0.42"/>
+      <path d="M35.75 40.52L42.85 46.50L35.75 52.48" stroke-opacity="0.68"/>
+      <path d="M44.35 46.02L51.45 52.00L44.35 57.98"/>
+      <path d="M57.95 52.00H68.30" stroke-opacity="0.95"/>
+    </g>
+  </g>
+  <text x="1002" y="256" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" font-weight="600" fill="#F6F2ED">最终方案</text>
+  <text x="1002" y="280" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" fill="#8A827A">疾行 Prompt · 三枚级联 + 收束</text>
+  <text x="1002" y="304" font-family="Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12.5" font-weight="500" fill="#F2B441">16px 可辨、可单色、语义有落点</text>
+</svg>

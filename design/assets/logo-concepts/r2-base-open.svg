@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+  <title id="t">R2 · 底座开口 + Agent 穿出</title>
+  <desc id="d">开口的圆角方框表示运行底座，三枚 chevron 向右穿出表示一群 Agent 从底座向外行动。</desc>
+  <defs>
+    <linearGradient id="r2-bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1D1815"/>
+      <stop offset="1" stop-color="#0D0B0A"/>
+    </linearGradient>
+    <linearGradient id="r2-g" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#FADFA6"/>
+      <stop offset="0.45" stop-color="#F2B441"/>
+      <stop offset="1" stop-color="#CE8B12"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#r2-bg)"/>
+  <rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="2"/>
+  <path d="M380 208 A76 76 0 0 1 304 132 L208 132 A76 76 0 0 1 132 208 L132 304 A76 76 0 0 1 208 380 L304 380 A76 76 0 0 1 380 304"
+        fill="none" stroke="#6E645A" stroke-width="28" stroke-linecap="round"/>
+  <g fill="none" stroke="url(#r2-g)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M302 176 L330 204 L302 232" stroke-width="30" stroke-opacity="0.4"/>
+    <path d="M302 280 L330 308 L302 336" stroke-width="30" stroke-opacity="0.62"/>
+    <path d="M356 208 L404 256 L356 304" stroke-width="44" stroke-opacity="1"/>
+  </g>
+</svg>
