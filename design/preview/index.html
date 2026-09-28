@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SableOS · 设计方案评审台</title>
+<link rel="stylesheet" href="../site/assets/fonts/fonts.css">
 <style>
 :root {
   --bg: #0B0908;
@@ -130,6 +131,55 @@ td.num { font-family: var(--mono); color: var(--ink-2); }
 .pill.err { background: rgba(226,104,94,.14); color: var(--err); }
 .pill.warn { background: rgba(242,180,65,.13); color: var(--accent-soft); }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* 活页面预览：同源 iframe，替代会过期的截图 */
+.liveCard {
+  border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel);
+  display: flex; flex-direction: column;
+}
+.liveHead {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 13px 18px; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.liveHead b { font-weight: 500; }
+.liveHead a { font-size: 12px; white-space: nowrap; }
+.liveFoot { padding: 11px 18px; font-size: 12px; color: var(--ink-3); border-top: 1px solid var(--line); }
+.liveFrame { position: relative; background: #fff; }
+.liveFrame iframe {
+  display: block; width: 100%; border: 0; background: #fff;
+}
+/* 整页：固定高度内滚动，iframe 自己是完整文档 */
+.liveFrame--tall { height: 520px; }
+.liveFrame--tall iframe { height: 520px; }
+/* 首屏视口：等比缩放宽页面，露出真实的桌面首屏构图 */
+.liveFrame--vp { height: 420px; overflow: hidden; }
+.liveFrame--vp iframe {
+  width: 1440px; height: 1000px;
+  transform: scale(0.64); transform-origin: top left;
+}
+.liveFrame--phone { height: 560px; overflow: hidden; display: flex; justify-content: center; background: var(--panel-2); padding: 20px 0; }
+.liveFrame--phone iframe {
+  width: 390px; height: 700px; border-radius: 18px;
+  box-shadow: 0 10px 34px rgba(0,0,0,.5);
+}
+.liveFrame--tablet { height: 420px; overflow: hidden; }
+.liveFrame--tablet iframe { width: 820px; height: 900px; transform: scale(0.72); transform-origin: top left; }
+
+@media (max-width: 1100px) {
+  /* 两列放不下 1440 视口缩放时，改为单列并缩小 */
+  .liveFrame--vp iframe { transform: scale(0.52); }
+  .liveFrame--vp { height: 340px; }
+  .liveFrame--tablet iframe { transform: scale(0.88); }
+  .liveFrame--tablet { height: 400px; }
+}
+@media (max-width: 700px) {
+  .liveFrame--vp iframe { transform: scale(0.33); }
+  .liveFrame--vp { height: 250px; }
+  .liveFrame--tall { height: 380px; }
+  .liveFrame--tall iframe { height: 380px; }
+  .liveFrame--tablet iframe { transform: scale(0.58); }
+  .liveFrame--tablet { height: 320px; }
+}
 
 .tree { font-family: var(--mono); font-size: 13px; line-height: 1.85; color: var(--ink-2); white-space: pre; overflow-x: auto; }
 .tree b { color: var(--accent-soft); font-weight: 500; }
@@ -563,7 +613,7 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
 └── <b>preview/</b>                       <i># 评审与校验</i>
     ├── index.html                <i># 评审台（你正在看的这一页）</i>
     ├── audit.json                <i># 自动校验原始结果</i>
-    └── *.png                     <i># 各区块 / 明暗 / 移动端截图</i></pre>
+    └── *.png                     <i># 按需生成的分区截图（已 gitignore）</i></pre>
       </div>
 
       <div>
@@ -629,65 +679,99 @@ ul.plain li b { color: var(--ink); font-weight: 500; }
       </table>
     </div>
 
-    <h3 style="margin:40px 0 18px;font-size:16px">页面对照 · 浅色主题</h3>
+    <h3 style="margin:40px 0 10px;font-size:16px">页面对照 · 直接看活的</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:18px">
+      这里刻意<b>不放截图</b>。截图是二进制、会随改版过期、又会把仓库撑大；改用同源 iframe 内嵌真实页面，
+      永远是最新的，且不占任何仓库体积。下面的分区预览通过 <code>?theme=</code> 把明暗主题固定下来，
+      点击任一张即可打开完整页面。
+    </p>
+
     <div class="grid g2">
-      <figure class="shot">
-        <img src="hero-light.png" alt="Hero 浅色主题">
-        <figcaption><b>Hero</b><span>1440 × 900</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="sec-why-light.png" alt="为什么需要 浅色">
-        <figcaption><b>为什么需要（四道门槛）</b><span>痛点 → 解法对照</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="sec-core-light.png" alt="核心能力 浅色">
-        <figcaption><b>核心能力</b><span>五张能力卡</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="sec-architecture-light.png" alt="架构 浅色">
-        <figcaption><b>架构</b><span>四层链路 + 14 模块表</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="sec-quickstart-light.png" alt="快速开始 浅色">
-        <figcaption><b>快速开始</b><span>步骤 + 代码 + Tabs</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="sec-roadmap-light.png" alt="路线图 浅色">
-        <figcaption><b>路线图</b><span>三态阶段卡</span></figcaption>
-      </figure>
+      <div class="liveCard">
+        <div class="liveHead">
+          <b>完整首页 · 浅色</b>
+          <a href="../site/index.html?theme=light" target="_blank" rel="noopener">新窗口打开 ↗</a>
+        </div>
+        <div class="liveFrame liveFrame--tall">
+          <iframe src="../site/index.html?theme=light" title="SableOS 首页原型（浅色主题）" loading="lazy"></iframe>
+        </div>
+        <p class="liveFoot">整页滚动 · 11 个内容区块</p>
+      </div>
+
+      <div class="liveCard">
+        <div class="liveHead">
+          <b>完整首页 · 深色</b>
+          <a href="../site/index.html?theme=dark" target="_blank" rel="noopener">新窗口打开 ↗</a>
+        </div>
+        <div class="liveFrame liveFrame--tall">
+          <iframe src="../site/index.html?theme=dark" title="SableOS 首页原型（深色主题）" loading="lazy"></iframe>
+        </div>
+        <p class="liveFoot">同一套代码，靠 <code>data-theme</code> 切换</p>
+      </div>
     </div>
 
-    <h3 style="margin:40px 0 18px;font-size:16px">页面对照 · 深色主题</h3>
-    <div class="grid g2">
-      <figure class="shot">
-        <img src="hero-dark.png" alt="Hero 深色主题">
-        <figcaption><b>Hero</b><span>深色主题</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="sec-core-dark.png" alt="核心能力 深色">
-        <figcaption><b>核心能力</b><span>深色主题</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="sec-architecture-dark.png" alt="架构 深色">
-        <figcaption><b>架构</b><span>深色主题</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="sec-quickstart-dark.png" alt="快速开始 深色">
-        <figcaption><b>快速开始</b><span>深色主题</span></figcaption>
-      </figure>
+    <div class="grid g2" style="margin-top:20px">
+      <div class="liveCard">
+        <div class="liveHead">
+          <b>首屏 · 浅色（1440 宽视口）</b>
+          <a href="../site/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
+        </div>
+        <div class="liveFrame liveFrame--vp">
+          <iframe src="../site/index.html?theme=light#top" title="首屏浅色" loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <div class="liveCard">
+        <div class="liveHead">
+          <b>首屏 · 深色（1440 宽视口）</b>
+          <a href="../site/index.html?theme=dark" target="_blank" rel="noopener">打开 ↗</a>
+        </div>
+        <div class="liveFrame liveFrame--vp">
+          <iframe src="../site/index.html?theme=dark#top" title="首屏深色" loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <div class="liveCard">
+        <div class="liveHead">
+          <b>首屏 · 移动端（390 宽视口）</b>
+          <a href="../site/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
+        </div>
+        <div class="liveFrame liveFrame--phone">
+          <iframe src="../site/index.html?theme=light#top" title="移动端首屏" loading="lazy"></iframe>
+        </div>
+      </div>
+
+      <div class="liveCard">
+        <div class="liveHead">
+          <b>首屏 · 平板（820 宽视口）</b>
+          <a href="../site/index.html?theme=light" target="_blank" rel="noopener">打开 ↗</a>
+        </div>
+        <div class="liveFrame liveFrame--tablet">
+          <iframe src="../site/index.html?theme=light#top" title="平板首屏" loading="lazy"></iframe>
+        </div>
+      </div>
     </div>
 
-    <h3 style="margin:40px 0 18px;font-size:16px">移动端（390px）</h3>
-    <div class="grid g2">
-      <figure class="shot">
-        <img src="mobile-hero.png" alt="移动端 Hero">
-        <figcaption><b>移动端首屏</b><span>390 × 844</span></figcaption>
-      </figure>
-      <figure class="shot">
-        <img src="footer-dark.png" alt="页脚">
-        <figcaption><b>页脚</b><span>窄屏自动转单列</span></figcaption>
-      </figure>
+    <h3 style="margin:40px 0 10px;font-size:16px">分区快照（按需生成，不入库）</h3>
+    <p style="color:var(--ink-2);font-size:14px;margin-bottom:18px">
+      需要贴到 Issue / PR / 文档里的静态图时再生成。这些 PNG 已加入 <code>.gitignore</code>，
+      不进版本库，避免每次改版都新增二进制历史。
+    </p>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>想看的</th><th>生成后文件名</th></tr></thead>
+        <tbody>
+          <tr><td>首屏 · 浅色 / 深色</td><td><code>hero-light.png</code> · <code>hero-dark.png</code></td></tr>
+          <tr><td>整页 · 浅色 / 深色</td><td><code>home-light.png</code> · <code>home-dark.png</code></td></tr>
+          <tr><td>响应式 · 768 / 390</td><td><code>home-768.png</code> · <code>home-390.png</code></td></tr>
+          <tr><td>各分区 · 明暗各一份</td><td><code>sec-{why,core,architecture,quickstart,roadmap,docs}-{light,dark}.png</code></td></tr>
+        </tbody>
+      </table>
     </div>
+    <p style="color:var(--ink-3);font-size:13px;margin-top:14px">
+      生成方式与校验脚本见仓库外的 <code>design/README.md</code>「质量校验」一节；
+      校验原始数据已入库：<code>preview/audit.json</code>。
+    </p>
   </section>
 
   <!-- ============================================ README -->

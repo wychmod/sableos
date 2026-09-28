@@ -22,3 +22,6 @@ design/preview/*.png
 # 操作系统
 .DS_Store
 Thumbs.db
+
+# 字体构建中间产物
+design/assets/_fontcache/

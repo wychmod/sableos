@@ -115,25 +115,53 @@ python design/assets/make-logo.py
 | 未使用样式        | 0 个冗余类                                                          |
 | 无障碍          | 跳转链接、`focus-visible`、`aria-label`、Tab 键盘操作、`reduced-motion` 已覆盖 |
 
-### 字体策略（国内访问需注意）
+### 评审台为什么不用截图
 
-`Inter` 与 `JetBrains Mono` 只是锦上添花。字体栈在两者之后紧跟
-`HarmonyOS Sans SC` / `PingFang SC` / `Microsoft YaHei` 与 `ui-monospace` / `Consolas`，
-中文与等宽字形任何情况下都有本地字体兜底。
+`preview/index.html` 里的页面对照用的是**同源 iframe 内嵌真实页面**，不是 PNG。原因：
 
-字体请求用 `media="print"` + `onload` 切换的方式加载，**不阻塞首屏渲染**，并配 `<noscript>` 回退。
-已实测两种极端情况，几何完全一致：
+- 截图会随改版过期，评审台看着看着就和实际页面不一致了
+- 截图是二进制，每改一版都往 git 历史里塞几 MB，且无法 diff
+- iframe 永远是最新的，且**不占任何仓库体积**
 
-| 场景 | 首屏加载 | hero 区高 | h1 盒子 | 已加载字体数 |
-| --- | --- | --- | --- | --- |
-| 正常加载 | 275ms | 1194px | 514 × 287 | 33 |
-| 拦截 Google Fonts | 180ms | 1194px | 514 × 287 | 0 |
+分区预览通过 `?theme=light|dark` 把主题固定下来（该参数只作用于本次打开，不会写回
+localStorage 改掉访问者偏好），点击任一预览可在新窗口打开完整页面。
 
-**结论：字体加载失败零布局位移。** 但由于国内访问 Google Fonts 不稳定，控制台会间歇出现
-`ERR_CONNECTION_RESET` / `ERR_CONNECTION_CLOSED`（纯网络问题，无视觉影响）。落地时建议二选一：
+确实需要静态图（贴 Issue / PR / 文档）时再按需生成，生成物已加入 `.gitignore`：
 
-1. 删掉 `site/index.html` 里的字体 `<link>`，改用系统字体栈（观感差异很小）
-2. 把 woff2 自托管到 `site/assets/fonts/`，改用本地 `@font-face`（需确认字体授权）
+| 想看的 | 生成后文件名 |
+| --- | --- |
+| 首屏 · 浅色 / 深色 | `hero-light.png` · `hero-dark.png` |
+| 整页 · 浅色 / 深色 | `home-light.png` · `home-dark.png` |
+| 响应式 · 768 / 390 | `home-768.png` · `home-390.png` |
+| 各分区 · 明暗各一份 | `sec-{why,core,architecture,quickstart,roadmap,docs}-{light,dark}.png` |
+
+### 字体策略：自托管，零外部请求
+
+`Inter` 与 `JetBrains Mono` 的 **latin + latin-ext** 两个子集已自托管到
+`site/assets/fonts/`（10 个 woff2，约 475 KB，按 `unicode-range` 命中，未用到的子集不下载）。
+生成脚本：`assets/make-fonts.py`。
+
+**中文不由这两款西文字体承担**——它们的 `unicode-range` 不含 CJK，浏览器会直接落到
+`--font-sans` 里的 `HarmonyOS Sans SC` / `PingFang SC` / `Microsoft YaHei`。
+因此字体加载失败也只有西文字形受影响，中文永远正常。
+
+自托管的三个理由：
+
+1. **去掉对 `fonts.gstatic.com` 的依赖** —— 国内访问不稳定（实测间歇 `ERR_CONNECTION_RESET`）
+2. **评审台内嵌 6 个预览**，若走 CDN 会对同一个域名重复发起 7 次请求
+3. 页面由此**完全自包含**：实测首页与评审台的外部 http(s) 请求数均为 **0**
+
+两个实测结论：
+
+| 场景 | 结果 |
+| --- | --- |
+| 拦截 Google Fonts（旧方案） | hero 区高 1194px、h1 盒子 514 × 287，与正常加载完全一致 → **零布局位移** |
+| 现方案（自托管） | 首页加载 5/10 个字重（按需命中），h1 宽 514px，无任何外部请求 |
+
+另外刻意**不用 `<link rel="preload" as="font">`** 预加载：字体预加载按规范必须带
+`crossorigin`，而用 `file://` 直接打开时 `Origin` 为 `null`，预加载会被 CORS 拒绝并在控制台
+刷 `ERR_FAILED`（`@font-face` 本身仍能加载成功，只是白白多出一堆报错）。
+字体已开 `font-display: swap`，不预加载也不会出现文字不可见。
 
 ### 渐变表面的对比度怎么验证
 
@@ -171,9 +199,9 @@ design/
 │   ├── _compare-marks.svg         参数精修对比图
 │   └── logo-concepts/             备选概念（留档）
 └── preview/                       评审与校验
-    ├── index.html                 评审台
+    ├── index.html                 评审台（页面对照用 iframe 内嵌，不放截图）
     ├── audit.json                 校验原始结果
-    └── *.png                      各区块 / 明暗 / 移动端截图
+    └── *.png                      按需生成的分区截图，已 gitignore
 ```
 
 ## 后续扩展方向

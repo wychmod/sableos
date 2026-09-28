@@ -16,25 +16,27 @@
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 
 <!--
-  字体策略
-  --------
-  Inter / JetBrains Mono 只是"锦上添花"：字体栈在两者之后紧跟
-  HarmonyOS Sans SC / PingFang SC / Microsoft YaHei 与 ui-monospace / Consolas，
-  中文与等宽字形在任何情况下都有本地字体兜底（已验证：字体加载失败时
-  hero 高度、标题盒子尺寸与正常加载完全一致，无布局位移）。
+  字体策略：自托管，无外部字体请求
+  ---------------------------------
+  assets/fonts/fonts.css 里是 Inter / JetBrains Mono 的 latin + latin-ext 两个子集
+  （由 design/assets/make-fonts.py 生成），共 10 个 woff2 / 约 475KB，
+  加载时按 unicode-range 命中，未用到的子集不会下载。
 
-  这里用 media="print" + onload 切换到 all 的写法，让字体请求不阻塞首屏渲染。
-  国内访问 Google Fonts 不稳定，若不需要这两款西文字体，直接删掉下面两行即可，
-  页面观感不受影响。若要更彻底，可把 woff2 自托管到 assets/fonts/ 并改用 @font-face。
+  中文不由这两款西文字体承担——它们的 unicode-range 不含 CJK，
+  浏览器会直接落到 --font-sans 里的 HarmonyOS Sans SC / PingFang SC /
+  Microsoft YaHei。因此字体加载失败也只有西文字形受影响，中文永远正常，
+  且已实测加载失败时零布局位移（见 design/README.md）。
+
+  这样做是为了去掉对 fonts.gstatic.com 的依赖：国内访问不稳定，
+  且评审台内嵌 6 个预览时会重复请求同一个 CDN。
+  若要换别的字体，改 design/assets/make-fonts.py 的 FAMILIES 后重新生成。
+
+  这里刻意不用 <link rel="preload" as="font"> 预加载：字体预加载按规范必须带
+  crossorigin，而页面用 file:// 直接打开时 Origin 为 null，预加载会被 CORS 拒绝
+  并在控制台刷 ERR_FAILED（@font-face 本身仍能加载成功，只是白白多出一堆报错）。
+  字体已开 font-display: swap，不预加载也不会出现文字不可见。
 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" media="print" onload="this.media='all'"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<noscript>
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-</noscript>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/main.css">
 </head>

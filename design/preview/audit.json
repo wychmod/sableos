@@ -6,12 +6,7 @@
     },
     {
       "theme": "dark",
-      "errors": [
-        "reqfail: https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
-        "Failed to load resource: net::ERR_CONNECTION_TIMED_OUT",
-        "reqfail: https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
-        "Failed to load resource: net::ERR_CONNECTION_TIMED_OUT"
-      ]
+      "errors": []
     }
   ],
   "images": [],

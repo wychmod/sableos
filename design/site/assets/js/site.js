@@ -81,10 +81,20 @@
   }
 
   var stored = null;
+  // URL 上的 ?theme=light|dark 优先级最高：用于评审台内嵌预览、分享链接、截图脚本。
+  // 只作用于本次打开，不写回 localStorage —— 避免"点开一个 dark 链接就把偏好改掉"。
   try {
-    stored = localStorage.getItem(THEME_KEY);
+    var m = /[?&]theme=(light|dark)(?:&|$)/.exec(window.location.search);
+    if (m) stored = m[1];
   } catch (e) {
     stored = null;
+  }
+  if (!stored) {
+    try {
+      stored = localStorage.getItem(THEME_KEY);
+    } catch (e) {
+      stored = null;
+    }
   }
   if (!stored) {
     stored =
