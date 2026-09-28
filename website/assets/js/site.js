@@ -12,10 +12,9 @@
      仓库改名 / 换组织 / 迁移到 sableos.dev 都只需要动这一段。
      ====================================================================== */
   var SITE = {
-    repo: "https://github.com/sable-labs/sableos",
+    repo: "https://github.com/wychmod/sableos",
     branch: "main",
     license: "https://www.apache.org/licenses/LICENSE-2.0",
-    org: "https://github.com/sable-labs",
   };
 
   function repoBlob(relPath) {
@@ -33,10 +32,6 @@
     });
     document.querySelectorAll("[data-license]").forEach(function (el) {
       el.setAttribute("href", SITE.license);
-      el.setAttribute("rel", "noopener");
-    });
-    document.querySelectorAll("[data-org]").forEach(function (el) {
-      el.setAttribute("href", SITE.org);
       el.setAttribute("rel", "noopener");
     });
     document.querySelectorAll("[data-doc]").forEach(function (el) {

@@ -8,8 +8,8 @@
   Google 默认给的 cyrillic / greek / vietnamese 等子集对本项目是纯浪费。
 
 产出：
-  design/site/assets/fonts/fonts.css   本地 @font-face，替代 Google Fonts 的 <link>
-  design/site/assets/fonts/*.woff2     实际字体文件
+  website/assets/fonts/fonts.css        本地 @font-face，替代 Google Fonts 的 <link>
+  website/assets/fonts/*.woff2          实际字体文件
 """
 import os
 import re
@@ -19,7 +19,7 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SITE_FONTS = os.path.normpath(os.path.join(HERE, "..", "site", "assets", "fonts"))
+SITE_FONTS = os.path.normpath(os.path.join(HERE, "..", "..", "website", "assets", "fonts"))
 CACHE = os.path.join(HERE, "_fontcache")
 
 KEEP = ("latin", "latin-ext")
