@@ -54,6 +54,31 @@
 工作流里带一段廉价的健全性校验（入口文件与关键资源是否齐、页面是否仍保持零外部 CDN 依赖），
 目的是避免把"资源漏提交"的版本发出去 —— 历史上曾漏提交过字体文件。
 
+### 已知坑：`github-pages` 环境的分支策略会锁死部署
+
+启用 Pages 时 GitHub 会自动创建名为 `github-pages` 的部署环境，并给它加一条**自定义分支策略**，
+把允许部署的分支钉死在那**当时**的默认分支上。之后如果改了默认分支（或删掉旧分支），
+部署任务会在**任何 step 执行之前**被直接拒绝 —— 表现为：
+
+- job 秒级失败（约 2 秒），`runner_name` 为空，**没有任何 step 被执行**
+- 构建任务（`build`）却完全正常，因为它在另一个 job 里、不涉及该环境
+
+本仓库就踩过：`github-pages` 环境创建于默认分支还是 `master` 的时刻，
+策略里只有 `master` 一条；默认分支改成 `main` 后，从 `main` 触发的部署全部被拒。
+
+**修复**（二选一，都在 GitHub 网页上做）：
+
+| 做法 | 路径 | 说明 |
+| --- | --- | --- |
+| 删除环境让 GitHub 重建（推荐） | Settings → Environments → `github-pages` → Delete environment | 下次运行会按当前默认分支重新创建，策略自然正确 |
+| 直接改策略 | Settings → Environments → `github-pages` → Deployment branches and tags → 改为 `Protected branches` 或加入 `main` | 保留环境的历史记录 |
+
+排查命令（公开仓库无需 token）：
+
+```bash
+curl -s https://api.github.com/repos/<owner>/<repo>/environments/github-pages/deployment-branch-policies
+```
+
 ## 设计主张
 
 **配色。** 取名而非编号：`sable`（黑貂墨）是项目名 sable 的本意，作主题底色，色相偏暖约 30°；

@@ -10,6 +10,15 @@
 # 触发条件：推送到 main 且改动了 website/**，或手动触发。
 # 为什么不用 GitHub 内置的 "Deploy from a branch"：它只允许发布根目录 / 或 /docs，
 # 不支持 /website 这样的子目录；用 Actions 才能保持 website/ 这个更清晰的目录结构。
+#
+# ⚠️ 已知坑：github-pages 环境的分支策略会锁死部署
+#   GitHub 会在启用 Pages 时自动建一个 github-pages 部署环境，并加一条自定义分支策略，
+#   把允许部署的分支钉死在那**当时**的默认分支上。之后若改了默认分支（或删掉旧分支），
+#   下面的 deploy 任务会在任何 step 执行前就被拒绝 —— 特征是 job 秒级失败、runner_name
+#   为空、没有任何 step 被执行，而上面的 build 任务一切正常。
+#   修复：Settings → Environments → github-pages，删除该环境（推荐，会按当前默认分支重建），
+#   或把 Deployment branches and tags 改为 Protected branches / 加入 main。
+#   排查：curl -s .../repos/<owner>/<repo>/environments/github-pages/deployment-branch-policies
 # ==========================================================================
 
 name: Deploy website to Pages
