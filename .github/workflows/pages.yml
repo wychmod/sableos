@@ -1,0 +1,115 @@
+# ==========================================================================
+# SableOS · GitHub Pages 部署
+# --------------------------------------------------------------------------
+# 把仓库根下的 website/ 作为静态站点发布到 GitHub Pages。
+#
+# 使用前提（需要仓库管理员手动做一次，CI 无法代做）：
+#   Settings → Pages → Build and deployment → Source 选择 "GitHub Actions"
+#   若仍停留在 "Deploy from a branch"，本工作流不会被触发。
+#
+# 触发条件：推送到 main 且改动了 website/**，或手动触发。
+# 为什么不用 GitHub 内置的 "Deploy from a branch"：它只允许发布根目录 / 或 /docs，
+# 不支持 /website 这样的子目录；用 Actions 才能保持 website/ 这个更清晰的目录结构。
+# ==========================================================================
+
+name: Deploy website to Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+# 允许 GITHUB_TOKEN 向 Pages 发布，并用 id-token 做部署来源校验
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时刻只跑一个部署；排队中的旧任务直接取消，不做半途中断
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 组装静态站点
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 配置 Pages
+        uses: actions/configure-pages@v5
+
+      - name: 校验站点完整性
+        # 站点是纯静态、零外部依赖的，所以不需要任何构建步骤。
+        # 这里做两层廉价但有效的健全性检查，避免把"资源漏提交"的版本发布出去
+        # （历史上曾漏提交过字体文件，线上会出现方框字）。
+        #
+        # 关键点：资源清单是**从 index.html 实际解析出来的**，不是硬编码列表。
+        # 硬编码列表会随页面演进悄悄过期一一之前就写错过 favicon 的路径；
+        # 解析引用则永远和页面保持一致。
+        run: |
+          set -eu
+          python3 - <<'PY'
+          import re, sys, pathlib
+
+          root = pathlib.Path("website")
+          index = root / "index.html"
+          if not index.exists():
+              sys.exit("入口文件缺失: website/index.html")
+
+          html = index.read_text(encoding="utf-8")
+
+          # 1) 页面内引用的本地静态资源必须都存在
+          refs = set(re.findall(
+              r'(?:href|src|content)="([^"]+\.(?:svg|png|jpg|webp|woff2?|css|js|ico))"',
+              html))
+          local = sorted(r for r in refs if not r.startswith(("http://", "https://", "//", "data:")))
+
+          fail = []
+          print(f"页面引用的本地资源 {len(local)} 个：")
+          for r in local:
+              target = (root / r.lstrip("/")).resolve()
+              if target.is_file():
+                  print(f"  OK      {r}")
+              else:
+                  print(f"  MISSING {r}")
+                  fail.append(r)
+
+          # 2) 必须保持零外部资源依赖（字体自托管、图标内联为 SVG sprite）
+          print("外部依赖检查：")
+          cdn = re.findall(
+              r'href="(https?://(?:fonts\.googleapis|fonts\.gstatic|cdn\.jsdelivr|unpkg|cdnjs)[^"]*)"',
+              html)
+          if cdn:
+              print(f"  FAIL  首页引入外部 CDN：{cdn}")
+              fail.append("external-cdn")
+          else:
+              print("  OK    首页无外部 CDN 依赖（字体与图标均自托管）")
+
+          if fail:
+              print(f"::error::站点校验未通过，问题 {len(fail)} 处")
+              sys.exit(1)
+          print("校验通过。")
+          PY
+
+      - name: 上传站点产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website
+
+  deploy:
+    name: 发布到 Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署
+        id: deployment
+        uses: actions/deploy-pages@v4
