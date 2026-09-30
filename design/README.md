@@ -239,7 +239,7 @@ sableos/
 │   └── assets/
 │       ├── css/tokens.css         设计变量
 │       ├── css/main.css           组件与布局（19 节）
-│       ├── js/site.js             渐进增强脚本（8 个模块）
+│       ├── js/site.js             渐进增强脚本（9 个模块，含中英切换）
 │       ├── fonts/                 自托管字体（latin + latin-ext，10 个 woff2）
 │       └── img/                   favicon / 图标位图 / 分享封面
 │
@@ -274,7 +274,7 @@ sableos/
 | 新增子页面（文档站、changelog、examples） | 复用 `assets/` | 否 |
 | 迁移到静态站点生成器（Astro 等） | 保留 `assets/`，拆分 `index.html` | 否 |
 | 新增标识变体 | `make-logo.py` 加生成函数 | 否 |
-| 中英双语 | 预留 `data-i18n` 属性位 | 否 |
+| 中英双语 | ✅ 已实现（2026-09-30）：`data-i18n` / `data-i18n-html` / `data-i18n-attr` 属性 + `site.js` 英文词典；导航栏按钮切换，localStorage 记忆，`?lang=en` 参数与 `?theme=` 同规则（URL 优先、不写回）；中文为源语言，切回走快照恢复，缺键回退中文并 console.warn | 否 |
 
 ## 待确认事项
 

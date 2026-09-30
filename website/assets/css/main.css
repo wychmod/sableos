@@ -390,6 +390,16 @@ pre {
   height: 17px;
 }
 
+/* 语言切换按钮：文字型变体，按钮文案显示目标语言（中文界面显示 EN，英文界面显示 中） */
+.sd-iconbtn--lang {
+  width: auto;
+  padding: 0 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.02em;
+}
+
 body[data-theme="light"] .sd-themeIcon--moon,
 body[data-theme="dark"] .sd-themeIcon--sun {
   display: none;
