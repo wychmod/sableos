@@ -202,7 +202,7 @@ SableOS 由 [sable-labs](docs/sable-labs.md) 社区发起——一个 AI coding 
 
 - 对设计文档提出问题与修正；文档之间出现修订不同步时，以[《技术方案》](docs/TechnicalSolution.md)为准
 - 开发流程按 Spec-Kit 驱动（准备阶段产出宪章、spec、plan，按 user story 实施，每个 user story 结束后做一致性检查），见[《AI 编程指南》](docs/AiProgrammingGuide.md)
-- 在本仓库工作的 AI coding agent 请先阅读 [CLAUDE.md](CLAUDE.md)
+- 在本仓库工作的 AI coding agent 请先阅读 [AGENTS.md](AGENTS.md)（项目指南唯一维护处；[CLAUDE.md](CLAUDE.md) 只是指向它的入口）
 
 ## 许可证
 
