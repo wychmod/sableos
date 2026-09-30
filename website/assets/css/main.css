@@ -655,7 +655,8 @@ body[data-theme="dark"] .sd-themeIcon--sun {
   height: 1.05em;
   margin-inline-start: 2px;
   background: var(--ember-400);
-  vertical-align: text-bottom;
+  /* 行容器是 flex，vertical-align 不生效；不居中会顶到行框顶部，与 $ 字形错位 */
+  align-self: center;
   animation: sd-blink 1.15s steps(1, end) infinite;
 }
 
@@ -827,6 +828,8 @@ body[data-theme="dark"] .sd-themeIcon--sun {
 }
 
 .sd-note__title {
+  /* 提示条常出现在 hero 内，继承的是 hero 亮色文字，在奶油底上不可见，必须显式取主题正文色 */
+  color: var(--text);
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
 }
