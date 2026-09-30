@@ -19,6 +19,8 @@
 #   修复：Settings → Environments → github-pages，删除该环境（推荐，会按当前默认分支重建），
 #   或把 Deployment branches and tags 改为 Protected branches / 加入 main。
 #   排查：curl -s .../repos/<owner>/<repo>/environments/github-pages/deployment-branch-policies
+#   2026-09-30 实锤复现：环境策略里只剩 master（旧默认分支），而默认分支已改为 main，
+#   deploy 即被秒拒；在 Settings → Environments → github-pages 加入 main 后恢复。
 # ==========================================================================
 
 name: Deploy website to Pages
