@@ -83,10 +83,22 @@ curl -X POST localhost:8080/api/v1/agents/daily-weather/invoke -H 'Content-Type:
 | V-E5 | 密钥不外泄 | 日志、`GET /api/v1/info`、`profile show` 中均无明文密钥 |
 | V-E6 | 可运维性 | 新用户在 30 分钟内完成部署并跑通场景一（SC-003） |
 | V-E7 | CLI 覆盖 | 12 个子命令均可执行，`--help` 与错误提示清晰 |
+| V-E8 | 记忆后端切换 | 把 `memory.backend` 从 `markdown` 改成 `sqlite`（或反向）后重启，同一段记忆可读、可写、可检索，且上层提示词组装与记忆工具的行为无差异（FR-042） |
 
-## 6. 可选：每日 GitHub 日报（技术方案第 12.3 节）
+## 6. 场景三：每日 GitHub 日报（必过）
 
-技术方案描述了一个带 `scripts/` 的 Agent（抓 GitHub trending 并总结推送）。本功能以两个 Demo 为必过；若时间允许，按同一模式补跑该场景作为**额外**验证，用于覆盖"脚本产出进上下文、脚本代码不进"这条边界。
+**前置**：`.sableos/agents/github-daily/`（`AGENT.md` + `scripts/github_trending.py`），frontmatter 声明 `tools: [github_daily, notify]` 与每天 09:30 的 `schedules`；`github_daily` 由专用 Tool 或 MCP 封装（**不交给通用 `shell`**）。
+
+**执行**：手动补跑一次，再等 cron 到点触发。
+
+### 观察点与预期（场景三）
+
+| 观察点 | 预期结果 |
+| --- | --- |
+| 脚本边界 | `tool_invocations` 中有 `github_daily` 调用；脚本产出的 JSON 进入上下文，**脚本代码不进** |
+| 三段结构 | 日报按"今日 / 本月 / AI 重点"三段组织，AI 段体现长期记忆中的偏好 |
+| 即时生效 | 改一次 `AGENT.md` 正文后无需重启，下一次触发即按新正文执行 |
+| 沙箱 | 脚本访问的网络域名必须在白名单内；越界即被拒绝并留审计 |
 
 ## 7. 性能与稳定性（对应 SC-004 ~ SC-006）
 

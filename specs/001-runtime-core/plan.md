@@ -18,7 +18,7 @@
 
 **主要依赖**：Spring Boot 3.x（单体，virtual thread）｜Spring AI + Spring AI Alibaba（只用 Provider 抽象、协议转换、`@Tool` schema 生成）｜Spring MVC｜Picocli｜SnakeYAML｜MCP Java SDK｜Logback + SLF4J
 
-**存储**：SQLite + Spring Data JPA（表结构管理走 Flyway 双轨目录 `db/migration/{vendor}/`，SQLite 为默认零配置档）｜长期记忆用 `.sableos/memory/MEMORY.md` 文件
+**存储**：SQLite + Spring Data JPA（表结构管理走 Flyway 双轨目录 `db/migration/{vendor}/`，SQLite 为默认零配置档）｜长期记忆：默认档用 `.sableos/memory/MEMORY.md` 文件，可选档用 `memory_entries` 表
 
 **测试**：JUnit 5 + Spring Boot Test（单元与集成）；端到端验收按 quickstart 的场景脚本执行。技术方案未细化测试策略，本计划按此默认执行，若与后续约定不一致以仓库约定为准
 
@@ -94,13 +94,14 @@ sableos-*/src/test/java/       # 单元与集成测试（JUnit 5 + Spring Boot T
 
 ## 已确认的范围偏差
 
-以下是本计划相对 `docs/TechnicalSolution.md`（冲突时的权威依据）的**有意偏差**，均已在 spec 的澄清记录中定案或需项目方确认：
+以下是本计划相对 `docs/TechnicalSolution.md`（冲突时的权威依据）的**有意偏差**，均已在 spec 的澄清记录中定案：
 
 | 偏差 | 技术方案口径 | 本计划口径 | 依据 |
 | --- | --- | --- | --- |
 | 定时任务的状态持久化与管理端点 | 第 8.5/28 节：`scheduled_tasks`、`task_executions` 两张表 + `/api/v2/schedules` 管理端点 | 不做：只做 cron 到点触发 + 手动补跑复用 `POST /api/v1/agents/{name}/invoke` | 项目方在 clarify 阶段选定的最小形态（spec 澄清记录第 1 条），符合宪章原则 VIII 的范围收敛 |
-| 验收 Demo 数量 | 第 12 章：三个 Demo（每日天气、每日科技日报、每日 GitHub 日报） | 两个 Demo（每日天气、每日科技日报）为**必过**；GitHub 日报作为**可选**补充验证 | `docs/DemandAnalysis.md` 第 13 章已明确把五个 Demo 收敛为两个；三 Demo 口径是技术方案未同步的残留 |
-| 长期记忆后端数量 | 第 5.1 节：三档后端（Markdown / Sqlite / Mem0）核心阶段一次交付 | 本次只交付 `LongTermMemoryStore` 接口 + 默认 `MarkdownMemoryStore`；Sqlite / Mem0 两档留给后续功能 | 需项目方确认（见 research.md 的 D-04）：spec 把「记忆多后端升级」列为后续功能，但技术方案的表述是核心阶段一次交付 |
-| E2E 演示所需的第三个 Demo | 第 12.3 节 GitHub 日报依赖 `scripts/` + MCP 封装 | 不阻塞交付；MCP 接入（方式二）仍在本次范围内 | 同上 |
+| 长期记忆后端数量 | 第 5.1 节：三档后端（Markdown / SQLite / Mem0）核心阶段一次交付 | 交付后端接口 + Markdown（默认）+ SQLite 两档（零外部依赖）；**Mem0 档与语义检索升级（015）留后续** | 接口墙一次立起（技术方案的本意）已满足；Mem0 依赖自托管外部服务，离线无法验收。项目方已确认（spec 澄清记录第 7 条） |
 
-> 上表第 2、4 条不改变代码结构，第 1、3 条会改变交付边界，需在进入 `/speckit-tasks` 之前确认。
+**已对齐、不再构成偏差的两项**：
+
+- **验收 Demo 数量**：按《技术方案》第 12 章取**三个**（每日天气、每日科技日报、每日 GitHub 日报）全部必过；《需求文档》第 13 章的"两个"记为文档漂移，已登记在 `AGENTS.md` 的已知漂移清单。
+- **MCP 接入（Plugin Tool 方式二）**：本计划包含，第三个 Demo 依赖它。

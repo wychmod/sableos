@@ -6,8 +6,8 @@
 
 | 数据 | 载体 | 理由 |
 | --- | --- | --- |
-| 会话、工具调用记录、模型调用记录、通知渠道 | SQLite（JPA + Flyway 双轨迁移） | 需要查询、需要跨重启保留、需要结构化字段 |
-| Agent 定义、Bootstrap、长期记忆、MCP 配置、日志 | 文件系统 `.sableos/` | 用户可直接编辑、可 git 跟踪、可备份 |
+| 会话、工具调用记录、模型调用记录、通知渠道、长期记忆（SQLite 档） | SQLite（JPA + Flyway 双轨迁移） | 需要查询、需要跨重启保留、需要结构化字段 |
+| Agent 定义、Bootstrap、长期记忆（默认档）、MCP 配置、日志 | 文件系统 `.sableos/` | 用户可直接编辑、可 git 跟踪、可备份 |
 
 ## 2. 关系型实体（SQLite）
 
@@ -68,12 +68,27 @@
 
 **约束**：仅由内部读取以解析适配器与地址；CRUD 端点按技术方案属扩展阶段，本次不提供。凭证类字段（如 email 密码）支持 `${ENV_VAR}` 占位符，加载时从环境变量解析，不明文落库。
 
-### 2.5 后续实体的契约位置（本次不实现）
+### 2.5 `memory_entries`（本次实现，SQLite 记忆档）
+
+仅在 `memory.backend = sqlite` 时使用；默认档是文件形态（见 3.4 节），两者共用同一套核心区/归档区语义。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | BIGINT | 主键，自增 |
+| `profile_name` | VARCHAR | 归属 Agent 的运行配置名（记忆按 Agent 隔离） |
+| `scope` | VARCHAR | `CORE` / `ARCHIVAL`（核心区用 `WHERE scope='CORE'` 全量取） |
+| `content` | TEXT | 记忆正文 |
+| `created_at` / `updated_at` | TIMESTAMP | 时间戳 |
+
+**行为契约（与文件档一致）**：不缓存（每次查库）；核心区永不截断，截断 = 归档查询 `LIMIT N`；关键词检索 = 归档区 `LIKE` 匹配、不区分大小写；写入分区由调用方显式指定，缺省归档区。
+**留白**：向量列与索引属 015 语义检索升级，本次不建。
+
+### 2.6 后续实体的契约位置（本次不实现）
 
 | 实体 | 归属 | 说明 |
 | --- | --- | --- |
 | `scheduled_tasks` / `task_executions` | 后续功能 | 定时任务的状态持久化与管理端点（项目方已选定最小形态，见 spec 澄清记录第 1 条） |
-| `memory_entries` | 后续功能 | 长期记忆的 SQLite 后端（见 `research.md` D-04，待确认） |
+| `memory_entries` 的向量列与索引 | 后续功能 | 015 语义检索升级（见 `research.md` D-04） |
 
 ## 3. 文件系统实体（`.sableos/`）
 

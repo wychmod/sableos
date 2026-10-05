@@ -112,7 +112,7 @@ servers:
 | `http.allowed_domains` | HTTP 出站域名白名单（支持通配符） | 空 = 全部拒绝 |
 | `smtp.allowed_endpoints` | SMTP 出站白名单（`host:port`），供后续 email 渠道使用 | 空 = 全部拒绝 |
 | `sandbox.tool_result_max_chars` | 单次工具结果截断阈值 | 有默认值；超阈值截断并标注 |
-| `memory.backend` | 长期记忆后端 | `markdown`（本次唯一实现） |
+| `memory.backend` | 长期记忆后端 | `markdown`（默认，`.sableos/memory/MEMORY.md`）或 `sqlite`（`memory_entries` 表）；两档语义一致 |
 | provider 段 | 各 provider 的 API key、base URL、默认模型 | 通过环境变量注入 |
 
 | 编号 | 约束 |
