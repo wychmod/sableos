@@ -22,7 +22,7 @@ SableOS 是一个**企业能完全掌控的、Java 原生的、私有可审计�
 
 - 仓库当前包含：`docs/` 六份文档、`design/` 设计留档、`website/` 线上站点、`README.md`、`AGENTS.md`（本文件）、`CLAUDE.md`（指向本文件的入口），以及 **Maven 多模块骨架**（2026-09-27 初始化）：parent POM + 9 个核心模块（core / provider / memory / tool / channel-cli / web / storage / cli / boot），`mvn clean package` 可通过，`sableos-boot` 产出可执行 fat JAR。骨架只含模块结构、依赖拓扑与入口类（`SableOsApplication`、`SableOsCli`），**尚无业务代码**。
 - 骨架按《技术方案》第 13 章第一周的 9 模块口径落地；第 10 章的 14 模块清单（多 persona / knowledge / 三渠道模块）在实施到对应能力时再补模块。各模块依赖也按实施节奏补齐（provider 的 Spring AI Alibaba、storage 的 JPA/SQLite 尚未加入）。
-- `git` 仓库已初始化（main 分支）；没有 `.specify/` 工作区。
+- `git` 仓库已初始化（main 分支）；**Spec-Kit 工作区已于 2026-10-05 就地初始化**（集成键 `qodercli`，技能装在 `.qoder/skills/`，配套 CLI `specify-cli` 1.0.13 锁版本），宪章已落地为 v1.0.0；`spec.md` / `plan.md` 尚未产出。
 - 文档在 2026-09-21 做过一次纯格式整理（统一标题层级、表格分隔符、引用块、列表空行），**内容与整理前逐字一致**，以当前版本为准。
 
 ## 3. 目录分工
@@ -36,6 +36,8 @@ SableOS 是一个**企业能完全掌控的、Java 原生的、私有可审计�
 | `docs/` | **文档语料**：六份 `.md` + `images/`（文档内嵌图，见第 4 章） | 站点代码、设计源文件 | ❌ |
 | `sableos-*`（9 个） | Maven 模块，各自只有 `pom.xml` + `src`；模块职责见第 7 章 | 文档、设计资产、生成脚本 | ❌ |
 | `.github/workflows/` | CI：`pages.yml`（发布 `website/` 到 Pages + 站点健全性校验） | 业务代码 | — |
+| `.specify/` | **Spec-Kit 工作区**：`memory/constitution.md`（宪章）、`templates/`、`scripts/bash/`、内置 SDD 工作流与集成配置 | 应用代码、设计资产 | ❌ |
+| `.qoder/skills/` | Spec-Kit 生成的 `speckit-*` 技能（Qoder IDE 1.24+ 扫描此目录，以 `/speckit-<command>` 调用） | IDE 本地状态（`.qoder/` 下除 `skills/` 之外的一切已在 `.gitignore` 排除） | ❌ |
 
 顶层文件：`pom.xml` 是聚合 POM，`README.md` 对外，`AGENTS.md`（本文件）是对内的唯一权威指南，`CLAUDE.md` 只做指向。
 
@@ -138,7 +140,7 @@ SableOS 是 Maven 多模块项目，**以《技术方案》第 10 章为准，�
 
 主体开发**不直接写代码**，按 Spec-Kit 流程走：
 
-1. 准备阶段：`specify init` 初始化工作区，产出 `constitution.md`（宪章）、`spec.md`（5 个 user story）、`plan.md`。
+1. 准备阶段：`specify init` 初始化工作区，产出 `constitution.md`（宪章）、`spec.md`（5 个 user story）、`plan.md`。工作区已于 2026-10-05 就地初始化（集成键 `qodercli`，`specify-cli` 锁 1.0.13，技能以 `/speckit-<command>` 调用），宪章 **v1.0.0 已落地**；`spec.md` / `plan.md` 待产出。
 2. 实施阶段：按依赖顺序实施 5 个 user story（US-5 Web Service 因依赖前四个能力排最后，但重要性很高）。
 3. **每个 user story 结束后必跑 `/speckit.analyze`**：检查 constitution + spec + plan + tasks + 代码是否一致，发现漂移立刻修正，不能省。
 4. **每个 user story 完成后打 git commit**，方便随时回退到稳定状态。
@@ -168,4 +170,4 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
 - **文档间修订不同步**（以《技术方案》为准）：
   - 模块数：`AiProgrammingGuide.md` 五处（第 35/176/204/405/481 行）与《技术方案》第 13 章第一周都还写 9 个模块，第 10 章已是 14 个（含 persona/knowledge/三渠道模块）。
   - CLI 子命令数：第 8.7 节写 12 个，第 10 章写 13 个（025 起加 `agent import`）。
-- **尚未初始化**：`.specify/` 工作区还没有；Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过），但主体开发第一步仍是准备阶段（Speckit init + constitution），骨架只是工程地基。
+- **Spec-Kit 工作区已就位（2026-10-05）**：`.specify/` 就地初始化，集成键 `qodercli`（技能装在 `.qoder/skills/`），配套 CLI 锁 `specify-cli` 1.0.13，宪章 v1.0.0 已落地；`spec.md` / `plan.md` 待产出，主体开发仍未开始编码。Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过），骨架只是工程地基。
