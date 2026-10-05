@@ -3,9 +3,9 @@
 > SableOS 的不可协商原则集。所有 spec、plan、tasks、implement 产出都必须符合本宪章；
 > `/speckit.analyze` 以本文件作为一致性检查的基准。
 
-## Core Principles
+## 核心原则
 
-### I. JDK 21 + Spring Boot 3.x 单体应用（NON-NEGOTIABLE）
+### I. JDK 21 + Spring Boot 3.x 单体应用（不可协商）
 
 - 运行时 JDK 21，框架 Spring Boot 3.x，Maven 多模块，单二进制 fat JAR 部署。
 - 高并发用虚拟线程处理。
@@ -14,14 +14,14 @@
 
 理由：企业自托管场景下，单二进制 + 虚拟线程的部署与并发成本最低，且不引入外部中间件依赖。
 
-### II. 自实现 ReAct 循环（NON-NEGOTIABLE）
+### II. 自实现 ReAct 循环（不可协商）
 
 - 不依赖 Spring AI 的 Agent 抽象。
 - 循环引擎、迭代次数控制、消息累积、错误处理全部由 `sableos-core` 自行实现。
 
 理由：循环是 Agent OS 的核心可审计点，必须完全可控、可替换。
 
-### III. Spring AI 只用一半（NON-NEGOTIABLE）
+### III. Spring AI 只用一半（不可协商）
 
 - **允许**使用：Provider 抽象、协议转换、`@Tool` schema 生成。
 - **禁止**使用：Spring AI 的自动 tool 执行。
@@ -29,20 +29,20 @@
 
 理由：这是最容易被写错的一条。一旦启用自动执行，同一个 tool 会被调用两次，且审计链路断裂。
 
-### IV. Provider 显式映射（NON-NEGOTIABLE）
+### IV. Provider 显式映射（不可协商）
 
 - 维护 provider name 到 `ChatModel` 的显式映射表，多 Provider 并存。
 - 禁止用类型扫描（classpath scanning）自动发现 Provider。
 
 理由：隐式发现会让「哪个 provider 生效」不可预测，也让配置校验失去落点。
 
-### V. Tool 三档接入且只有一个模块（NON-NEGOTIABLE）
+### V. Tool 三档接入且只有一个模块（不可协商）
 
 - 三档接入：内置 Tool、SKILL.md、MCP；主推 SKILL.md + MCP 的零代码方式。
 - builtin / skill / mcp 合并为唯一的 `sableos-tool` 模块，禁止再拆成多个模块。
 - `.sableos/agents/<name>/AGENT.md` 与 `AgentLoader` 归 `sableos-core` 的 `ContextLoader`，不算 Tool。
 
-### VI. 审计 day one 落库（NON-NEGOTIABLE）
+### VI. 审计 day one 落库（不可协商）
 
 - 持久化：SQLite + Spring Data JPA + `MEMORY.md` 文件。
 - `tool_invocations` 与 `llm_calls` 两张审计表在核心阶段就写入数据库，不是只写日志。
@@ -50,12 +50,12 @@
 
 理由：私有可审计是 SableOS 的定位本身，审计能力不能等到治理阶段再补。
 
-### VII. Sandbox 接口先行（NON-NEGOTIABLE）
+### VII. Sandbox 接口先行（不可协商）
 
 - 抽象 `Sandbox` 接口 + 应用层 `WhitelistSandbox`（Path / Pattern 白名单）。
 - 禁用 `SecurityManager`（JDK 17 起废弃、JDK 21 已不可用）。
 
-### VIII. 范围收敛：核心阶段只做运行时内核（NON-NEGOTIABLE）
+### VIII. 范围收敛：核心阶段只做运行时内核（不可协商）
 
 - 五大核心能力（对接 LLM、ReAct 循环、Memory、Plugin Tool、Web Service）优先交付。
 - 多租户、SSO、完整审计查询、Tool 治理属扩展阶段，核心阶段仅预留扩展点，不实现。
@@ -64,7 +64,7 @@
 
 ### IX. 每个 user story 交付可演示 Demo
 
-- 优先级是跑通而非完美；每个 user story 完成时必须有可演示 Demo，验收标准复用《需求文档》第 13 章的 5 个 Demo。
+- 优先级是跑通而非完美；每个 user story 完成时必须有可演示 Demo，验收标准复用《需求文档》第 13 章的端到端 Demo。
 - 每个 user story 结束后必须跑 `/speckit.analyze`，核对 constitution + spec + plan + tasks + 代码是否一致，发现漂移立即修正。
 
 ## 技术栈与范围约束
@@ -90,11 +90,11 @@
 - 文档同步：`docs/` 文档之间冲突以《技术方案》为准；修改 `docs/` 遵守 AGENTS.md 的 Markdown 格式约定，提交前跑 markdownlint。
 - 跨 task 上下文丢失时，回到 `spec.md` + `plan.md` + 最近代码，不凭印象继续写。
 
-## Governance
+## 治理
 
 - 效力：本宪章是项目的最高约束，优先于其他实践与文档；仓库文档之间冲突时以《技术方案》为准。
 - 修订程序：修订需项目方明确同意并书面记录变更理由与影响面；**AI agent 无权自行修改本宪章**，发现生成内容偏离宪章时只能重读本宪章并纠正产出。
 - 版本策略：语义化版本。MAJOR = 原则或治理条款的移除、重定义（向后不兼容）；MINOR = 新增原则或实质性扩展约束；PATCH = 措辞澄清、错别字与非语义调整。
 - 合规审查：每次 `/speckit.analyze` 必须核对本宪章；plan 与 tasks 需能追溯到对应原则编号；无法解释的偏离必须在进入 implement 前修正。
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-05 | **Last Amended**: 2026-10-05
+**版本**：1.0.1 | **批准日期**：2026-10-05 | **最后修订**：2026-10-05
