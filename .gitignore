@@ -12,6 +12,12 @@ target/
 # 本地工具目录
 .qoder-credits/
 
+# Qoder IDE 本地状态不入库（可能含 memory/logs/settings 等本机数据），
+# 只保留 Spec Kit 生成的技能目录；必须是 .qoder/* 再反选，
+# 直接写 .qoder/ 会让 git 不再进入该目录，! 反选失效
+.qoder/*
+!.qoder/skills/
+
 # AI coding agent 本地工作状态（含本地记忆，不入库）
 .workbuddy/
 
