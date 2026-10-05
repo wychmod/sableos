@@ -170,4 +170,6 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
 - **文档间修订不同步**（以《技术方案》为准）：
   - 模块数：`AiProgrammingGuide.md` 五处（第 35/176/204/405/481 行）与《技术方案》第 13 章第一周都还写 9 个模块，第 10 章已是 14 个（含 persona/knowledge/三渠道模块）。
   - CLI 子命令数：第 8.7 节写 12 个，第 10 章写 13 个（025 起加 `agent import`）。
-- **Spec-Kit 工作区已就位（2026-10-05）**：`.specify/` 就地初始化，集成键 `qodercli`（技能装在 `.qoder/skills/`），配套 CLI 锁 `specify-cli` 1.0.13，宪章 v1.0.0 已落地；`spec.md` / `plan.md` 待产出，主体开发仍未开始编码。Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过），骨架只是工程地基。
+  - 验收 Demo 数：`DemandAnalysis.md` 第 13 章写"两个 Demo"，`TechnicalSolution.md` 第 11.5 / 12 / 15 章写三个（多"每日 GitHub 日报"）——**以技术方案为准（三个）**，需求文档待同步。
+  - 长期记忆后端：`TechnicalSolution.md` 5.1 写"三档后端核心阶段一次交付"，实际本次只交付 Markdown（默认）+ SQLite 两档，Mem0 档（依赖外部自托管服务）后置，见 `specs/001-runtime-core/research.md` 的 D-04。
+- **Spec-Kit 工作区已就位（2026-10-05）**：`.specify/` 就地初始化，集成键 `qodercli`（技能装在 `.qoder/skills/`，以 `/speckit-<command>` 调用），配套 CLI 锁 `specify-cli` 1.0.13，宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart，主体开发仍未开始编码。Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过），骨架只是工程地基。
