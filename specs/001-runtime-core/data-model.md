@@ -55,7 +55,7 @@
 | `duration_ms` | BIGINT | 调用耗时 |
 | `created_at` | TIMESTAMP | 调用时间 |
 
-### 2.4 `notify_channels`（本次实现：建表 + 读取）
+### 2.4 `notify_channels`（本次实现：建表 + 启动同步 + 读取）
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -66,7 +66,9 @@
 | `config_json` | TEXT | 类型相关的多字段配置（email 的 host/port/from/to 等；HTTP 类可为空） |
 | `created_at` / `updated_at` | TIMESTAMP | 时间戳 |
 
-**约束**：仅由内部读取以解析适配器与地址；CRUD 端点按技术方案属扩展阶段，本次不提供。凭证类字段（如 email 密码）支持 `${ENV_VAR}` 占位符，加载时从环境变量解析，不明文落库。
+**定义源与同步（本次的关键约定）**：渠道的**定义源是工作区文件 `.sableos/notify_channels.yaml`**（用户可直接编辑），启动时读取并同步进本表——文件里新增/改动的 upsert，文件里移除的标记退役；表是运行时视图，不是定义源。这与定时任务"定义在文件、状态在库"的处理方式一致。
+
+**约束**：本次只提供读取（供 `NotifyTools` 解析适配器与地址）与启动同步；管理端点（CRUD）属后续功能。凭证类字段（如 email 密码）支持 `${ENV_VAR}` 占位符，加载时从环境变量解析，不明文落库。
 
 ### 2.5 `memory_entries`（本次实现，SQLite 记忆档）
 
@@ -101,6 +103,7 @@
 ├── memory/
 │   └── MEMORY.md      # 长期记忆（核心记忆区 / 归档记忆区）
 ├── mcp_servers.yaml   # MCP server 声明
+├── notify_channels.yaml  # 通知出站渠道定义（本次新增；启动时同步进 notify_channels 表）
 ├── sessions/          # 会话导出目录（工作区约定留白）
 ├── logs/              # 日志
 ├── AGENTS.md          # Bootstrap：底座级指令
@@ -152,9 +155,15 @@ frontmatter 至少含 `name` 与 `description`；正文按需读取。Prompt 每
 
 **行为契约**：① 不缓存，每次重新读文件；② 核心区永不截断，截断只作用于归档区；③ 写入哪个区由调用方通过 `scope` 显式指定（缺省归档区），系统不猜；④ 未配置向量化时行为与关键词检索一致（语义检索为后续功能）。
 
+**异常降级**：文件不存在 = 空记忆（正常路径，不报错）；文件存在但无法解析或结构非法 = 按纯文本整体视作归档区内容，核心区视为空，并在日志中给出明确告警；任何情况下不得因记忆文件异常而中断对话。
+
 ### 3.5 `mcp_servers.yaml`
 
 每项声明 `name`、`transport`、`command`、`env`；启动时连接并调 `tools/list`，把每个 MCP 工具包装为 `SableTool` 注册进 `ToolRegistry`，并处理失联、超时与错误恢复。
+
+### 3.6 `notify_channels.yaml`（本次新增）
+
+通知出站渠道的定义源。每项声明 `name`、`type`、`url`（HTTP 类）或 `config`（多字段类型，如后续的 email），可选 `description`；凭证支持 `${ENV_VAR}`。启动时读取并同步进 `notify_channels` 表（新增/改动 upsert、移除的标记退役），`sableos init` 会生成一份带注释的模板。
 
 ## 4. 内存态实体
 

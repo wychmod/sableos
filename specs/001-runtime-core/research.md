@@ -72,7 +72,7 @@
 
 - **决策**：`NotifyChannelAdapter.send(NotifyTarget, content)` 接口先行，核心阶段只实现 `WebhookNotifyAdapter`；渠道由 SQLite 全局注册表管理（`notify_channels` 表），Agent 正文按名引用；发送前复用同一份 HTTP 域名白名单。
 - **理由**：技术方案 6.8；与入站 `ChannelAdapter` 分开建模（方向相反）。
-- **注**：`notify_channels` 表属于内存/工具所需的支撑数据，其管理端点（CRUD）按技术方案属扩展阶段——本次仅建表 + 读取，不提供 CRUD 端点。
+- **注**：`notify_channels` 表的管理端点（CRUD）按技术方案属扩展阶段——本次**不提供 CRUD 端点**，但必须提供一条可用的登记途径：定义源为工作区文件 `.sableos/notify_channels.yaml`（与 `mcp_servers.yaml` 同形态，`init` 生成模板），启动时 reconcile 进表。否则 Demo 一/二的推送目标无从配置（详见 `plan.md` 的范围偏差表）。
 
 ## D-13 测试策略
 
@@ -86,6 +86,6 @@
 | --- | --- | --- | --- |
 | ~~D-04~~ | ~~长期记忆后端范围~~ | — | 已定：接口 + Markdown + SQLite 两档，Mem0 与 015 后置 |
 | ~~Demo 数~~ | ~~验收 Demo 是 2 个还是 3 个~~ | — | 已定：按《技术方案》取三个全部必过；需求文档的"两个"登记为文档漂移 |
-| — | 同会话并发写入策略（拒绝/排队/最后写入胜出） | 会话一致性测试设计 | 仍开放：属实现机制选择，留 `/speckit-tasks` 阶段定 |
+| ~~并发~~ | ~~同会话并发写入策略~~ | — | 已定：按会话维度在进程内串行（等待上限为单次调用超时，不拒绝、不丢写），见 spec FR-045 |
 
 （扩展钩子检查：本项目无 `.specify/extensions.yml`，Phase 0 前后均无需执行钩子。）

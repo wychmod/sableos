@@ -100,6 +100,7 @@ sableos-*/src/test/java/       # 单元与集成测试（JUnit 5 + Spring Boot T
 | --- | --- | --- | --- |
 | 定时任务的状态持久化与管理端点 | 第 8.5/28 节：`scheduled_tasks`、`task_executions` 两张表 + `/api/v2/schedules` 管理端点 | 不做：只做 cron 到点触发 + 手动补跑复用 `POST /api/v1/agents/{name}/invoke` | 项目方在 clarify 阶段选定的最小形态（spec 澄清记录第 1 条），符合宪章原则 VIII 的范围收敛 |
 | 长期记忆后端数量 | 第 5.1 节：三档后端（Markdown / SQLite / Mem0）核心阶段一次交付 | 交付后端接口 + Markdown（默认）+ SQLite 两档（零外部依赖）；**Mem0 档与语义检索升级（015）留后续** | 接口墙一次立起（技术方案的本意）已满足；Mem0 依赖自托管外部服务，离线无法验收。项目方已确认（spec 澄清记录第 7 条） |
+| 通知渠道的登记途径 | 第 6.8 节：通过 Web 管理台或 `/api/v1/notify-channels` 做 CRUD | 定义源改为工作区文件 `.sableos/notify_channels.yaml`（与 `mcp_servers.yaml` 同形态，`init` 生成模板），启动时 reconcile 进 `notify_channels` 表；CRUD 端点仍留后续 | 三个 Demo 的推送目标必须可配置，而管理端点属"第二批"；文件形态与"核心阶段手动改文件"的阶段边界一致（spec 澄清记录第 8 条） |
 
 **已对齐、不再构成偏差的两项**：
 

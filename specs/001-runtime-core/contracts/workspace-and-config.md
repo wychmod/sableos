@@ -101,7 +101,25 @@ servers:
 | C-02 | server 失联 / 超时 / 报错时不得让主进程退出；该工具调用返回失败结果并记入审计 |
 | C-03 | 凭证走 `${ENV_VAR}` 占位符，不在文件里明文落盘 |
 
-## 6. 应用配置（`application.yaml`）
+## 6. `notify_channels.yaml`（通知出站渠道）
+
+```yaml
+channels:
+  - name: team-lark
+    type: webhook
+    url: https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx
+    description: 团队日报群
+```
+
+| 编号 | 约束 |
+| --- | --- |
+| N-01 | **定义源是文件**：Agent 正文按 `name` 引用；启动时读取并同步进 `notify_channels` 表（新增/改动 upsert、移除的标记退役） |
+| N-02 | 管理端点（CRUD）属后续功能；核心阶段"新增或修改渠道"= 编辑本文件后重启（或触发重新加载） |
+| N-03 | 地址不进入对话内容与 Agent 定义；凭证字段用 `${ENV_VAR}`，加载时解析、不明文落盘 |
+| N-04 | 引用了不存在渠道名的 `notify` 调用必须失败并给出可读原因，且失败同样落审计 |
+| N-05 | `init` 必须生成一份带注释的模板（含示例条目），使新工作区无需猜测格式 |
+
+## 7. 应用配置（`application.yaml`）
 
 | 配置项 | 含义 | 缺省行为 |
 | --- | --- | --- |
