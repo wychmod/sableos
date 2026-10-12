@@ -64,6 +64,15 @@ management:
     tags:
       application: sableos
 
+# --- OpenAPI / Swagger UI（springdoc）---
+# swagger-ui webjar 由父 POM 覆盖到修补版；此处必须显式声明同一版本：
+# springdoc 在 fat jar 内自动探测 webjar 版本会失败并回落到内置默认（5.32.2），
+# 导致 /swagger-ui/** 资源 404。构建期由 Maven 资源过滤写入实际版本号，
+# 版本真相源保持父 POM 的 <swagger-ui.version> 一处。
+springdoc:
+  swagger-ui:
+    version: @swagger-ui.version@
+
 # Log levels（格式与 appender 在 logback-spring.xml）
 logging:
   level:
