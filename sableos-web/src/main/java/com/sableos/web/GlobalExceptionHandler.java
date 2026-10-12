@@ -12,17 +12,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-/**
- * 全局异常翻译：未捕获异常一律转成统一信封（契约 http-api.md §统一响应信封），
- * 状态码只覆盖核心阶段六个：400 / 404 / 409 / 500 / 503 / 504。
- */
+/** 全局异常翻译：未捕获异常一律转成统一信封（契约 http-api.md §统一响应信封）， 状态码只覆盖核心阶段六个：400 / 404 / 409 / 500 / 503 / 504。 */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -95,8 +92,7 @@ public class GlobalExceptionHandler {
 
   private static ResponseEntity<ApiResponse<Void>> badRequest(String message) {
     return error(
-        HttpStatus.BAD_REQUEST,
-        message == null || message.isBlank() ? "Bad request" : message);
+        HttpStatus.BAD_REQUEST, message == null || message.isBlank() ? "Bad request" : message);
   }
 
   private static ResponseEntity<ApiResponse<Void>> error(HttpStatus status, String message) {

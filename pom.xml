@@ -63,6 +63,14 @@
          springdoc 自带的 swagger-ui 版本偏旧，覆盖为含 DOMPurify 修补的版本。 -->
     <springdoc.version>2.8.17</springdoc.version>
     <swagger-ui.version>5.32.13</swagger-ui.version>
+
+    <!-- 开发规范：Google 格式（Spotless）+ 阿里 P3C（PMD 6.x，2.1.1 为兼容线）+ Checkstyle 兜底 -->
+    <spotless.version>2.43.0</spotless.version>
+    <maven-pmd-plugin.version>3.21.2</maven-pmd-plugin.version>
+    <pmd.version>6.55.0</pmd.version>
+    <p3c.version>2.1.1</p3c.version>
+    <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
+    <checkstyle.version>10.18.2</checkstyle.version>
   </properties>
 
   <dependencyManagement>
@@ -221,6 +229,119 @@
             </execution>
           </executions>
         </plugin>
+
+        <!-- 格式层：Google 格式，apply 一键自动修（本地写码后 mvn spotless:apply） -->
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>${spotless.version}</version>
+          <configuration>
+            <java>
+              <googleJavaFormat>
+                <style>GOOGLE</style>
+              </googleJavaFormat>
+              <removeUnusedImports/>
+              <importOrder/>
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+            </java>
+          </configuration>
+          <executions>
+            <execution>
+              <!-- 快失败：格式检查提前到 compile/test 之前（spotless:check 默认绑 verify） -->
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- 编码规约层：阿里 P3C 挂在 PMD 上（PMD 6.x 是 P3C 2.1.1 唯一兼容线） -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-pmd-plugin</artifactId>
+          <version>${maven-pmd-plugin.version}</version>
+          <configuration>
+            <!-- PMD 6.55 最高只认到 Java 19 语法，按 17 级解析。业务代码避免 Java 18-21
+                 的 *语法*（record pattern、pattern switch）；records/sealed 可用。 -->
+            <targetJdk>17</targetJdk>
+            <printFailingErrors>true</printFailingErrors>
+            <skipPmdError>false</skipPmdError>
+            <linkXRef>false</linkXRef>
+            <analysisCache>true</analysisCache>
+            <rulesets>
+              <ruleset>rulesets/java/ali-naming.xml</ruleset>
+              <ruleset>rulesets/java/ali-oop.xml</ruleset>
+              <ruleset>rulesets/java/ali-concurrent.xml</ruleset>
+              <ruleset>rulesets/java/ali-exception.xml</ruleset>
+              <ruleset>rulesets/java/ali-constant.xml</ruleset>
+              <ruleset>rulesets/java/ali-flowcontrol.xml</ruleset>
+              <ruleset>rulesets/java/ali-set.xml</ruleset>
+              <ruleset>rulesets/java/ali-other.xml</ruleset>
+            </rulesets>
+          </configuration>
+          <dependencies>
+            <!-- PMD 6.55 自带 ASM 过旧，类型解析读到 Java 21 字节码（class v65）会抛
+                 "Unsupported class file major version 65"；ASM 9.7 认识 v65。 -->
+            <dependency>
+              <groupId>org.ow2.asm</groupId>
+              <artifactId>asm</artifactId>
+              <version>9.7</version>
+            </dependency>
+            <dependency>
+              <groupId>net.sourceforge.pmd</groupId>
+              <artifactId>pmd-core</artifactId>
+              <version>${pmd.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>net.sourceforge.pmd</groupId>
+              <artifactId>pmd-java</artifactId>
+              <version>${pmd.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>com.alibaba.p3c</groupId>
+              <artifactId>p3c-pmd</artifactId>
+              <version>${p3c.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- 兜底层：Checkstyle（google_checks），只拦 error 级 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${maven-checkstyle-plugin.version}</version>
+          <configuration>
+            <configLocation>google_checks.xml</configLocation>
+            <violationSeverity>error</violationSeverity>
+            <failOnViolation>true</failOnViolation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>${checkstyle.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>checkstyle-validate</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -228,6 +349,18 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

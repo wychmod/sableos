@@ -24,10 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-/**
- * 契约 http-api.md 的错误映射验收：每类异常映射到约定状态码，响应体都是统一信封，
- * 且 500 绝不泄露内部细节。
- */
+/** 契约 http-api.md 的错误映射验收：每类异常映射到约定状态码，响应体都是统一信封， 且 500 绝不泄露内部细节。 */
 class GlobalExceptionHandlerTest {
 
   /** ISO-8601 时刻形态，如 2026-10-05T15:00:00Z / 2026-10-05T15:00:00.123456Z。 */
