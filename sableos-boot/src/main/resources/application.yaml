@@ -1,3 +1,71 @@
 spring:
   application:
     name: sableos
+  # 宪法 I：HTTP 层用 Spring MVC + Java 21 虚拟线程（不引入响应式）
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    # 工作区根下的 SQLite（路径随 workspace.root 联动）；工作区目录由 `sableos init` 创建
+    url: jdbc:sqlite:${workspace.root:.sableos}/sableos.db
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      data-source-properties:
+        journal_mode: WAL
+        busy_timeout: 5000
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      # 宪法 VIII：表结构唯一权威是 db/migration/{vendor}（Flyway），禁止 ddl-auto 改结构
+      ddl-auto: none
+    show-sql: false
+  flyway:
+    # 双轨迁移目录（sqlite 默认档 / postgresql 部署档），见 sableos-storage 的 migration/README.md
+    locations: classpath:db/migration/{vendor}
+
+server:
+  port: 8080
+
+# 工作区根（默认工作目录下 .sableos/；环境变量 WORKSPACE_ROOT 可覆盖）
+workspace:
+  root: .sableos
+
+# --- Sandbox 白名单（契约 §7）---
+# 四个键各自独立；**空列表 = 该类全部拒绝（deny-all）**，不是"不校验"。
+# 最小可用白名单由 `sableos init`（T019）按示例 Agent 需要生成，勿在此预先放宽。
+file:
+  allowed_paths: []
+shell:
+  allowed_commands: []
+http:
+  allowed_domains: []
+smtp:
+  allowed_endpoints: []
+
+sandbox:
+  # 单次工具结果截断阈值；超阈值截断并在结果中标注
+  tool_result_max_chars: 16384
+
+# 长期记忆后端：markdown（默认，.sableos/memory/MEMORY.md）| sqlite（memory_entries 表）
+memory:
+  backend: markdown
+
+# --- Observability: Actuator + Micrometer/Prometheus ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: sableos
+
+# Log levels（格式与 appender 在 logback-spring.xml）
+logging:
+  level:
+    root: INFO
+    com.sableos: DEBUG

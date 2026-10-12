@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SableOS 结构化日志。
+  - 默认（开发）：彩色、人类可读的 console pattern，带 traceId（MDC）
+  - profile=prod：单行 JSON（LogstashEncoder），同样携带 traceId，便于日志平台检索
+  约定：统一走 SLF4J，禁止 System.out；密钥、通知渠道地址、Bootstrap 正文等敏感内容
+  一律不进日志（契约 A-03 / N-03，靠调用侧脱敏，禁止打印配置原文）。
+-->
+<configuration>
+    <!-- 注册 Spring Boot 的 %clr / %wEx 转换器与下方引用的基础属性 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="LOG_PATTERN"
+              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%X{traceId:-}]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"/>
+
+    <!-- 开发：彩色 console -->
+    <springProfile name="!prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+                <!-- 显式 UTF-8：中文 Windows 控制台默认 GBK，需配合 chcp 65001 / [Console]::OutputEncoding=UTF8 -->
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.sableos" level="DEBUG"/>
+    </springProfile>
+
+    <!-- 生产：结构化 JSON -->
+    <springProfile name="prod">
+        <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <customFields>{"application":"sableos"}</customFields>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="JSON"/>
+        </root>
+        <logger name="com.sableos" level="INFO"/>
+    </springProfile>
+</configuration>
