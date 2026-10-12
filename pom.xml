@@ -71,6 +71,15 @@
     <p3c.version>2.1.1</p3c.version>
     <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
     <checkstyle.version>10.18.2</checkstyle.version>
+
+    <!-- 代码安全：SpotBugs + Find Security Bugs；OWASP Dependency-Check（依赖层 CVE 扫描） -->
+    <spotbugs-maven-plugin.version>4.8.6.4</spotbugs-maven-plugin.version>
+    <spotbugs.version>4.8.6</spotbugs.version>
+    <findsecbugs.version>1.13.0</findsecbugs.version>
+    <dependency-check.version>12.2.2</dependency-check.version>
+    <nvd.datafeed.url>https://dependency-check.github.io/DependencyCheck_Builder/nvd_cache/</nvd.datafeed.url>
+    <!-- 本地快速构建默认跳过 OWASP（首跑需拉 NVD 缓存）；CI 与发版用 -Dowasp.skip=false 开启 -->
+    <owasp.skip>true</owasp.skip>
   </properties>
 
   <dependencyManagement>
@@ -342,6 +351,65 @@
             </execution>
           </executions>
         </plugin>
+
+        <!-- 安全扫描（字节码层）：SpotBugs + Find Security Bugs（OWASP Top 10 规则） -->
+        <plugin>
+          <groupId>com.github.spotbugs</groupId>
+          <artifactId>spotbugs-maven-plugin</artifactId>
+          <version>${spotbugs-maven-plugin.version}</version>
+          <configuration>
+            <effort>Max</effort>
+            <threshold>Low</threshold>
+            <plugins>
+              <plugin>
+                <groupId>com.h3xstream.findsecbugs</groupId>
+                <artifactId>findsecbugs-plugin</artifactId>
+                <version>${findsecbugs.version}</version>
+              </plugin>
+            </plugins>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>com.github.spotbugs</groupId>
+              <artifactId>spotbugs</artifactId>
+              <version>${spotbugs.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- 安全扫描（依赖层）：OWASP Dependency-Check，CVSS ≥ 8 阻断构建 -->
+        <plugin>
+          <groupId>org.owasp</groupId>
+          <artifactId>dependency-check-maven</artifactId>
+          <version>${dependency-check.version}</version>
+          <configuration>
+            <skip>${owasp.skip}</skip>
+            <failBuildOnCVSS>8</failBuildOnCVSS>
+            <!-- NVD 夜间缓存镜像：无需 NVD API key（fork PR 同样可跑） -->
+            <nvdDatafeedUrl>${nvd.datafeed.url}</nvdDatafeedUrl>
+            <!-- 不用 OSS Index（需要凭证）；NVD 与 CISA 保持启用 -->
+            <ossIndexAnalyzerEnabled>false</ossIndexAnalyzerEnabled>
+            <suppressionFile>${maven.multiModuleProjectDirectory}/config/dependency-check-suppressions.xml</suppressionFile>
+            <formats>
+              <format>HTML</format>
+              <format>JSON</format>
+            </formats>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -361,6 +429,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.owasp</groupId>
+        <artifactId>dependency-check-maven</artifactId>
       </plugin>
     </plugins>
   </build>

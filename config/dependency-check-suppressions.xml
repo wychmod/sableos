@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd">
+    <!--
+      误报 / 已缓解 CVE 的抑制清单（dependency-check-maven 的 suppressionFile）。
+
+      每条 <suppress> 必须写清三件事：
+        1) 命中哪个构件（packageUrl 尽量精确到版本）；
+        2) 为什么安全（代码路径不存在 / 已缓解 / 上游未发 OSS 修复），附证据链接；
+        3) 何时移除（如“升级到 X 版本后删除本条目”）。
+
+      语法见 https://jeremylong.github.io/DependencyCheck/general/suppression.html
+      当前为空表：首轮 OWASP 扫描（CI 的 dependency-check job / 本地加 -Dowasp.skip=false）
+      发现问题时在此追加，禁止无 notes 的裸抑制。
+    -->
+</suppressions>

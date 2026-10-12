@@ -5,7 +5,6 @@ import com.sableos.web.error.AgentTimeoutException;
 import com.sableos.web.error.ConflictException;
 import com.sableos.web.error.ProviderUnavailableException;
 import com.sableos.web.error.ResourceNotFoundException;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -24,9 +23,6 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class GlobalExceptionHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
-  /** 攻击者可控值里的 CR/LF 不得伪造日志行（CWE-117）。 */
-  private static final Pattern CRLF = Pattern.compile("[\r\n]");
 
   /** 400 — 业务层可归因于请求的参数错误（缺参、格式非法、超长、provider 未注册等）。 */
   @ExceptionHandler(IllegalArgumentException.class)
@@ -111,6 +107,10 @@ public class GlobalExceptionHandler {
   }
 
   private static String sanitize(String value) {
-    return value == null ? "" : CRLF.matcher(value).replaceAll("_");
+    if (value == null) {
+      return "";
+    }
+    // findsecbugs 的 CRLF 注入规则只认可 String.replaceAll 形态的净化，勿改用 Pattern/Matcher
+    return value.replaceAll("[\r\n]", "_");
   }
 }
