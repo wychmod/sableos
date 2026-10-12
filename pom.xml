@@ -40,11 +40,86 @@
 
   <properties>
     <java.version>21</java.version>
+
+    <!-- Spring AI 1.1.x 线（Boot 3.5 兼容；2.x 需要 Boot 4）。只用于 Provider 抽象、
+         协议转换与 @Tool schema 生成，禁用其自动 tool 执行（宪章原则 III）。 -->
+    <spring-ai.version>1.1.8</spring-ai.version>
+    <!-- Spring AI Alibaba 1.1.2.x 线，与 Spring AI 1.1.x 同期；security-fix 为 CVE 修补版 -->
+    <spring-ai-alibaba.version>1.1.2.4-security-fix</spring-ai-alibaba.version>
     <picocli.version>4.7.7</picocli.version>
+
+    <!-- SQLite 默认零配置档；PostgreSQL 为部署选项（双轨迁移 db/migration/{vendor}）。
+         覆盖 Boot BOM 的 42.7.11——CVE-2026-54291（CVSS 8.2）修复于 42.7.12。 -->
+    <sqlite-jdbc.version>3.53.4.0</sqlite-jdbc.version>
+    <postgresql.version>42.7.12</postgresql.version>
+
+    <!-- MCP Java SDK（Plugin Tool 方式二）；锁 1.x 线，2.x 为新主版本待 US4 评估 -->
+    <mcp.version>1.1.4</mcp.version>
+
+    <!-- 结构化日志：prod 档 JSON 输出（logstash-logback-encoder 9.x 需 logback 1.5.x） -->
+    <logstash-logback.version>9.0</logstash-logback.version>
+
+    <!-- OpenAPI / Swagger UI（2.8.x 为 Boot 3.5 线；3.x 需要 Boot 4）。
+         springdoc 自带的 swagger-ui 版本偏旧，覆盖为含 DOMPurify 修补的版本。 -->
+    <springdoc.version>2.8.17</springdoc.version>
+    <swagger-ui.version>5.32.13</swagger-ui.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <!-- Spring AI BOM：版本统一由 BOM 管理，模块只声明 artifactId -->
+      <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-bom</artifactId>
+        <version>${spring-ai.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Spring AI Alibaba BOM -->
+      <dependency>
+        <groupId>com.alibaba.cloud.ai</groupId>
+        <artifactId>spring-ai-alibaba-bom</artifactId>
+        <version>${spring-ai-alibaba.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- 阿里 BOM 未收录 dashscope starter，按同一版本号显式锁定 -->
+      <dependency>
+        <groupId>com.alibaba.cloud.ai</groupId>
+        <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+        <version>${spring-ai-alibaba.version}</version>
+      </dependency>
+
+      <!-- 说明：Spring Data JPA、Flyway、SnakeYAML、PostgreSQL 版本由 Spring Boot BOM
+           统一管理（flyway-core 内置 SQLite 支持）；仅下列三方件需显式锁版本。 -->
+      <dependency>
+        <groupId>org.xerial</groupId>
+        <artifactId>sqlite-jdbc</artifactId>
+        <version>${sqlite-jdbc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.modelcontextprotocol.sdk</groupId>
+        <artifactId>mcp</artifactId>
+        <version>${mcp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.logstash.logback</groupId>
+        <artifactId>logstash-logback-encoder</artifactId>
+        <version>${logstash-logback.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        <version>${springdoc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.webjars</groupId>
+        <artifactId>swagger-ui</artifactId>
+        <version>${swagger-ui.version}</version>
+      </dependency>
+
+      <!-- 内部模块 -->
       <dependency>
         <groupId>com.sableos</groupId>
         <artifactId>sableos-core</artifactId>
@@ -105,4 +180,55 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- 构建环境硬约束：本机曾出现 JDK 8 下静默产出 Java 8 字节码的先例，
+             用 enforcer 把 JDK 21 / Maven 版本钉死（fail）；依赖收敛仅告警不阻断。 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.5.0</version>
+          <executions>
+            <execution>
+              <id>enforce-environment</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <requireJavaVersion>
+                    <version>[21,)</version>
+                  </requireJavaVersion>
+                  <requireMavenVersion>
+                    <version>[3.8,)</version>
+                  </requireMavenVersion>
+                </rules>
+              </configuration>
+            </execution>
+            <execution>
+              <id>warn-dependency-convergence</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <dependencyConvergence/>
+                </rules>
+                <fail>false</fail>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 </project>

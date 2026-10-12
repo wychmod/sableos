@@ -47,6 +47,22 @@
       <groupId>com.sableos</groupId>
       <artifactId>sableos-cli</artifactId>
     </dependency>
+
+    <!-- Observability：Actuator + Micrometer/Prometheus -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <!-- 结构化日志（prod 档 JSON 输出，见 logback-spring.xml） -->
+    <dependency>
+      <groupId>net.logstash.logback</groupId>
+      <artifactId>logstash-logback-encoder</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

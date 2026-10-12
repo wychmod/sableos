@@ -19,5 +19,33 @@
       <groupId>com.sableos</groupId>
       <artifactId>sableos-core</artifactId>
     </dependency>
+    <!-- SQLite + Spring Data JPA；SQLiteDialect 来自 hibernate-community-dialects -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-community-dialects</artifactId>
+    </dependency>
+    <!-- 表结构唯一权威是 db/migration/{vendor} 双轨目录（SQLite 默认档）。
+         flyway-core 内置 SQLite 支持；PG 支持拆分为独立插件，连同驱动一起打进 fat jar，
+         作为部署选项按 URL 自动识别，即开即用不换包。 -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+    </dependency>
   </dependencies>
 </project>
