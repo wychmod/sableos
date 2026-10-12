@@ -1,0 +1,24 @@
+# SableOS 本地 pre-commit 钩子（pre-commit 框架版；git 原生版在 .githooks/，二选一）。
+# 安装：pip install pre-commit && pre-commit install
+# 跳过单次检查：SKIP=spotless-check git commit ...
+repos:
+  - repo: local
+    hooks:
+      - id: spotless-apply
+        name: spotless (google-java-format, auto-fix)
+        entry: mvn -q -B spotless:apply
+        language: system
+        pass_filenames: false
+        files: \.java$
+      - id: spotless-check
+        name: spotless check
+        entry: mvn -q -B spotless:check
+        language: system
+        pass_filenames: false
+        files: \.java$
+      - id: spotbugs-quick
+        name: spotbugs (quick scan)
+        entry: mvn -q -B -DskipTests compile spotbugs:check
+        language: system
+        pass_filenames: false
+        files: \.java$

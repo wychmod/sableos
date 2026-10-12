@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# SableOS 推送前门禁：全量质量检查（跳过测试求快；CI 会再跑带测试的完整 verify）。
+# 启用一次：git config core.hooksPath .githooks
+# 紧急跳过：SKIP_SABLEOS_HOOKS=1 git push ...
+set -euo pipefail
+[ "${SKIP_SABLEOS_HOOKS:-0}" = "1" ] && exit 0
+
+cd "$(git rev-parse --show-toplevel)"
+echo "[pre-push] mvn verify -DskipTests ..."
+mvn -q -B verify -DskipTests

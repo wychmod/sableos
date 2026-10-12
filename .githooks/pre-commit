@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# SableOS 本地提交门禁（git 原生钩子版；pre-commit 框架版见 .pre-commit-config.yaml，二选一）。
+# 启用一次：git config core.hooksPath .githooks
+# 紧急跳过：SKIP_SABLEOS_HOOKS=1 git commit ...
+set -euo pipefail
+[ "${SKIP_SABLEOS_HOOKS:-0}" = "1" ] && exit 0
+
+cd "$(git rev-parse --show-toplevel)"
+
+# 只在有 .java 变更时跑，纯文档/配置提交零开销
+if git diff --cached --name-only --diff-filter=ACM | grep -q '\.java$'; then
+  echo "[pre-commit] spotless:check ..."
+  mvn -q -B spotless:check
+  echo "[pre-commit] spotbugs quick scan ..."
+  mvn -q -B -DskipTests compile spotbugs:check
+fi
