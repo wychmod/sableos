@@ -27,12 +27,12 @@
 
 **目的**：把骨架补成能承载业务代码的工程基座
 
-- [ ] T001 在聚合 POM 补齐依赖管理与版本：Spring AI Alibaba、Spring Data JPA、SQLite JDBC、Flyway、SnakeYAML、MCP Java SDK in `pom.xml`
-- [ ] T002 [P] 各模块按需声明依赖，确认 `mvn clean package` 通过且 JDK 21 目标锁定 in `sableos-*/pom.xml`
-- [ ] T003 [P] 建立 Flyway 双轨迁移目录（SQLite 为默认档） in `sableos-storage/src/main/resources/db/migration/sqlite/`、`sableos-storage/src/main/resources/db/migration/postgresql/`
-- [ ] T004 [P] 配置结构化日志（Logback，含日志脱敏占位） in `sableos-boot/src/main/resources/logback-spring.xml`
-- [ ] T005 [P] 建立应用配置骨架：端口、工作区根、四类白名单键、`memory.backend`、工具结果截断阈值 in `sableos-boot/src/main/resources/application.yaml`
-- [ ] T006 验证 fat JAR 产出与 `java -jar` 启动冒烟 in `sableos-boot/pom.xml`
+- [x] T001 在聚合 POM 补齐依赖管理与版本：Spring AI Alibaba、Spring Data JPA、SQLite JDBC、Flyway、SnakeYAML、MCP Java SDK in `pom.xml`
+- [x] T002 [P] 各模块按需声明依赖，确认 `mvn clean package` 通过且 JDK 21 目标锁定 in `sableos-*/pom.xml`
+- [x] T003 [P] 建立 Flyway 双轨迁移目录（SQLite 为默认档） in `sableos-storage/src/main/resources/db/migration/sqlite/`、`sableos-storage/src/main/resources/db/migration/postgresql/`
+- [x] T004 [P] 配置结构化日志（Logback，含日志脱敏占位） in `sableos-boot/src/main/resources/logback-spring.xml`
+- [x] T005 [P] 建立应用配置骨架：端口、工作区根、四类白名单键、`memory.backend`、工具结果截断阈值 in `sableos-boot/src/main/resources/application.yaml`
+- [x] T006 验证 fat JAR 产出与 `java -jar` 启动冒烟 in `sableos-boot/pom.xml`
 
 **检查点**：`mvn clean package` 通过，骨架可启动
 
@@ -184,7 +184,7 @@
 ### 用户故事 5 的实现
 
 - [ ] T066 [US5] 实现 `WebServer`：Spring MVC + virtual thread，`sableos serve` 触发，默认端口 8080 in `sableos-web/src/main/java/com/sableos/web/WebServer.java`
-- [ ] T067 [US5] 统一响应信封与 `GlobalExceptionHandler`：成功与错误共用一个信封，错误码映射到标准状态码 in `sableos-web/src/main/java/com/sableos/web/GlobalExceptionHandler.java`
+- [x] T067 [US5] 统一响应信封与 `GlobalExceptionHandler`：成功与错误共用一个信封，错误码映射到标准状态码 in `sableos-web/src/main/java/com/sableos/web/GlobalExceptionHandler.java`
 - [ ] T068 [US5] 实现 `SessionApiController` 四个端点：创建（同组合复用）、发消息、查历史（默认最近 100 条）、归档（不物理删除） in `sableos-web/src/main/java/com/sableos/web/SessionApiController.java`
 - [ ] T069 [US5] 实现 `AgentApiController.invoke`：无状态调用端点，与 CLI 走同一条 `AgentService` 链路（也是定时任务手动补跑的入口） in `sableos-web/src/main/java/com/sableos/web/AgentApiController.java`
 - [ ] T070 [P] [US5] 实现信息查询三个控制器：`ProfileApiController`、`MemoryApiController`、`ToolApiController`（均只读、脱敏） in `sableos-web/src/main/java/com/sableos/web/`
@@ -194,7 +194,7 @@
 - [ ] T074 [US5] 会话身份规则落地：命令行取本机用户名、HTTP 由请求参数提供（缺省 `anonymous`）、定时固定 `scheduler`；`channel + user + profile` 联合生成并在同组合下复用 in `sableos-core/src/main/java/com/sableos/core/session/SessionIdentity.java`
 - [ ] T075 [US5] 多 Agent 并存校验：同实例两个不同 provider 的 Agent 同时可用、配置与会话不串扰 in `sableos-core/src/main/java/com/sableos/core/agent/AgentLoader.java`
 - [ ] T076 [US5] 补全 CLI 命令：`serve` / `gateway` / `status` / `profile list|create|show|delete` / `provider list` / `tool list` / `session list`（合计 12 个子命令） in `sableos-cli/src/main/java/com/sableos/cli/command/`
-- [ ] T077 [US5] 接入 OpenAPI 文档（`springdoc`，暴露 `/swagger-ui`） in `sableos-web/src/main/java/com/sableos/web/OpenApiConfig.java`
+- [x] T077 [US5] 接入 OpenAPI 文档（`springdoc`，暴露 `/swagger-ui`） in `sableos-web/src/main/java/com/sableos/web/OpenApiConfig.java`
 - [ ] T078 [US5] 跑 `/speckit-analyze` 核对一致性并修正漂移
 - [ ] T079 [US5] 打 commit 固化用户故事 5 的稳定状态（提交范围：`sableos-web/`、`sableos-core/`、`sableos-storage/`、`sableos-cli/`）
 

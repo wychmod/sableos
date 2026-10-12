@@ -20,9 +20,10 @@ SableOS 是一个**企业能完全掌控的、Java 原生的、私有可审计�
 
 ## 2. 仓库现状
 
-- 仓库当前包含：`docs/` 六份文档、`design/` 设计留档、`website/` 线上站点、`README.md`、`AGENTS.md`（本文件）、`CLAUDE.md`（指向本文件的入口），以及 **Maven 多模块骨架**（2026-09-27 初始化）：parent POM + 9 个核心模块（core / provider / memory / tool / channel-cli / web / storage / cli / boot），`mvn clean package` 可通过，`sableos-boot` 产出可执行 fat JAR。骨架只含模块结构、依赖拓扑与入口类（`SableOsApplication`、`SableOsCli`），**尚无业务代码**。
-- 骨架按《技术方案》第 13 章第一周的 9 模块口径落地；第 10 章的 14 模块清单（多 persona / knowledge / 三渠道模块）在实施到对应能力时再补模块。各模块依赖也按实施节奏补齐（provider 的 Spring AI Alibaba、storage 的 JPA/SQLite 尚未加入）。
-- `git` 仓库已初始化（main 分支）；**Spec-Kit 工作区已于 2026-10-05 就地初始化**（集成键 `qodercli`，技能装在 `.qoder/skills/`，配套 CLI `specify-cli` 1.0.13 锁版本），宪章已落地为 v1.0.0；`spec.md` / `plan.md` 尚未产出。
+- 仓库当前包含：`docs/` 六份文档、`design/` 设计留档、`website/` 线上站点、`README.md`、`AGENTS.md`（本文件）、`CLAUDE.md`（指向本文件的入口），以及 **Maven 多模块骨架**（2026-09-27 初始化）：parent POM + 9 个核心模块（core / provider / memory / tool / channel-cli / web / storage / cli / boot），`mvn clean package` 可通过，`sableos-boot` 产出可执行 fat JAR。
+- **工程地基已于 2026-10-12 落地**（按 `sableos-init` skill 执行，提交链 `b37e5f4`→`1ac85d3` + `24dd3b8`）：依赖版本锁定、结构化日志、Actuator/Prometheus、虚拟线程、统一响应信封 + `GlobalExceptionHandler` + OpenAPI、四层质量门槛（见 5.3）、`ci.yml` 与本地钩子。落地代码仅信封/异常/`OpenApiConfig` 与 10 个测试——**业务逻辑（五大核心能力）仍未开始**。
+- 骨架按《技术方案》第 13 章第一周的 9 模块口径落地；第 10 章的 14 模块清单（多 persona / knowledge / 三渠道模块）在实施到对应能力时再补模块。各模块依赖按实施节奏补齐：storage 的 JPA / SQLite / Flyway 已就位，provider 的 Spring AI Alibaba 等随 US1 加入。
+- `git` 仓库已初始化（main 分支）；**Spec-Kit 工作区已于 2026-10-05 就地初始化**（集成键 `qodercli`，技能装在 `.qoder/skills/`，配套 CLI `specify-cli` 1.0.13 锁版本），宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart 与 tasks.md（85 条任务），其中 T001–T006 / T067 / T077 已实施并勾选。
 - 文档在 2026-09-21 做过一次纯格式整理（统一标题层级、表格分隔符、引用块、列表空行），**内容与整理前逐字一致**，以当前版本为准。
 
 ## 3. 目录分工
@@ -35,11 +36,11 @@ SableOS 是一个**企业能完全掌控的、Java 原生的、私有可审计�
 | `design/` | **设计过程留档**：`assets/`（标识源文件、`make-*.py` 生成器、`logo-concepts/` 备选概念）、`preview/`（评审台 `index.html`、`audit.json` 校验原始数据）、`README.md` | 站点代码、`docs/` 文档正文 | ❌ |
 | `docs/` | **文档语料**：六份 `.md` + `images/`（文档内嵌图，见第 4 章） | 站点代码、设计源文件 | ❌ |
 | `sableos-*`（9 个） | Maven 模块，各自只有 `pom.xml` + `src`；模块职责见第 7 章 | 文档、设计资产、生成脚本 | ❌ |
-| `.github/workflows/` | CI：`pages.yml`（发布 `website/` 到 Pages + 站点健全性校验） | 业务代码 | — |
+| `.github/workflows/` | CI：`pages.yml`（发布 `website/` 到 Pages + 站点健全性校验）、`ci.yml`（`mvn verify` 质量门禁 + 独立 depcheck 聚合） | 业务代码 | — |
 | `.specify/` | **Spec-Kit 工作区**：`memory/constitution.md`（宪章）、`templates/`、`scripts/bash/`、内置 SDD 工作流与集成配置 | 应用代码、设计资产 | ❌ |
 | `.qoder/skills/` | Spec-Kit 生成的 `speckit-*` 技能（Qoder IDE 1.24+ 扫描此目录，以 `/speckit-<command>` 调用） | IDE 本地状态（`.qoder/` 下除 `skills/` 之外的一切已在 `.gitignore` 排除） | ❌ |
 
-顶层文件：`pom.xml` 是聚合 POM，`README.md` 对外，`AGENTS.md`（本文件）是对内的唯一权威指南，`CLAUDE.md` 只做指向。
+顶层文件：`pom.xml` 是聚合 POM，`README.md` 对外，`AGENTS.md`（本文件）是对内的唯一权威指南，`CLAUDE.md` 只做指向；工程门槛配套：`.editorconfig`、`.githooks/`（git 原生钩子）、`.pre-commit-config.yaml`（框架版，二选一）、`config/dependency-check-suppressions.xml`（漏洞抑制，无 notes 不许抑制）。
 
 **三处都可能出现"图"，用途不同，不要混：**
 
@@ -106,6 +107,21 @@ design/assets/*.svg           ->  website/assets/img/*  （线上产物）
 | `AgentLoader`/`AGENT.md` 当成 Tool | Agent 目录归 `ContextLoader`，在 core 模块里 |
 | 审计表没落库 | `tool_invocations` 和 `llm_calls` day one 写入 |
 
+### 5.3 工程质量门槛（已接入 `mvn verify`，2026-10-12 起生效）
+
+| 关卡 | 工具 | 拦截方式 |
+| --- | --- | --- |
+| 格式 | Spotless + google-java-format | 绑 `validate`，格式违规即挂；本地先跑 `mvn spotless:apply` 自动修 |
+| 编码规约 | 阿里 P3C（8 个 `ali-*` ruleset，挂 PMD 6.55） | `mvn verify` 拦截 |
+| 兜底风格 | Checkstyle（`google_checks`，只拦 error，含测试代码） | 绑 `validate` |
+| 安全 | SpotBugs（effort Max / threshold Low）+ Find Security Bugs | 有 BugInstance 即失败（含测试代码） |
+| 依赖 CVE | OWASP Dependency-Check（`failBuildOnCVSS=8`） | 本地默认 `-Dowasp.skip=true` 跳过；CI 独立 job 用 `-Dowasp.skip=false` 强制跑（本地实测受限，见下方结论） |
+
+- 提交前钩子在 `.githooks/`：启用一次 `git config core.hooksPath .githooks`（或改用 pre-commit 框架读 `.pre-commit-config.yaml`，二选一）；紧急跳过 `SKIP_SABLEOS_HOOKS=1 git commit ...`。**仓库默认不启用钩子（`core.hooksPath` 未设置）**，新环境先启用再开发。
+- 写 Java 的节奏：改完 → `mvn spotless:apply` → `mvn -q -B verify` 全绿再提交；CI 任一关卡不过即红、禁止合并。
+- 两个已踩过的坑（勿回退）：`GlobalExceptionHandler` 的 CRLF 净化必须保持 `String.replaceAll("[\\r\\n]", "_")` 形态（findsecbugs 只认这种写法，换 `Pattern/Matcher` 会挂 SpotBugs）；升级 `org.webjars:swagger-ui` 时必须同步 `application.yaml` 的 `springdoc.swagger-ui.version`（值是 `@swagger-ui.version@`，构建期从父 POM 过滤注入；不同步会因 springdoc 探测失败回落内置版本，导致 `/swagger-ui/**` 404）。
+- depcheck 本地可行性实测（2026-10-12）：NVD 镜像经 IPv6 可连通、数据可下载，但全量首更新出现文件传输中途截断（如 `nvdcve-2012.json.gz` 仅收 2.97/4 MB）与连接停滞（进程 10+ 分钟零进展），且单个辅助文件（`.meta` / RetireJS）下载失败即整体 `UpdateException`；强制 IPv4 反而完全超时。结论：**本地依赖 CVE 首跑不可靠，以 CI 独立 job 为权威门禁**；确需本地跑时，先在有稳定网络的环境预热 Maven 本地仓库的 `dependency-check-data` 目录后再执行。
+
 ## 6. 核心领域概念
 
 - **一个目录 = 一个 Agent**：`.sableos/agents/<name>/AGENT.md`，frontmatter 是运行配置（派生为底座认识的 `Profile`），正文是任务指令；可选 `skills/` 软连接、`scripts/`、`REFERENCE.md`。
@@ -140,7 +156,7 @@ SableOS 是 Maven 多模块项目，**以《技术方案》第 10 章为准，�
 
 主体开发**不直接写代码**，按 Spec-Kit 流程走：
 
-1. 准备阶段：`specify init` 初始化工作区，产出 `constitution.md`（宪章）、`spec.md`（5 个 user story）、`plan.md`。工作区已于 2026-10-05 就地初始化（集成键 `qodercli`，`specify-cli` 锁 1.0.13，技能以 `/speckit-<command>` 调用），宪章 **v1.0.0 已落地**；`spec.md` / `plan.md` 待产出。
+1. 准备阶段：`specify init` 初始化工作区，产出 `constitution.md`（宪章）、`spec.md`（5 个 user story）、`plan.md`。工作区已于 2026-10-05 就地初始化（集成键 `qodercli`，`specify-cli` 锁 1.0.13，技能以 `/speckit-<command>` 调用），宪章 **v1.0.1**；`specs/001-runtime-core/` 的 spec / plan / tasks 均已产出，工程地基（Phase 1 与 T067/T077）已先行落地。
 2. 实施阶段：按依赖顺序实施 5 个 user story（US-5 Web Service 因依赖前四个能力排最后，但重要性很高）。
 3. **每个 user story 结束后必跑 `/speckit.analyze`**：检查 constitution + spec + plan + tasks + 代码是否一致，发现漂移立刻修正，不能省。
 4. **每个 user story 完成后打 git commit**，方便随时回退到稳定状态。
@@ -172,4 +188,5 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
   - CLI 子命令数：第 8.7 节写 12 个，第 10 章写 13 个（025 起加 `agent import`）。
   - 验收 Demo 数：`DemandAnalysis.md` 第 13 章写"两个 Demo"，`TechnicalSolution.md` 第 11.5 / 12 / 15 章写三个（多"每日 GitHub 日报"）——**以技术方案为准（三个）**，需求文档待同步。
   - 长期记忆后端：`TechnicalSolution.md` 5.1 写"三档后端核心阶段一次交付"，实际本次只交付 Markdown（默认）+ SQLite 两档，Mem0 档（依赖外部自托管服务）后置，见 `specs/001-runtime-core/research.md` 的 D-04。
-- **Spec-Kit 工作区已就位（2026-10-05）**：`.specify/` 就地初始化，集成键 `qodercli`（技能装在 `.qoder/skills/`，以 `/speckit-<command>` 调用），配套 CLI 锁 `specify-cli` 1.0.13，宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart，主体开发仍未开始编码。Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过），骨架只是工程地基。
+- **Spec-Kit 工作区已就位（2026-10-05）**：`.specify/` 就地初始化，集成键 `qodercli`（技能装在 `.qoder/skills/`，以 `/speckit-<command>` 调用），配套 CLI 锁 `specify-cli` 1.0.13，宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart 与 tasks.md（85 条）。
+- **工程地基已落地（2026-10-12）**：`sableos-init` skill 十步执行完毕（提交链 `b37e5f4`→`1ac85d3` + `24dd3b8`），T001–T006 / T067 / T077 已勾选；业务开发（US1 起）仍未开始编码。质量门槛、钩子启用方式与两个防回退坑见 5.3 节。Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过）。
