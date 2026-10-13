@@ -153,6 +153,15 @@ public final class TraceContext {
     return (current == null) ? TraceSnapshot.EMPTY : current;
   }
 
+  /**
+   * 彻底清理当前线程的链路上下文（ThreadLocal 与本类管理的那 5 个 MDC 键）。
+   *
+   * <p>正常路径不需要它——{@link Scope#close()} 已经收口。它面向两类场景：入口代码在 try-with-resources 之外兜底清理， 以及测试收尾防止用例间串味。
+   */
+  public static void clear() {
+    restore(null);
+  }
+
   /** 供 {@link TraceSnapshot#openInCurrentThread()} 使用：安装给定快照并返回作用域。 */
   static Scope openSnapshot(TraceSnapshot snapshot) {
     if (snapshot == null || snapshot.isEmpty()) {

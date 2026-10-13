@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sableos.core.trace.TraceContext;
 import com.sableos.web.error.AgentTimeoutException;
 import com.sableos.web.error.ConflictException;
 import com.sableos.web.error.ProviderUnavailableException;
@@ -113,6 +114,27 @@ class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.code").value(500))
         .andExpect(jsonPath("$.message").value("Internal server error"))
         .andExpect(content().string(not(containsString("secret internal detail"))));
+  }
+
+  @Test
+  @DisplayName("错误信封_带traceId字段且与当前链路同值")
+  void errorEnvelopeCarriesTraceId() throws Exception {
+    try (TraceContext.Scope scope = TraceContext.openRoot(TraceContext.CHANNEL_WEB)) {
+      mvc.perform(get("/throw/not-found"))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.code").value(404))
+          .andExpect(jsonPath("$.traceId").value(scope.traceId()));
+    }
+  }
+
+  @Test
+  @DisplayName("错误信封_无链路上下文时traceId为null")
+  void errorEnvelopeTraceIdIsNullWithoutContext() throws Exception {
+    TraceContext.clear();
+
+    mvc.perform(get("/throw/not-found"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.traceId", nullValue()));
   }
 
   @RestController
