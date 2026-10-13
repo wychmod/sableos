@@ -1,6 +1,6 @@
 # 数据库迁移（Flyway 双轨）
 
-> 本目录是表结构的**唯一权威真相源**（constitution VIII）：建表 / 改表只改这里，
+> 本目录是表结构的**唯一权威真相源**（工程约定，见 AGENTS.md §5.1；宪章只管"审计 day one 落库"，见原则 VI）：建表 / 改表只改这里，
 > 禁止用 JPA `ddl-auto` 或运行时手写 SQL 改结构。
 
 - `sqlite/`：默认档，零配置本地运行（`jdbc:sqlite:.sableos/sableos.db`）。

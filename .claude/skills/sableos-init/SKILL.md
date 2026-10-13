@@ -37,10 +37,12 @@ description: 初始化 SableOS（或同类 JDK 21 + Spring Boot 3.x 企业级单
 ## 初始化步骤（按顺序执行，每步完成后 `git commit`）
 
 ### 0. 确认参数
+
 向用户确认：`groupId`、根 `artifactId`、模块清单（默认 SableOS 9 模块）、端口（默认 8080）、JDK（21）。
 （本仓库已定：`com.sableos` / `sableos-parent` / 9 模块 / 8080 / JDK 21——核对即可，无需重问。）
 
 ### 1. Maven 多模块骨架
+
 核对/建父 `pom.xml`（packaging=pom，统一版本管理）+ 9 个子模块：
 `sableos-core`、`sableos-provider`、`sableos-memory`、`sableos-tool`、`sableos-web`、
 `sableos-storage`、`sableos-boot`、`sableos-cli`、`sableos-channel-cli`。
@@ -48,50 +50,65 @@ description: 初始化 SableOS（或同类 JDK 21 + Spring Boot 3.x 企业级单
 （骨架已于 2026-09-27 建好（`mvn clean package` 通过、fat JAR 可产出）：此步核对 JDK 21 目标锁定即可；空仓库才需要新建。）
 
 ### 2. 基础依赖与版本管理（父 pom `dependencyManagement` / `pluginManagement`）
+
 固定 Spring Boot BOM、Spring AI Alibaba BOM、Spring Data JPA、SQLite JDBC、Flyway、MCP Java SDK、Picocli、SnakeYAML、logstash-logback-encoder、springdoc 等版本。**具体版本号以实施时最新稳定版为准，先锁定再开发。**
 
 ### 3. 日志（结构化）
+
 `sableos-boot/src/main/resources/logback-spring.xml`：
+
 - 开发环境：彩色 console pattern
 - 生产环境（profile=prod）：JSON 输出（`LogstashEncoder`），带 `traceId`（MDC）
 - 脱敏占位：密钥、通知地址、Bootstrap 正文不进日志
 - 统一通过 SLF4J 打日志，禁止 `System.out`
 
 ### 4. 监控（Actuator + Micrometer + Prometheus）
+
 依赖：`spring-boot-starter-actuator`、`micrometer-registry-prometheus`。
+
 `application.yaml`：
+
 ```yaml
 management:
   endpoints.web.exposure.include: health,info,prometheus,metrics
   endpoint.health.probes.enabled: true
   metrics.tags.application: sableos
 ```
+
 暴露 `/actuator/health`、`/actuator/info`、`/actuator/prometheus`。
 
 ### 5. HTTP Server（Spring MVC + 虚拟线程）
-依赖：`spring-boot-starter-web`。`application.yaml`：
+
+依赖：`spring-boot-starter-web`。
+
+`application.yaml`：
+
 ```yaml
 server.port: 8080
 spring.threads.virtual.enabled: true   # JDK 21 虚拟线程，单机扛高并发
 ```
 
 ### 6. API 规范（OpenAPI + 统一响应 / 错误码）
+
 - 依赖：`springdoc-openapi-starter-webmvc-ui`（Swagger UI 在 `/swagger-ui.html`，spec 在 `/v3/api-docs`）
 - 在 `sableos-web` 建：
   - `ApiResponse<T>`：统一响应体（`code` / `message` / `data` / `timestamp`），字段口径与 `specs/001-runtime-core/contracts/http-api.md` 逐条一致
   - `GlobalExceptionHandler`（`@RestControllerAdvice`）：异常也走**同一信封**（`code` 非 0 / `message` 可定位 / `data` 为 null），覆盖 400 / 404 / 409 / 500 / 503 / 504
   - REST 约定：资源名词复数、`/api/v1` 前缀、合理 HTTP 状态码
 - 参考实现：OryxOS 的 `oryxos-web`（`ApiResponse` + `GlobalExceptionHandler`）就是同一套统一信封，形状可直接参照；两处差异——`timestamp` 按 SableOS 契约用 ISO-8601 字符串（OryxOS 是 epoch 毫秒）、错误状态码按核心阶段 6 个裁（不含 OryxOS 的 403 / 429）
+- 坑（fat jar 必踩，2026-10-12 实测）：若通过父 POM 覆盖 `org.webjars:swagger-ui` 版本，必须在 `application.yaml` 显式声明 `springdoc.swagger-ui.version`（构建期资源过滤注入，如 `@swagger-ui.version@`）——springdoc 在 fat jar 内自动探测 webjar 版本会失败并回落内置默认，导致 `/swagger-ui/**` 404
 - 与 tasks.md T067 / T077 保持同一口径，不造两套
 
 ### 7. 开发规范（Google 格式 + 阿里编码规约，两层互补）
 
 职责分开，互不冲突：
+
 - **格式层 — Google**：Spotless + google-java-format，管缩进、import 顺序、空白、换行——`apply` 一键自动修。
 - **编码规约层 — 阿里巴巴 Java 开发手册**：通过 **P3C（p3c-pmd ruleset）** 落地，管命名、并发、异常处理、集合、OOP、日志、SQL 等"怎么写才对"的规约。
 - **兜底 — Checkstyle**（`google_checks.xml`）+ 根目录 `.editorconfig`。
 
-**格式：Spotless + google-java-format**
+#### 格式：Spotless + google-java-format
+
 ```xml
 <plugin>
   <groupId>com.diffplug.spotless</groupId>
@@ -108,7 +125,8 @@ spring.threads.virtual.enabled: true   # JDK 21 虚拟线程，单机扛高并�
 </plugin>
 ```
 
-**编码规约：阿里 P3C（挂在 PMD 上）**
+#### 编码规约：阿里 P3C（挂在 PMD 上）
+
 ```xml
 <plugin>
   <groupId>org.apache.maven.plugins</groupId>
@@ -116,9 +134,15 @@ spring.threads.virtual.enabled: true   # JDK 21 虚拟线程，单机扛高并�
   <version>${pmd.version}</version>
   <configuration>
     <rulesets>
-      <ruleset>rulesets/java/ali-pmd.xml</ruleset>     <!-- 阿里 P3C 规约 -->
+      <!-- 落地口径为 8 个分册（与 AGENTS.md §5.3 一致），不用 ali-pmd.xml 聚合册 -->
+      <ruleset>rulesets/java/ali-naming.xml</ruleset>
+      <ruleset>rulesets/java/ali-oop.xml</ruleset>
       <ruleset>rulesets/java/ali-concurrent.xml</ruleset>
       <ruleset>rulesets/java/ali-exception.xml</ruleset>
+      <ruleset>rulesets/java/ali-constant.xml</ruleset>
+      <ruleset>rulesets/java/ali-flowcontrol.xml</ruleset>
+      <ruleset>rulesets/java/ali-set.xml</ruleset>
+      <ruleset>rulesets/java/ali-other.xml</ruleset>
     </rulesets>
   </configuration>
   <dependencies>
@@ -137,7 +161,9 @@ spring.threads.virtual.enabled: true   # JDK 21 虚拟线程，单机扛高并�
 > 「阿里巴巴 Java 编码规约」IDEA/VS Code 插件，写代码时即时提示。
 
 ### 8. 代码安全检查
+
 父 pom 加四件套：
+
 - **SpotBugs** + **Find Security Bugs**（findsecbugs 插件，覆盖 OWASP Top 10：SQL 注入、XSS、路径穿越、弱加密、XXE、不安全反序列化等）
 - **PMD**（源码层规则，与第 7 步 P3C 共用插件配置）
 - **OWASP Dependency-Check**（`dependency-check-maven`，扫第三方依赖已知 CVE，设 `failBuildOnCVSS`）
@@ -158,16 +184,21 @@ spring.threads.virtual.enabled: true   # JDK 21 虚拟线程，单机扛高并�
 </plugin>
 ```
 
+> 坑（2026-10-12 实测）：findsecbugs 对净化写法敏感——CRLF 净化保持 `String.replaceAll("[\\r\\n]", "_")` 形态；改写成 `Pattern` / `Matcher` 形态会被判 CRLF 注入风险，直接挂 SpotBugs。
+
 ### 9. CI + pre-commit
+
 - **pre-commit**（本地）：提交前跑 `mvn spotless:check`（或 `spotless:apply`）+ 快速 SpotBugs；做法可参考 oryxos 仓库的 `.githooks/` + `.pre-commit-config.yaml`
+- 交付形态（2026-10-12 决策）：`.githooks/` + `.pre-commit-config.yaml` 文件就位即可，**仓库默认不启用钩子**（不预设 `core.hooksPath`）；在 AGENTS.md 写明启用命令 `git config core.hooksPath .githooks` 与紧急跳过 `SKIP_SABLEOS_HOOKS=1`，由开发者自行启用
 - **CI**（GitHub Actions）：新增独立 `ci.yml`，`mvn verify` 串起 spotless:check → checkstyle → spotbugs → pmd → dependency-check；任一不过则红，禁止合并
 - **不要动 `pages.yml`**（仓库已有，只管 website 发布）
 
 ### 10. 验证
+
 - `mvn clean verify` 全绿
 - `java -jar sableos-boot/target/sableos-boot-*.jar` 起得来（交付形态必验）；开发期可用 `mvn -pl sableos-boot -am spring-boot:run`（多模块下 `-pl` 不配 `-am` 会找不到兄弟模块）
 - 访问 `/actuator/health`（UP）、`/actuator/prometheus`（有指标）、`/swagger-ui.html`（能打开）
-- 故意写一行不规范代码 → `spotless:check` 报错；故意引一个有 CVE 的旧依赖 → depcheck 报警
+- 故意写一行不规范代码 → `spotless:check` 报错；故意引一个有 CVE 的旧依赖 → depcheck 报警。**注意**：CVE 报警依赖 NVD 数据首下载，受限网络下本地可能传输截断 / 连接停滞跑不通（2026-10-12 实测，IPv4 强制反而全超时）——本地验证以格式 / 规约 / 安全三关卡为准，CVE 报警以 CI 独立 job 为权威；确需本地跑，先在稳定网络环境预热 Maven 本地仓库的 `dependency-check-data` 目录
 
 ---
 

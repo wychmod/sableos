@@ -91,7 +91,7 @@ design/assets/*.svg           ->  website/assets/img/*  （线上产物）
 | 3 | **自实现 ReAct loop** | 不依赖 Spring AI 的 Agent 抽象 |
 | 4 | **Spring AI 只用一半** | 只用 Provider 抽象、协议转换、`@Tool` schema 生成；**禁用自动 tool 执行**，tool 调度完全由 `ReActLoop` + `ToolExecutor` 控制 |
 | 5 | Plugin Tool 三档接入 | 主推 SKILL.md + MCP 零代码方式 |
-| 6 | SQLite + Spring Data JPA + `MEMORY.md` 文件 | 审计表 `tool_invocations` 和 `llm_calls` **核心阶段就落库**，不是只放日志 |
+| 6 | SQLite + Spring Data JPA + `MEMORY.md` 文件 | 审计表 `tool_invocations` 和 `llm_calls` **核心阶段就落库**，不是只放日志；表结构唯一权威是 Flyway 双轨目录 `db/migration/{vendor}/`（SQLite 默认档），禁止 `ddl-auto` 改结构 |
 | 7 | Sandbox 接口先行 | `Sandbox` 抽象 + `WhitelistSandbox`（应用层 Path/Pattern 白名单）；**不用 `SecurityManager`**（JDK 17 起废弃、JDK 21 已不可用） |
 | 8 | Provider 显式映射 | 维护 provider name 到 `ChatModel` 的显式映射，**不用类型扫描** |
 

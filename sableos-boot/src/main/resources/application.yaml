@@ -16,7 +16,7 @@ spring:
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
-      # 宪法 VIII：表结构唯一权威是 db/migration/{vendor}（Flyway），禁止 ddl-auto 改结构
+      # 表结构唯一权威是 db/migration/{vendor}（Flyway），禁止 ddl-auto 改结构（约定见 AGENTS.md §5.1）
       ddl-auto: none
     show-sql: false
   flyway:
