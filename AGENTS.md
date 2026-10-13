@@ -21,9 +21,10 @@ SableOS 是一个**企业能完全掌控的、Java 原生的、私有可审计�
 ## 2. 仓库现状
 
 - 仓库当前包含：`docs/` 六份文档、`design/` 设计留档、`website/` 线上站点、`README.md`、`AGENTS.md`（本文件）、`CLAUDE.md`（指向本文件的入口），以及 **Maven 多模块骨架**（2026-09-27 初始化）：parent POM + 9 个核心模块（core / provider / memory / tool / channel-cli / web / storage / cli / boot），`mvn clean package` 可通过，`sableos-boot` 产出可执行 fat JAR。
-- **工程地基已于 2026-10-12 落地**（按 `sableos-init` skill 执行，提交链 `b37e5f4`→`1ac85d3` + `24dd3b8`）：依赖版本锁定、结构化日志、Actuator/Prometheus、虚拟线程、统一响应信封 + `GlobalExceptionHandler` + OpenAPI、四层质量门槛（见 5.3）、`ci.yml` 与本地钩子。落地代码仅信封/异常/`OpenApiConfig` 与 10 个测试——**业务逻辑（五大核心能力）仍未开始**。
+- **工程地基已于 2026-10-12 落地**（按 `sableos-init` skill 执行，提交链 `b37e5f4`→`1ac85d3` + `24dd3b8`）：依赖版本锁定、结构化日志、Actuator/Prometheus、虚拟线程、统一响应信封 + `GlobalExceptionHandler` + OpenAPI、四层质量门槛（见 5.3）、`ci.yml` 与本地钩子。
+- **链路标识（traceId）已于 2026-10-14 落地**（T086–T090）：`com.sableos.core.trace` 内核（W3C `traceparent` 解析 + 快照式跨线程传播）、web 侧 `TraceFilter`、boot 侧唯一 `TaskDecorator`、信封第 5 字段 `traceId`、审计三表 `trace_id` 列已进 data-model（随 T015 建表）。落地代码为信封/异常/`OpenApiConfig`/链路标识与 98 个测试——**业务逻辑（五大核心能力）仍未开始**。
 - 骨架按《技术方案》第 13 章第一周的 9 模块口径落地；第 10 章的 14 模块清单（多 persona / knowledge / 三渠道模块）在实施到对应能力时再补模块。各模块依赖按实施节奏补齐：storage 的 JPA / SQLite / Flyway 已就位，provider 的 Spring AI Alibaba 等随 US1 加入。
-- `git` 仓库已初始化（main 分支）；**Spec-Kit 工作区已于 2026-10-05 就地初始化**（集成键 `qodercli`，技能装在 `.qoder/skills/`，配套 CLI `specify-cli` 1.0.13 锁版本），宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart 与 tasks.md（90 条任务），其中 T001–T006 / T067 / T077 已实施并勾选。
+- `git` 仓库已初始化（main 分支）；**Spec-Kit 工作区已于 2026-10-05 就地初始化**（集成键 `qodercli`，技能装在 `.qoder/skills/`，配套 CLI `specify-cli` 1.0.13 锁版本），宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart 与 tasks.md（90 条任务），其中 T001–T006 / T067 / T077 / T086–T090 已实施并勾选。
 - 文档在 2026-09-21 做过一次纯格式整理（统一标题层级、表格分隔符、引用块、列表空行），**内容与整理前逐字一致**，以当前版本为准。
 
 ## 3. 目录分工
@@ -199,4 +200,5 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
   - 长期记忆后端：`TechnicalSolution.md` 5.1 写"三档后端核心阶段一次交付"，实际本次只交付 Markdown（默认）+ SQLite 两档，Mem0 档（依赖外部自托管服务）后置，见 `specs/001-runtime-core/research.md` 的 D-04。
 - **Spec-Kit 工作区已就位（2026-10-05）**：`.specify/` 就地初始化，集成键 `qodercli`（技能装在 `.qoder/skills/`，以 `/speckit-<command>` 调用），配套 CLI 锁 `specify-cli` 1.0.13，宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart 与 tasks.md（90 条）。
 - **工程地基已落地（2026-10-12）**：`sableos-init` skill 十步执行完毕（提交链 `b37e5f4`→`1ac85d3` + `24dd3b8`），T001–T006 / T067 / T077 已勾选；业务开发（US1 起）仍未开始编码。质量门槛、钩子启用方式与两个防回退坑见 5.3 节。Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过）。
+- **链路标识已落地（2026-10-14）**：T086–T090 已勾选（core 内核 / web 入口 / boot 装配 / 信封字段 / 传播测试）。**仍待后续任务接手的两处**：① 审计三表的 `trace_id` 列随 T015 建表落地（列与索引口径见 `data-model.md` 2.6），写入点在 T021 / T034 / T035；② CLI 与定时入口的 `openRoot` 分别在 T039 / T073。设计与取舍见 `research.md` D-14。
 - **Boot 4.x 迁移待排期（2026-10-14 决策：短期留在 3.5.16 过渡）**：3.5.16 是 Boot 3.5 OSS 线终版，Spring Framework 6.2.19 的 6 条 CVSS≥8 CVE 在 OSS 线无修复版，过渡期以抑制放行（见 5.3 节，抑制移除条件即迁移落地）。迁移须联动 Spring AI 1.1.x→2.x、springdoc 2.8→3.x、JUnit 6 等，单独走 Spec-Kit 任务排期，勿在业务 task 里顺手升级。
