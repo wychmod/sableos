@@ -50,12 +50,25 @@ sandbox:
 memory:
   backend: markdown
 
+# --- 应用元信息（/actuator/info）---
+# 注意：Boot 2.6+ 起 info 端点的 env 贡献者默认关闭，须开 management.info.env.enabled（见下方）。
+# version 用 @project.version@（根 POM 的应用版本，发版时自动跟随）；API 版本 v1 属于 URL 前缀与 OpenAPI，不在此处。
+info:
+  app:
+    name: SableOS
+    description: 企业能完全掌控的、Java 原生的、私有可审计的 Agent OS（Agent Harness OS）
+    version: @project.version@
+
 # --- Observability: Actuator + Micrometer/Prometheus ---
 management:
   endpoints:
     web:
       exposure:
         include: health,info,prometheus,metrics
+  # Boot 2.6+ 默认关闭 info 端点的 env 贡献者；不开启则上方 info.* 属性不会出现在 /actuator/info
+  info:
+    env:
+      enabled: true
   endpoint:
     health:
       probes:

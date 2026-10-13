@@ -106,6 +106,7 @@ design/assets/*.svg           ->  website/assets/img/*  （线上产物）
 | Provider 用类型扫描 | 必须用显式 provider name 映射 |
 | `AgentLoader`/`AGENT.md` 当成 Tool | Agent 目录归 `ContextLoader`，在 core 模块里 |
 | 审计表没落库 | `tool_invocations` 和 `llm_calls` day one 写入 |
+| 在 `synchronized` 里做阻塞调用（JDBC / LLM / 文件 / MCP） | JDK 21 会把虚拟线程**钉住**在载体线程上，高并发直接失效；这类锁改用 `ReentrantLock`（JDK 24 才修复该问题，本项目锁定 JDK 21） |
 
 ### 5.3 工程质量门槛（已接入 `mvn verify`，2026-10-12 起生效）
 
