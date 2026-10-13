@@ -80,6 +80,17 @@
 - **理由**：《需求文档》第 13 章要求"每个功能模块至少有一个端到端测试用例覆盖"；技术方案未细化，按此默认执行。
 - **注**：宪章未强制测试先行（TDD 条款在定稿时被明确排除），因此计划不设置"测试先写"的门槛，但要求每条 FR 有可断言的验证点。
 
+## D-14 链路标识（traceId）实现路线
+
+- **决策**：**自建**轻量实现（`com.sableos.core.trace`，框架无关、仅依赖 `slf4j-api`），**兼容 W3C trace-context**：入站解析 `traceparent`、出站回写 `traceparent` 与便捷头 `X-Trace-Id`。不引入 micrometer-tracing / brave。MDC 键为 `traceId` / `spanId` / `sessionId` / `profileName` / `channel` 五个。
+- **理由**：FR-037 与 SC-011 只要求「凭单一 ID 在日志与审计之间互查」，不需要 span 树与后端上报；项目已有 `micrometer-observation` 但无 tracing 桥接，引入 brave 会带来一套与「自实现可控」（宪章原则 II/III 的同一取向）相冲突的自动装配。自建实现零重依赖、行为可断言。
+- **`tracestate` 只透传、不解析、不生成**：SableOS 无自有 vendor key、无消费方；解析需处理 32 条上限、OWS 折叠与优先级重排，成本高收益零。原样存快照、原样写回，与上游 APM 兼容。
+- **`userId` 不入 MDC**：① `user_id` 已在 `sessions` 落库，凭 traceId 一次 join 即可反查；② HTTP 档 `user_id` 缺省 `anonymous` 且可由请求参数任意指定（契约 C-03），入 MDC 等于让外部可污染日志字段（伪造归因面）；③ prod 走 JSON 进日志平台后长期留存并入检索索引，超出 SC-011 所需。需人肉排障时用 `sessionId`，或对 userId 取 SHA-256 前 12 hex 后经 `attachBusiness` 传入，不落原值。
+- **跨线程传播只能显式做**：已用字节码核验 logback 1.5.34 的 `LogbackMDCAdapter` 内部是普通 `ThreadLocal`（非 `InheritableThreadLocal`，1.5.x 已移除 `copyOnInheritThreadLocal`），故子线程（含虚拟线程）MDC 必为空。`InheritableThreadLocal` 也不能兜底：拷贝发生在**线程创建时刻**（任务排队后父作用域早已关闭或换 trace）、平台线程池的线程只创建一次故此后永不继承、且每虚拟线程持一份 map 在百万级并发下内存放大。统一走「提交时 `snapshot()` 捕获 → 运行时安装 → finally **恢复**目标线程原状态」。
+- **Spring 异步覆盖方式**：Boot 3.5.16 开启虚拟线程时 `applicationTaskExecutor` 是 `SimpleAsyncTaskExecutor`，其 builder 无条件调用 `taskDecorator.getIfUnique()` → 注册**恰好一个** `TaskDecorator` bean 即覆盖 `@Async` 与该执行器；**注册多个会被 `getIfUnique()` 静默忽略且不报错**，故全容器只允许一个（`ObservabilityConfig`），并用测试断言 bean 数 == 1。`ThreadPoolTaskScheduler` 无 `setTaskDecorator`，定时任务改为注册前包装 Runnable。
+- **ID 生成不用 `UUID.randomUUID()`**：已核验其走共享静态 `SecureRandom`，高并发虚拟线程下是竞争点；trace-id 非凭证，用 `ThreadLocalRandom` 生成 128-bit（32 hex）即可，同时天然满足 W3C 对长度的要求。
+- **备选**：逐 controller 手动 `openIfAbsent`（oryxos 现状）——否决，易漏且覆盖不到 actuator/静态资源/404；`HandlerInterceptor`——否决，`afterCompletion` 可能在响应提交后执行导致 `setHeader` 静默失效，且不经 handler mapping 的路径覆盖不到。
+
 ## 未决项汇总
 
 | 编号 | 事项 | 阻塞什么 | 结论 |

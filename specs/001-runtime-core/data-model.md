@@ -23,6 +23,7 @@
 | `user_id` | VARCHAR | 用户标识（CLI 取本机用户名、定时固定 `scheduler`、HTTP 由请求参数提供且缺省 `anonymous`） |
 | `messages_json` | TEXT | 对话历史（JSON 序列化；含模型输出与工具结果） |
 | `status` | VARCHAR | `active` / `archived` |
+| `trace_id` | VARCHAR(32) | 链路标识（可空）：**创建该会话那次调用**的 trace，写入后不随后续轮次更新（见 2.6） |
 | `created_at` / `last_active_at` / `archived_at` | TIMESTAMP | 归档时间可空 |
 
 **状态流转**：`active` --（归档，`DELETE /api/v1/sessions/{id}`）--> `archived`；归档后不再追加消息，历史仍可查询。
@@ -41,6 +42,7 @@
 | `success` | BOOLEAN | 是否成功（被沙箱拒绝 = false） |
 | `error_message` | TEXT | 失败原因（可空） |
 | `duration_ms` | BIGINT | 执行耗时 |
+| `trace_id` | VARCHAR(32) | 链路标识（可空，建索引）：与日志 MDC `traceId` 同值，供互查（见 2.6） |
 | `created_at` | TIMESTAMP | 调用时间 |
 
 ### 2.3 `llm_calls`（本次实现，只写不查）
@@ -53,6 +55,7 @@
 | `model` | VARCHAR | 模型名 |
 | `prompt_tokens` / `completion_tokens` / `total_tokens` | INT | 用量（取不到时记 0 或空） |
 | `duration_ms` | BIGINT | 调用耗时 |
+| `trace_id` | VARCHAR(32) | 链路标识（可空，建索引）：与日志 MDC `traceId` 同值，供互查（见 2.6） |
 | `created_at` | TIMESTAMP | 调用时间 |
 
 ### 2.4 `notify_channels`（本次实现：建表 + 启动同步 + 读取）
@@ -85,7 +88,23 @@
 **行为契约（与文件档一致）**：不缓存（每次查库）；核心区永不截断，截断 = 归档查询 `LIMIT N`；关键词检索 = 归档区 `LIKE` 匹配、不区分大小写；写入分区由调用方显式指定，缺省归档区。
 **留白**：向量列与索引属 015 语义检索升级，本次不建。
 
-### 2.6 后续实体的契约位置（本次不实现）
+### 2.6 链路标识列与索引（traceId）
+
+三张表均含可空 `trace_id` 列，值与响应头 `X-Trace-Id`、信封 `traceId` 字段、日志 MDC `traceId` 同源（见 `contracts/http-api.md`「链路标识」小节）。
+
+| 表 | SQLite | PostgreSQL | 索引 |
+| --- | --- | --- | --- |
+| `sessions` | `trace_id TEXT NULL` | `trace_id VARCHAR(32) NULL` | 不建（跨多轮、选择性低） |
+| `tool_invocations` | `trace_id TEXT NULL` | `trace_id VARCHAR(32) NULL` | `idx_tool_invocations_trace_id` |
+| `llm_calls` | `trace_id TEXT NULL` | `trace_id VARCHAR(32) NULL` | `idx_llm_calls_trace_id` |
+
+**约定**：
+
+1. **可空**——启动早期或无链路上下文时写入不得失败（宪章原则 VI 的 day-one 审计优先于 trace 完整性）。
+2. 由**领域写入方显式赋值**（`AgentService` 建会话、`ToolExecutor` 写工具记录、模型调用记录器写 `llm_calls`），**不用 JPA `@PrePersist` 监听器**——Hibernate flush 可能发生在其他线程/时机，读 ThreadLocal 会拿到空值或错值。
+3. `sessions.trace_id` 语义是**创建该会话的那次 trace，写入后不更新**；「最近一次 trace」由 `llm_calls WHERE session_id=? ORDER BY created_at DESC LIMIT 1` 推出，避免每轮 UPDATE 加剧 SQLite 单写者竞争。
+
+### 2.7 后续实体的契约位置（本次不实现）
 
 | 实体 | 归属 | 说明 |
 | --- | --- | --- |

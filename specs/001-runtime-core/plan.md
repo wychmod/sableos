@@ -2,7 +2,7 @@
 
 **功能分支**：`001-runtime-core` | **日期**：2026-10-05 | **规格**：[spec.md](./spec.md)
 
-**输入**：`specs/001-runtime-core/spec.md`（5 个用户故事、41 条功能需求、12 条成功标准）
+**输入**：`specs/001-runtime-core/spec.md`（5 个用户故事、46 条功能需求、12 条成功标准）
 
 **依据**：技术方案以 `docs/TechnicalSolution.md` 为准（仓库内编码的权威依据）；非协商条款以 `.specify/memory/constitution.md` 为准。
 
@@ -30,7 +30,7 @@
 
 **约束**：禁用 Spring AI 自动 tool 执行；禁用 `SecurityManager`；Provider 必须显式映射；Tool 只允许一个模块；审计表必须真实落库；核心阶段无认证/无多租户（假设受信内网）
 
-**规模与范围**：本功能涉及 14 个模块中的 **9 个既有模块**（core / provider / memory / tool / channel-cli / web / storage / cli / boot），persona / knowledge / 三渠道模块只预留位置不创建；41 条 FR、12 个关键实体、10 个 REST 端点、12 个 CLI 子命令
+**规模与范围**：本功能涉及 14 个模块中的 **9 个既有模块**（core / provider / memory / tool / channel-cli / web / storage / cli / boot），persona / knowledge / 三渠道模块只预留位置不创建；46 条 FR、10 个关键实体、10 个 REST 端点、12 个 CLI 子命令
 
 ## 宪章检查
 

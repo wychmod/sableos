@@ -11,13 +11,15 @@
   "code": 0,
   "message": "ok",
   "data": { },
-  "timestamp": "2026-10-05T15:00:00Z"
+  "timestamp": "2026-10-05T15:00:00Z",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
 
 - `code`：`0` 表示成功；非 0 为内部错误码
 - `message`：人类可读信息（错误时为可定位原因）
 - `data`：成功时为业务数据，错误时为 `null`
+- `traceId`：本次调用的链路标识（W3C trace-id，32 位小写 hex）；与响应头 `X-Trace-Id`、日志 MDC `traceId`、审计表 `trace_id` **同值**；无链路上下文（如内部构造）时为 `null`。信封形状恒定为这 5 个字段，不因 null 而省略
 
 ## 状态码约定
 
@@ -40,6 +42,19 @@
 | Agent 调用超时 | 60 秒 |
 | CORS | 核心阶段放开（扩展阶段加白名单） |
 | 认证 | 核心阶段无（假设受信内网） |
+
+## 链路标识（traceId）
+
+| 项 | 约定 |
+| --- | --- |
+| 入站优先级 | `traceparent`（W3C trace-context）> `X-Trace-Id`（仅当为合法 32 位小写 hex 时采纳）> 服务端新生成 |
+| 非法值处理 | `traceparent` 格式非法时**降级为新生成**，请求照常处理，不返回 400 |
+| 出站回写 | 每个响应恒定回写 `X-Trace-Id` 与 `traceparent` 两个头（`traceparent` 可由配置关闭） |
+| `tracestate` | 只透传：原样接收、原样回写，不解析、不生成 |
+| sampled 语义 | 透传入站 sampled 标志，本地新生成恒为 `01`；sampled=0 **不影响**日志输出与审计落库 |
+| 覆盖范围 | 全部路径（含 `/actuator/**` 与 `/swagger-ui/**`），不做排除 |
+| 一致性 | 响应头、信封 `traceId` 字段、日志 MDC、审计三表 `trace_id` 为同一值 |
+| 跨入口一致 | HTTP / 命令行 / 定时触发 / 异步执行四类入口共用同一套标识与传播规则（FR-046） |
 
 ## 1. 会话管理（4 个）
 
@@ -135,3 +150,6 @@ POST /api/v1/agents/{name}/invoke
 | C-05 | 超过 32KB 的消息返回 400；历史查询不超过 100 条 |
 | C-06 | 提供方故障返回 503；调用超时返回 504 |
 | C-07 | 归档后的会话仍可查询、不可再追加消息 |
+| C-08 | 响应头 `X-Trace-Id` 与信封 `traceId` 同值，且匹配 `[0-9a-f]{32}` |
+| C-09 | 入站合法 `traceparent` 被沿用：trace-id 不变、span-id 变化 |
+| C-10 | 入站非法 `traceparent` 降级为新生成，且请求仍成功（不返回 400） |

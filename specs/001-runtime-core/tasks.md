@@ -52,14 +52,19 @@
 - [ ] T012 实现 `ContextLoader`：现读 `AGENT.md` 正文与 Bootstrap（无缓存，改动下一轮即生效） in `sableos-core/src/main/java/com/sableos/core/context/ContextLoader.java`
 - [ ] T013 实现 `AgentLoader.deriveProfile`：扫 `.sableos/agents/`，校验 provider / tool / channel / bootstrap，校验失败只记日志不阻断启动 in `sableos-core/src/main/java/com/sableos/core/agent/AgentLoader.java`
 - [ ] T014 [P] 审计实体与仓储：`ToolInvocationEntity` 与 `ToolInvocationRepository`、`LlmCallEntity` 与 `LlmCallRepository`（只写不查） in `sableos-storage/src/main/java/com/sableos/storage/audit/`
-- [ ] T015 Flyway 首个迁移脚本：`sessions`、`tool_invocations`、`llm_calls`、`notify_channels`、`memory_entries` 五张表（字段与约束照 `data-model.md` 第 2 节） in `sableos-storage/src/main/resources/db/migration/sqlite/V1__init.sql`
+- [ ] T015 Flyway 首个迁移脚本：`sessions`、`tool_invocations`、`llm_calls`、`notify_channels`、`memory_entries` 五张表（字段与约束照 `data-model.md` 第 2 节）；三张会话/审计表含可空 `trace_id` 列与 `idx_tool_invocations_trace_id` / `idx_llm_calls_trace_id` 索引（`data-model.md` 2.6），PostgreSQL 轨同步 in `sableos-storage/src/main/resources/db/migration/sqlite/V1__init.sql`、`sableos-storage/src/main/resources/db/migration/postgresql/V1__init.sql`
 - [ ] T016 实现 `WhitelistSandbox`：四类 ActionType 分别路由到路径（标准化后比对，处理 `../` 穿越）、命令（精确匹配）、域名（通配符）、SMTP 端点（`host:port`，端口缺省任意）四个校验分支，失败抛异常；**不得使用 `SecurityManager`**（JDK 21 已不可用） in `sableos-tool/src/main/java/com/sableos/tool/sandbox/WhitelistSandbox.java`
 - [ ] T017 实现 `ToolRegistry`：注册全部 `SableTool`（内置 / MCP / 注解）并按 Profile 的 `tools` 字段过滤可用子集 in `sableos-tool/src/main/java/com/sableos/tool/registry/ToolRegistry.java`
 - [ ] T018 实现 `ConfigLoader`：`${ENV_VAR}` 占位符解析、必填与格式校验、明文密钥不入日志 in `sableos-cli/src/main/java/com/sableos/cli/config/ConfigLoader.java`
 - [ ] T019 实现 `sableos init`：创建 `.sableos/` 完整目录、默认 Bootstrap 模板、示例 Agent、**带注释的最小白名单**（示例域名 + 工作区目录 + 少量命令）、`notify_channels.yaml` 模板，且可重复执行不覆盖用户文件 in `sableos-cli/src/main/java/com/sableos/cli/command/InitCommand.java`
 - [ ] T020 Picocli 主入口与 12 个子命令骨架（未实现者给出明确提示） in `sableos-cli/src/main/java/com/sableos/cli/SableOsCli.java`
-- [ ] T021 实现 `AgentService.process` 编排壳：放入 `ProfileContext` → 调循环 → 持久化会话 → `finally` 清理 in `sableos-core/src/main/java/com/sableos/core/agent/AgentService.java`
+- [ ] T021 实现 `AgentService.process` 编排壳：放入 `ProfileContext` → 调循环 → 持久化会话 → `finally` 清理；同一 `finally` 内关闭 `TraceContext.attachBusiness(sessionId, profileName, channel)` 作用域（T086），建会话时显式写 `trace_id` in `sableos-core/src/main/java/com/sableos/core/agent/AgentService.java`
 - [ ] T022 [P] 建立测试基建：临时工作区夹具、内存 SQLite 数据源、provider 桩 in `sableos-core/src/test/java/com/sableos/core/support/`
+- [ ] T086 [P] 实现链路标识内核（框架无关，仅依赖 `slf4j-api`）：`TraceIds`（`ThreadLocalRandom` 生成 32/16 位 hex，避开 `UUID.randomUUID()` 的共享 `SecureRandom` 竞争）、`TraceParent`（W3C trace-context 解析与格式化，非法值降级为新生成）、`TraceSnapshot`（跨线程不可变载荷 + `wrap(Runnable/Callable)` + `openInCurrentThread`）、`TraceContext`（`openRoot` / `open` / `openIfAbsent` / `openSpan` / `attachBusiness` + `Scope` 的 owner 语义与 ThreadLocal/MDC 双清）、`TraceHeaders`（函数式 `extract`/`inject`，不依赖 servlet）、`TracedExecutors` + `TracedExecutorService`；**全链路无锁**（JDK 21 下 `synchronized` 会钉住载体线程） in `sableos-core/src/main/java/com/sableos/core/trace/`（FR-037、FR-046）
+- [ ] T087 [P] HTTP 入口接入：`TraceFilter`（`OncePerRequestFilter`，order 最高，在 `chain.doFilter` **之前**回写 `X-Trace-Id` 与 `traceparent`，`try-with-resources` 保证清理）、`TraceProperties`（`sableos.observability.trace`）、`TraceConfiguration`（`FilterRegistrationBean`） in `sableos-web/src/main/java/com/sableos/web/trace/`（FR-046、契约「链路标识」小节）
+- [ ] T088 [P] 异步传播装配与日志输出：`TraceTaskDecorator` + `ObservabilityConfig`（**全容器唯一** `TaskDecorator` bean——`SimpleAsyncTaskExecutorBuilder` 用 `getIfUnique()`，注册多个即静默失效）；`logback-spring.xml` 的 dev pattern 加 `spanId`/`sessionId`、prod `LogstashEncoder` 补齐 5 个 `includeMdcKeyName`（白名单，不用 `includeMdc`）；`application.yaml` 加 `sableos.observability.trace` 三键 in `sableos-boot/src/main/java/com/sableos/boot/observability/`、`sableos-boot/src/main/resources/`（FR-037、FR-046）
+- [ ] T089 信封接入 traceId：`ApiResponse` 增第 5 字段（私有构造读 `TraceContext.traceId()`，静态工厂签名不变、null 也输出以保持信封形状恒定），补 `@Schema`；同步契约测试 in `sableos-web/src/main/java/com/sableos/web/common/ApiResponse.java`（契约 C-08 ~ C-10）
+- [ ] T090 [P] 链路传播测试：`TraceIdsTest` / `TraceParentTest`（解析各分支）/ `TraceContextTest`（owner 与嵌套、close 后 ThreadLocal 与 MDC 双清）/ `TracedExecutorsTest`（虚拟线程传播、平台线程池连续两任务无串号）/ `TraceFilterTest`（MockMvc 断言响应头与信封同值、入站沿用、非法降级仍 200）/ `ObservabilityConfigTest`（断言 `TaskDecorator` bean 数 == 1）/ `AsyncTracePropagationIT`（`ListAppender` 断言后台虚拟线程日志同 traceId、异 spanId、5 个 MDC 键齐全） in `sableos-core/src/test/java/com/sableos/core/trace/`、`sableos-web/src/test/java/com/sableos/web/trace/`、`sableos-boot/src/test/java/com/sableos/boot/observability/`
 
 **检查点**：地基就绪，用户故事可以开工
 
@@ -103,12 +108,12 @@
 ### 用户故事 2 的实现
 
 - [ ] T033 [US2] 实现 `PromptBuilder` 四段组装：系统提示（`AGENT.md` 正文 + Bootstrap + 当前日期时间）→ Memory 注入 → 对话历史（按 `max_history_turns` 截断，缺省 20）→ 可用工具列表 in `sableos-core/src/main/java/com/sableos/core/prompt/PromptBuilder.java`
-- [ ] T034 [US2] 实现 `ReActLoop`：调 Provider → 无工具调用即结束 → 有则交 `ToolExecutor` 并回填结果 → 迭代计数与上限终止（缺省 10，可由 Profile 覆盖）；终止时返回最后一条模型输出 + 终止原因；模型输出无法解析出工具调用时，按带「是否可重试」的失败结果回填并继续，由上限兜底（FR-044） in `sableos-core/src/main/java/com/sableos/core/react/ReActLoop.java`
-- [ ] T035 [US2] 实现 `ToolExecutor`：查 `ToolRegistry` → `Sandbox.enforce` → 执行 → 包装 `ToolResult` → 写 `tool_invocations`（失败与被拒绝的调用同样落库） in `sableos-core/src/main/java/com/sableos/core/tool/ToolExecutor.java`
+- [ ] T034 [US2] 实现 `ReActLoop`：调 Provider → 无工具调用即结束 → 有则交 `ToolExecutor` 并回填结果 → 迭代计数与上限终止（缺省 10，可由 Profile 覆盖）；终止时返回最后一条模型输出 + 终止原因；模型输出无法解析出工具调用时，按带「是否可重试」的失败结果回填并继续，由上限兜底（FR-044）；每轮迭代用 `TraceContext.openSpan()` 递进 spanId，写 `llm_calls` 时显式赋 `trace_id` in `sableos-core/src/main/java/com/sableos/core/react/ReActLoop.java`
+- [ ] T035 [US2] 实现 `ToolExecutor`：查 `ToolRegistry` → `Sandbox.enforce` → 执行 → 包装 `ToolResult` → 写 `tool_invocations`（失败与被拒绝的调用同样落库）；工具执行段用 `TraceContext.openSpan()`，落库时显式赋 `trace_id`（取 `TraceContext.traceId()`，**不用** JPA `@PrePersist`） in `sableos-core/src/main/java/com/sableos/core/tool/ToolExecutor.java`
 - [ ] T036 [US2] 实现工具结果截断：超过可配置阈值按字符数截断并标注「已截断 + 原始长度」，循环继续且不落盘 in `sableos-core/src/main/java/com/sableos/core/tool/ToolResultTruncator.java`
 - [ ] T037 [P] [US2] 内置 `HttpTools`（`http_get` / `http_post`，执行前过域名白名单） in `sableos-tool/src/main/java/com/sableos/tool/builtin/HttpTools.java`
 - [ ] T038 [US2] 实现内存版会话存储与消息追加（本阶段不落库） in `sableos-storage/src/main/java/com/sableos/storage/session/InMemorySessionStore.java`
-- [ ] T039 [US2] 实现 `CliChannel` 与 `sableos chat`（交互对话、维持当前会话、`/quit` 退出） in `sableos-channel-cli/src/main/java/com/sableos/channel/cli/CliChannel.java`
+- [ ] T039 [US2] 实现 `CliChannel` 与 `sableos chat`（交互对话、维持当前会话、`/quit` 退出）；**每轮用户输入开一个 `TraceContext.openRoot("cli")` 作用域**并在轮末关闭（T086） in `sableos-channel-cli/src/main/java/com/sableos/channel/cli/CliChannel.java`
 - [ ] T040 [US2] 跑 `/speckit-analyze` 核对一致性并修正漂移
 - [ ] T041 [US2] 打 commit 固化用户故事 2 的稳定状态（提交范围：`sableos-core/`、`sableos-tool/`、`sableos-channel-cli/`、`sableos-storage/`）
 
@@ -160,7 +165,7 @@
 - [ ] T056 [US4] 定义 `NotifyChannelAdapter` 接口（`send(NotifyTarget, content)`）并实现 `WebhookNotifyAdapter`（发送前过域名白名单） in `sableos-tool/src/main/java/com/sableos/tool/notify/`
 - [ ] T057 [US4] 实现 `NotifyTools.notify(content, channel)`：从全局注册表按名解析适配器与地址，地址不进入对话 in `sableos-tool/src/main/java/com/sableos/tool/builtin/NotifyTools.java`
 - [ ] T058 [US4] 实现 `notify_channels.yaml` 加载与同步：读文件 → reconcile 进 `notify_channels` 表（新增/改动 upsert、文件里移除的标记退役），供 `NotifyTools` 解析适配器与地址；不提供 CRUD 端点（FR-035/036） in `sableos-storage/src/main/java/com/sableos/storage/notify/`
-- [ ] T059 [US4] 实现 `McpClientService` 与 `McpToolAdapter`：启动连接 `mcp_servers.yaml` 声明的 server、调 `tools/list`、包装为 `SableTool`，处理失联 / 超时 / 错误恢复 in `sableos-tool/src/main/java/com/sableos/tool/mcp/`
+- [ ] T059 [US4] 实现 `McpClientService` 与 `McpToolAdapter`：启动连接 `mcp_servers.yaml` 声明的 server、调 `tools/list`、包装为 `SableTool`，处理失联 / 超时 / 错误恢复；出站调用用 `TraceHeaders.inject` 注入 `traceparent` / `X-Trace-Id`，SDK 回调线程由 `TraceContext.snapshot()` 捕获后在回调内 `openInCurrentThread()`（T086） in `sableos-tool/src/main/java/com/sableos/tool/mcp/`
 - [ ] T060 [US4] `ContextLoader` 补技能扫描：验证软连接真实目标位于公共 Skill 根内，只注入 name / description / 本地绝对路径（正文不预载） in `sableos-core/src/main/java/com/sableos/core/context/ContextLoader.java`
 - [ ] T061 [US4] 实现注解式工具的扫描注册（来源标记 `builtin` / `annotation` / `mcp`） in `sableos-tool/src/main/java/com/sableos/tool/registry/AnnotationToolScanner.java`
 - [ ] T062 [US4] 跑 `/speckit-analyze` 核对一致性并修正漂移
@@ -183,14 +188,14 @@
 
 ### 用户故事 5 的实现
 
-- [ ] T066 [US5] 实现 `WebServer`：Spring MVC + virtual thread，`sableos serve` 触发，默认端口 8080 in `sableos-web/src/main/java/com/sableos/web/WebServer.java`
+- [ ] T066 [US5] 实现 `WebServer`：Spring MVC + virtual thread，`sableos serve` 触发，默认端口 8080；确认 `TraceFilter`（T087）以最高优先级覆盖全部路径（含 `/actuator/**` 与 `/swagger-ui/**`） in `sableos-web/src/main/java/com/sableos/web/WebServer.java`
 - [x] T067 [US5] 统一响应信封与 `GlobalExceptionHandler`：成功与错误共用一个信封，错误码映射到标准状态码 in `sableos-web/src/main/java/com/sableos/web/GlobalExceptionHandler.java`
 - [ ] T068 [US5] 实现 `SessionApiController` 四个端点：创建（同组合复用）、发消息、查历史（默认最近 100 条）、归档（不物理删除） in `sableos-web/src/main/java/com/sableos/web/SessionApiController.java`
 - [ ] T069 [US5] 实现 `AgentApiController.invoke`：无状态调用端点，与 CLI 走同一条 `AgentService` 链路（也是定时任务手动补跑的入口） in `sableos-web/src/main/java/com/sableos/web/AgentApiController.java`
 - [ ] T070 [P] [US5] 实现信息查询三个控制器：`ProfileApiController`、`MemoryApiController`、`ToolApiController`（均只读、脱敏） in `sableos-web/src/main/java/com/sableos/web/`
 - [ ] T071 [P] [US5] 实现 `SystemApiController`：`health`（进程 / 存储 / Agent 数）与 `info`（版本 / 工作区 / provider 与 MCP 列表，不含密钥） in `sableos-web/src/main/java/com/sableos/web/SystemApiController.java`
 - [ ] T072 [US5] 会话持久化切到 SQLite：`SessionRepository` 落地、消息追加入库、跨重启恢复查询；按会话维度加进程内锁实现同会话串行（等待上限为单次调用超时，不拒绝、不丢写，FR-045） in `sableos-storage/src/main/java/com/sableos/storage/session/`
-- [ ] T073 [US5] 实现 `AgentScheduler`：`ThreadPoolTaskScheduler` + `CronTrigger` 动态注册；单任务进程内锁防重叠（上一次未结束则跳过）；失败只记日志且仍走完整审计路径 in `sableos-core/src/main/java/com/sableos/core/agent/AgentScheduler.java`
+- [ ] T073 [US5] 实现 `AgentScheduler`：`ThreadPoolTaskScheduler` + `CronTrigger` 动态注册；单任务进程内锁防重叠（上一次未结束则跳过，锁用 `ReentrantLock.tryLock`，**禁 `synchronized`**）；失败只记日志且仍走完整审计路径；每次触发用 `TracedExecutors.wrapRoot(task, "scheduler")` 开新 trace，**跳过分支单独开一个短 trace 记 WARN，绝不复用上次执行的 traceId**（T086） in `sableos-core/src/main/java/com/sableos/core/agent/AgentScheduler.java`
 - [ ] T074 [US5] 会话身份规则落地：命令行取本机用户名、HTTP 由请求参数提供（缺省 `anonymous`）、定时固定 `scheduler`；`channel + user + profile` 联合生成并在同组合下复用 in `sableos-core/src/main/java/com/sableos/core/session/SessionIdentity.java`
 - [ ] T075 [US5] 多 Agent 并存校验：同实例两个不同 provider 的 Agent 同时可用、配置与会话不串扰 in `sableos-core/src/main/java/com/sableos/core/agent/AgentLoader.java`
 - [ ] T076 [US5] 补全 CLI 命令：`serve` / `gateway` / `status` / `profile list|create|show|delete` / `provider list` / `tool list` / `session list`（合计 12 个子命令） in `sableos-cli/src/main/java/com/sableos/cli/command/`
@@ -208,7 +213,7 @@
 
 - [ ] T080 [P] 把三个 Demo 的 Agent 目录与公共 Skill 示例纳入 `sableos init` 的模板产物（每日天气、每日科技日报、每日 GitHub 日报） in `sableos-cli/src/main/resources/templates/`
 - [ ] T081 [P] 项目主页同步：在既有站点补上五大能力与快速开始（对应 SC-012） in `website/index.html`、`website/assets/js/`
-- [ ] T082 [P] 日志与审计脱敏复核：确认密钥、通知地址、Bootstrap 正文均不出现在日志与 HTTP 响应 in `sableos-boot/src/main/resources/logback-spring.xml`、`sableos-web/src/main/java/com/sableos/web/`
+- [ ] T082 [P] 日志与审计脱敏复核：确认密钥、通知地址、Bootstrap 正文均不出现在日志与 HTTP 响应；同时复核 traceId 相关 MDC 键为白名单输出（`LogstashEncoder` 的 `includeMdcKeyName`），且 `userId` 未进入 MDC in `sableos-boot/src/main/resources/logback-spring.xml`、`sableos-web/src/main/java/com/sableos/web/`
 - [ ] T083 稳定性与性能验证：10 Agent 连续 4 小时、100 并发会话、会话创建 P99 < 200ms、转发开销 < 50ms（quickstart 第 7 节） in `specs/001-runtime-core/quickstart.md`
 - [ ] T084 端到端跑通 quickstart 的 3 个 Demo、6 条失败路径与 8 条工程化验证，记录结果 in `specs/001-runtime-core/quickstart.md`
 - [ ] T085 文档同步：把实现过程中产生的口径变化回写 `AGENTS.md` 与相关 `docs/`（含漂移清单）
@@ -242,6 +247,7 @@
 
 - Phase 1 内 T002–T005 可并行
 - Phase 2 内 T007–T011、T014、T022 可并行（不同文件）
+- Phase 2 内链路标识一组：T086（core 内核）先做，其后 T087（web）、T088（boot）、T090（测试）分属不同模块可并行；T089（信封字段）依赖 T086 与 T087
 - Phase 4 内 T037（HttpTools）与 T038（内存会话存储）可并行
 - Phase 5 内 T045（Markdown 档）与 T046（SQLite 档）可并行
 - Phase 6 内 T054（FileTools）与 T055（ShellTools）可并行
