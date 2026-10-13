@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SableOS 结构化日志。
-  - 默认（开发）：彩色、人类可读的 console pattern，带 traceId（MDC）
-  - profile=prod：单行 JSON（LogstashEncoder），同样携带 traceId，便于日志平台检索
+  - 默认（开发）：彩色、人类可读的 console pattern，带 traceId/spanId 与 sessionId（MDC）
+  - profile=prod：单行 JSON（LogstashEncoder），输出 MDC 白名单里的 5 个键，便于日志平台检索
+  MDC 的写入方是 com.sableos.core.trace.TraceContext（键名常量见该类）：
+  traceId / spanId 由四类入口（HTTP / CLI / 定时 / 异步）开作用域时写入，
+  sessionId / profileName / channel 由 AgentService 等业务侧 attachBusiness 写入。
   约定：统一走 SLF4J，禁止 System.out；密钥、通知渠道地址、Bootstrap 正文等敏感内容
-  一律不进日志（契约 A-03 / N-03，靠调用侧脱敏，禁止打印配置原文）。
+  一律不进日志（契约 A-03 / N-03，靠调用侧脱敏，禁止打印配置原文）；userId 也不入 MDC（research.md D-14）。
 -->
 <configuration>
     <!-- 注册 Spring Boot 的 %clr / %wEx 转换器与下方引用的基础属性 -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <property name="LOG_PATTERN"
-              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%X{traceId:-}]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"/>
+              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%X{traceId:-}/%X{spanId:-}]){faint} %clr(%X{sessionId:-}){magenta} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"/>
 
     <!-- 开发：彩色 console -->
     <springProfile name="!prod">
@@ -32,7 +35,14 @@
     <springProfile name="prod">
         <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <!-- 白名单模式：不列出的 MDC 键不会进 JSON。新增 MDC 键必须同步补这里，
+                     否则 prod 静默缺字段而 dev 正常（最难查的一类故障）。
+                     刻意不用 includeMdc=true——白名单能防敏感值混入日志（契约 A-03）。 -->
                 <includeMdcKeyName>traceId</includeMdcKeyName>
+                <includeMdcKeyName>spanId</includeMdcKeyName>
+                <includeMdcKeyName>sessionId</includeMdcKeyName>
+                <includeMdcKeyName>profileName</includeMdcKeyName>
+                <includeMdcKeyName>channel</includeMdcKeyName>
                 <customFields>{"application":"sableos"}</customFields>
             </encoder>
         </appender>

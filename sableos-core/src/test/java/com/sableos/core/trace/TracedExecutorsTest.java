@@ -49,9 +49,11 @@ class TracedExecutorsTest {
 
         assertThat(done.await(AWAIT_SECONDS, TimeUnit.SECONDS)).isTrue();
         assertThat(childTrace.get()).isEqualTo(scope.traceId());
-        assertThat(childSpan.get()).isEqualTo(scope.spanId());
+        // 跨线程即新的一段：trace 相同、span 递进
+        assertThat(childSpan.get()).isNotEqualTo(scope.spanId());
       }
 
+      assertThat(TraceIds.isValidSpanId(childSpan.get())).isTrue();
       assertThat(childIsVirtual.get()).isTrue();
       assertThat(childMdcTrace.get()).isEqualTo(childTrace.get());
       assertThat(childMdcChannel.get()).isEqualTo(TraceContext.CHANNEL_WEB);

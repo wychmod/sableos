@@ -77,6 +77,19 @@ management:
     tags:
       application: sableos
 
+# --- 链路标识（traceId / spanId；对外契约见 contracts/http-api.md「链路标识」小节）---
+# MDC 共 5 个键：traceId / spanId / sessionId / profileName / channel；
+# prod 档的 JSON 输出走 logback-spring.xml 里 LogstashEncoder 的 includeMdcKeyName 白名单，新增键必须同步两处。
+sableos:
+  observability:
+    trace:
+      # 是否回写链路响应头（MDC 与信封 traceId 字段不受此开关影响）
+      enabled: true
+      # 便捷响应头名；网关若改写头名可在此对齐
+      response-header: X-Trace-Id
+      # 是否同时回写 W3C 的 traceparent / tracestate
+      propagate-w3c: true
+
 # --- OpenAPI / Swagger UI（springdoc）---
 # swagger-ui webjar 由父 POM 覆盖到修补版；此处必须显式声明同一版本：
 # springdoc 在 fat jar 内自动探测 webjar 版本会失败并回落到内置默认（5.32.2），

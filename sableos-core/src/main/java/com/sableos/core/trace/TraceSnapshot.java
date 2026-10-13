@@ -71,7 +71,8 @@ public record TraceSnapshot(
       return task;
     }
     return () -> {
-      TraceSnapshot previous = TraceContext.install(this);
+      // span 在**运行时**递进而非包装时：同一个被包装任务反复执行（如定时触发）时，每次都是独立的一段
+      TraceSnapshot previous = TraceContext.install(withSpan(TraceIds.newSpanId()));
       try {
         task.run();
       } finally {
@@ -86,7 +87,7 @@ public record TraceSnapshot(
       return task;
     }
     return () -> {
-      TraceSnapshot previous = TraceContext.install(this);
+      TraceSnapshot previous = TraceContext.install(withSpan(TraceIds.newSpanId()));
       try {
         return task.call();
       } finally {
@@ -96,10 +97,10 @@ public record TraceSnapshot(
   }
 
   /**
-   * 在当前线程安装本快照并返回作用域，用于**无法装饰线程**的场景（如 MCP SDK 的回调线程、子进程 IO 线程）：在提交处 {@code
+   * 在当前线程安装本快照（span 递进为新的一段）并返回作用域，用于**无法装饰线程**的场景（如 MCP SDK 的回调线程、子进程 IO 线程）：在提交处 {@code
    * TraceContext.snapshot()} 捕获，在回调里 try-with-resources 打开本方法。
    */
   public TraceContext.Scope openInCurrentThread() {
-    return TraceContext.openSnapshot(this);
+    return TraceContext.openSnapshot(isEmpty() ? this : withSpan(TraceIds.newSpanId()));
   }
 }
