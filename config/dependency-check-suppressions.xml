@@ -9,7 +9,31 @@
         3) 何时移除（如“升级到 X 版本后删除本条目”）。
 
       语法见 https://jeremylong.github.io/DependencyCheck/general/suppression.html
-      当前为空表：首轮 OWASP 扫描（CI 的 dependency-check job / 本地加 -Dowasp.skip=false）
-      发现问题时在此追加，禁止无 notes 的裸抑制。
+      首轮 OWASP 扫描发现问题时在此追加，禁止无 notes 的裸抑制。
+      现有条目：spring-framework 6.2.19 六条 CVE（OSS 线无修复版，2026-10-14）。
     -->
+
+    <suppress>
+        <notes><![CDATA[
+Timestamp: 2026-10-14
+命中构件：org.springframework:spring-*@6.2.19（Spring Framework 6.2.x 线）
+为何暂以抑制放行：
+  1) 6.2.x 的 OSS 支持已于 2026-06-30 结束，6.2.19 是 Maven Central 终版；
+     这 6 条（2026-08~09 披露，CVSS 9.1-9.8）官方仅在 6.2.20（商业支持）
+     与 7.0.9（Spring Boot 4）中提供修复，无任何可用的 OSS 修复版本。
+  2) 项目当前处于文档先行阶段：无对外业务端点，SpEL / SSE / WebSocket
+     等触发场景均未启用，实际不可达。
+  3) 项目无 Spring 商业订阅，无法获取 6.2.20。
+何时移除：Spring Boot 4.x 迁移落地后删除本条（迁移待排期，见 AGENTS.md 第 10 章；
+迁移后 spring-* 版本变为 7.0.x，本 packageUrl 不再命中，若 CI 仍报 spring 相关
+CVE 即为真实残留，不再受本条遮蔽）。
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-.*@6\.2\.19$</packageUrl>
+        <cve>CVE-2026-47884</cve>
+        <cve>CVE-2026-47890</cve>
+        <cve>CVE-2026-47891</cve>
+        <cve>CVE-2026-47892</cve>
+        <cve>CVE-2026-59283</cve>
+        <cve>CVE-2026-59313</cve>
+    </suppress>
 </suppressions>
