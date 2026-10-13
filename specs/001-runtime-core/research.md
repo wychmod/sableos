@@ -91,6 +91,9 @@
 - **ID 生成不用 `UUID.randomUUID()`**：已核验其走共享静态 `SecureRandom`，高并发虚拟线程下是竞争点；trace-id 非凭证，用 `ThreadLocalRandom` 生成 128-bit（32 hex）即可，同时天然满足 W3C 对长度的要求。
 - **备选**：逐 controller 手动 `openIfAbsent`（oryxos 现状）——否决，易漏且覆盖不到 actuator/静态资源/404；`HandlerInterceptor`——否决，`afterCompletion` 可能在响应提交后执行导致 `setHeader` 静默失效，且不经 handler mapping 的路径覆盖不到。
 
+- **ID 生成不用 `UUID.randomUUID()`，且对 findsecbugs 的 `PREDICTABLE_RANDOM` 做方法级定点抑制**：已核验 `UUID.randomUUID()` 走共享静态 `SecureRandom`。此处**不**改用 `SecureRandom` 的理由有两条：① trace-id 是关联标识而非安全凭证——HTTP 入口本就接受客户端提供的 `traceparent` / `X-Trace-Id`，不可预测性不构成任何安全边界；② `SecureRandom.nextBytes` 在 `synchronized` 内做阻塞 IO，正是 JDK 21 虚拟线程钉住载体线程的典型场景（AGENTS.md §5.2），而 ID 生成位于每个请求的热路径。抑制以 `@SuppressFBWarnings` 写在 `TraceIds` 的两个生成方法上并附 `justification`。**撤销条件**：一旦新增「按 traceId 查询」的对外端点（届时 ID 可被枚举），必须改用安全随机源。
+- **`TracedExecutorService` 继承 `AbstractExecutorService` 而非 `implements ExecutorService`**：一是少写 7 个委托方法（`submit` / `invokeAll` / `invokeAny` 由基类包成 `FutureTask` 再走被包装的 `execute`，一处即覆盖全部提交入口）；二是阿里 P3C 的 `ServiceOrDaoClassShouldEndWithImplRule` 见到「实现了以 Service 结尾的接口」就要求类名以 `Impl` 结尾，对 JDK 接口属误报。
+
 ## 未决项汇总
 
 | 编号 | 事项 | 阻塞什么 | 结论 |

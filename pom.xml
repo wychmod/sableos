@@ -211,6 +211,14 @@
         <artifactId>picocli</artifactId>
         <version>${picocli.version}</version>
       </dependency>
+      <!-- SpotBugs 抑制注解（provided，只在编译期）：仅用于对确证的误报做**方法级定点抑制**，
+           每处必须写 justification 说明理由与「何时必须撤销」。禁止用它绕过真实缺陷。 -->
+      <dependency>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-annotations</artifactId>
+        <version>${spotbugs.version}</version>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
