@@ -10,7 +10,8 @@
 
       语法见 https://jeremylong.github.io/DependencyCheck/general/suppression.html
       首轮 OWASP 扫描发现问题时在此追加，禁止无 notes 的裸抑制。
-      现有条目：spring-framework 6.2.19 六条 CVE（OSS 线无修复版，2026-10-14）。
+      现有条目：spring-framework 6.2.19 六条 CVE、spring-ai 1.1.8 一条 CVE
+      （均 OSS 线无修复版，2026-10-14）。
     -->
 
     <suppress>
@@ -35,5 +36,28 @@ CVE 即为真实残留，不再受本条遮蔽）。
         <cve>CVE-2026-47892</cve>
         <cve>CVE-2026-59283</cve>
         <cve>CVE-2026-59313</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+Timestamp: 2026-10-14
+命中构件：org.springframework.ai:spring-ai-*@1.1.8（Spring AI 1.1.x 线）
+为何暂以抑制放行：
+  1) Maven Central 核验：1.1.x OSS 线终版即 1.1.8，此前无 1.1.9+；
+     官方修复随 Spring AI 2.x（需 Spring Boot 4），无任何可用的 1.1.x 修复版本。
+  2) 可达性分析：该 CVE 的触发路径是 Spring AI 的自动 tool 执行
+     （per-request 工具清单在 dispatch 时未被强制）。SableOS 按宪法原则 III
+     显式禁用自动 tool 执行——internalToolExecutionEnabled(false) 在工厂
+     defaultOptions 与 per-call options 两处设置，且由回归测试
+     toolSchemaCall_disablesInternalToolExecution 钉死；工具调度完全由自研
+     ReActLoop + ToolExecutor 控制（第 17/20 节），Spring AI 的
+     ToolCallingManager 调度路径在本架构中不存在。
+  3) 公告：https://spring.io/security/cve-2026-59318（NVD 最高分 9.8/CRITICAL）。
+何时移除：Spring AI 2.x（随 Boot 4 迁移）落地后删除本条（迁移待排期，见
+AGENTS.md 第 10 章；迁移后本 packageUrl 不再命中，若 CI 仍报 spring-ai
+相关 CVE 即为真实残留，不再受本条遮蔽）。
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.ai/spring-ai-.*@1\.1\.8$</packageUrl>
+        <cve>CVE-2026-59318</cve>
     </suppress>
 </suppressions>

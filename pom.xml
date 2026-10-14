@@ -446,6 +446,14 @@
     </pluginManagement>
 
     <plugins>
+      <!-- 集成冒烟（@Tag("integration")）默认不跑：外部 API 可用性不绑架日常构建/CI -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludedGroups>integration</excludedGroups>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
