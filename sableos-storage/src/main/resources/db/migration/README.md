@@ -8,9 +8,9 @@
 
 命名规约：`V{序号}__{描述}.sql`（只追加、不改历史脚本），两轨版本号一一对应。
 
-预留位：`V1__init.sql` 由 T015（US1）落地，含五张表 `sessions`、`tool_invocations`、
-`llm_calls`、`notify_channels`、`memory_entries`——字段与约束照
-`specs/001-runtime-core/data-model.md` 第 2 节。
+按节追加策略：每节把本节的表以**追加迁移**落进两轨目录（版本号从 `V1` 起按落地顺序递增），
+已执行过的脚本永不修改。已知追加计划：`V1__llm_calls.sql`（16 节 Provider）、`tool_invocations`（17 节）、
+`sessions`（18 节）、`memory_entries`（22 节，落哪个模块以对应节 plan 为准）。
 
 与 `application.yaml` 的联动（`{vendor}` 按 datasource url 自动展开）：
 
