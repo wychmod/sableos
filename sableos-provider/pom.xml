@@ -27,10 +27,35 @@
       <artifactId>spring-ai-openai</artifactId>
     </dependency>
     <!-- DashScope 协议栈（qwen 原生协议）。boot 侧以 spring.ai.dashscope.enabled=false
-         禁用其全部 autoconfig，只消费 DashScopeApi/DashScopeChatModel 的显式构造。 -->
+         禁用其全部 autoconfig，只消费 DashScopeApi/DashScopeChatModel 的显式构造。
+         排除项均为 chat 路径不触达的重传递依赖（jdeps 逐类核实），避免把
+         RAG/OpenNLP/okhttp 链带入 fat jar（其中三件命中 CVSS≥8 CVE，CI depcheck 门禁）。 -->
     <dependency>
       <groupId>com.alibaba.cloud.ai</groupId>
       <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+      <exclusions>
+        <!-- 仅 advisor / document-retriever 类引用（本节不消费 RAG；知识库能力落地时再显式引入） -->
+        <exclusion>
+          <groupId>org.springframework.ai</groupId>
+          <artifactId>spring-ai-rag</artifactId>
+        </exclusion>
+        <!-- 被 dashscope 声明但全模块零字节码引用（jdeps 核实），纯死重量 -->
+        <exclusion>
+          <groupId>org.apache.opennlp</groupId>
+          <artifactId>opennlp-tools</artifactId>
+        </exclusion>
+        <!-- 仅 DashScopeApi 私有 uploadFile 与音频/TTS 类使用，chat 路径不触达；
+             logging-interceptor 是同链兄弟件（无 okhttp 即为死重量），
+             件随根除，连带剔除其传递的 kotlin-stdlib（CVE-2026-53914，9.8） -->
+        <exclusion>
+          <groupId>com.squareup.okhttp3</groupId>
+          <artifactId>okhttp</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.squareup.okhttp3</groupId>
+          <artifactId>logging-interceptor</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- 重试策略载体：显式单次调用（maxAttempts=1），不引入隐式重试 -->
     <dependency>
