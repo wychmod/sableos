@@ -19,9 +19,18 @@ spring:
       # 表结构唯一权威是 db/migration/{vendor}（Flyway），禁止 ddl-auto 改结构（约定见 AGENTS.md §5.1）
       ddl-auto: none
     show-sql: false
+    properties:
+      # Instant 以 java.sql.Timestamp 绑定（setTimestamp）：sqlite-jdbc 只对「INTEGER 毫秒」可读写往返，
+      # 默认 TIMESTAMP_UTC 绑定写出的 ISO 文本读回时会 "Error parsing time stamp"（2026-10-14 实测）。
+      hibernate.type.preferred_instant_jdbc_type: TIMESTAMP
   flyway:
     # 双轨迁移目录（sqlite 默认档 / postgresql 部署档），见 sableos-storage 的 migration/README.md
     locations: classpath:db/migration/{vendor}
+  # Spring AI Alibaba DashScope starter 的 10 个 autoconfig 全部带 @ConditionalOnDashScopeEnabled，
+  # 默认激活且无 key 即启动失败；本应用只显式构造 DashScopeApi/ChatModel，用单开关全部禁用。
+  ai:
+    dashscope:
+      enabled: false
 
 server:
   port: 8080
@@ -89,6 +98,15 @@ sableos:
       response-header: X-Trace-Id
       # 是否同时回写 W3C 的 traceparent / tracestate
       propagate-w3c: true
+
+  # --- Provider 清单（核心能力一；契约见 specs/001-lesson16-provider/contracts/provider-config.md）---
+  # 空清单 = 无 provider 可路由（未登记名调用抛点名异常），零 key 可正常启动；凭证一律环境变量占位。
+  providers: []
+  # 声明示例（按需启用）：
+  #  - name: deepseek            # Profile 按此名引用
+  #    type: openai              # openai | dashscope，缺省 openai
+  #    api-key: ${DEEPSEEK_API_KEY:}
+  #    base-url: https://api.deepseek.com
 
 # --- OpenAPI / Swagger UI（springdoc）---
 # swagger-ui webjar 由父 POM 覆盖到修补版；此处必须显式声明同一版本：

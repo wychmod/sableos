@@ -19,5 +19,28 @@
       <groupId>com.sableos</groupId>
       <artifactId>sableos-core</artifactId>
     </dependency>
+
+    <!-- OpenAI 兼容协议栈（deepseek / kimi 等 OpenAI 兼容端点走这条）。
+         用 raw jar 显式构造 ChatModel，不用 starter 的自动装配（宪法原则 IV：显式映射）。 -->
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-openai</artifactId>
+    </dependency>
+    <!-- DashScope 协议栈（qwen 原生协议）。boot 侧以 spring.ai.dashscope.enabled=false
+         禁用其全部 autoconfig，只消费 DashScopeApi/DashScopeChatModel 的显式构造。 -->
+    <dependency>
+      <groupId>com.alibaba.cloud.ai</groupId>
+      <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+    </dependency>
+    <!-- 重试策略载体：显式单次调用（maxAttempts=1），不引入隐式重试 -->
+    <dependency>
+      <groupId>org.springframework.retry</groupId>
+      <artifactId>spring-retry</artifactId>
+    </dependency>
+    <!-- @ConfigurationProperties 注解（ProvidersProperties），版本由 Boot BOM 管理 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
   </dependencies>
 </project>
