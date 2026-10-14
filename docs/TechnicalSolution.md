@@ -288,7 +288,7 @@ SableOS **主推**的接入方式。业务方不写代码，只写一个 Agent �
 
 加载走三层渐进式披露：`AGENT.md` 正文常驻；当前 Agent 绑定 Skill 的 name/description/本地路径每轮注入；Skill 正文、参考与脚本经底座 `read_file`/`shell` 按需读取或运行。SableOS 不解析任务步骤、不做工作流引擎。
 
-> 注意 `AGENT.md` 的解析由 `AgentLoader` / `ContextLoader`（8.3）负责，不在 Tool 模块里——它是 prompt 的输入源、不是可执行 Tool（见宪法原则四与 11.1）。
+> 注意 `AGENT.md` 的解析由 `AgentLoader` / `ContextLoader`（8.3）负责，不在 Tool 模块里——它是 prompt 的输入源、不是可执行 Tool（见宪法原则五与 11.1）。
 
 ### 6.4 Plugin Tool 方式二：自己写 MCP server
 
@@ -681,13 +681,13 @@ mvn clean package
 
 **借 Anthropic Agent Skills 的形态、但定义的是 Agent。** Anthropic 把这种目录叫一个 Skill（Claude 这个大 Agent 的一项可加载能力）；我们借的是目录的**形态**，不是命名——在 SableOS，**一个目录 = 一个 Agent**。每个 Agent 独立自足，只调用底座的系统基础能力。
 
-> **宪章 v2.0.0 修订：公共实体与 Agent 绑定分离。** Skill 内容存 `.sableos/skills/<name>/`；Agent 通过自身 `skills/<name>` 下的受控相对软连接选择可见集合。软连接集合是唯一绑定真相源，不再使用 frontmatter `skills:`。公共 CRUD 保留，但删除被引用 Skill 默认拒绝并返回引用 Agent。
+> **项目约定：公共实体与 Agent 绑定分离**（原标注「宪章 v2.0.0 修订」，但 `.specify/memory/constitution.md` 现为 v1.0.1 且未收录该条，待项目方按治理程序修订）。Skill 内容存 `.sableos/skills/<name>/`；Agent 通过自身 `skills/<name>` 下的受控相对软连接选择可见集合。软连接集合是唯一绑定真相源，不再使用 frontmatter `skills:`。公共 CRUD 保留，但删除被引用 Skill 默认拒绝并返回引用 Agent。
 
 **派生 Profile**：底座（第 1~10 章的一切）都吃 `Profile`，所以 `AgentLoader.deriveProfile(agentDir)` 把 `AGENT.md` 的 frontmatter 映射成一个 `Profile`，让 Agent 目录**零改动复用整台底座**。
 
 **渐进式披露（收进一个 Agent 内部）**：Agent 的**正文**在被触发时进 system prompt（它就是这个 Agent 的"人格 + 干什么"）；目录里的**子指令 / 参考 / 脚本不预载**，按正文指引**用底座既有能力按需取**——读子指令 / 参考用 `read_file`；在可信单机部署中，脚本可通过 `shell` 调用管理员显式白名单内的解释器。该操作以 SableOS 进程的操作系统权限运行，不构成文件或网络隔离；不可信或多租户代码应使用未来基于容器/MicroVM 的 `execute_code` Runner。没有新工具、没有能力库、没有全局索引。
 
-> **底线不变（宪法原则四）**：`AGENT.md` 正文由 `ContextLoader` 注入 system prompt（与 Bootstrap 文件同层）；**一个 Agent 目录不是一个可执行 Tool**——它的子资源经底座既有的 `read_file`/`shell` 取用，不新造机制。
+> **底线不变（宪法原则五）**：`AGENT.md` 正文由 `ContextLoader` 注入 system prompt（与 Bootstrap 文件同层）；**一个 Agent 目录不是一个可执行 Tool**——它的子资源经底座既有的 `read_file`/`shell` 取用，不新造机制。
 
 ### 11.2 核心阶段：一个目录定义一个 Agent（文件系统）
 
@@ -772,7 +772,7 @@ mvn clean package
 3. LLM 按正文调 `github_daily` 获取 JSON；该 MCP 或专用 Tool 自己定义输入、脚本访问范围和网络策略，并通过 `ToolExecutor` 写 `tool_invocations`。**脚本产出的 JSON 进上下文、脚本代码不进**。
 4. LLM 用 JSON + 记忆偏好组织三段日报（今日 / 本月 / AI 重点），调 `notify` 推送
 
-> **脚本的信任边界（呼应 11.1 与宪法原则四）**：通用 `shell` 可调用管理员显式白名单内的 Python、Bash、Node 等解释器，但这等于授予模型 SableOS 进程所属操作系统用户的代码执行权限。argv 直传只阻止 Shell 语法拼接，不会隔离解释器的文件或网络行为。对不可信或多租户代码，应使用未来基于容器/MicroVM 的 `execute_code` Runner；在此之前，只能在可信单机部署中启用解释器。
+> **脚本的信任边界（呼应 11.1 与宪法原则五）**：通用 `shell` 可调用管理员显式白名单内的 Python、Bash、Node 等解释器，但这等于授予模型 SableOS 进程所属操作系统用户的代码执行权限。argv 直传只阻止 Shell 语法拼接，不会隔离解释器的文件或网络行为。对不可信或多租户代码，应使用未来基于容器/MicroVM 的 `execute_code` Runner；在此之前，只能在可信单机部署中启用解释器。
 
 **验收要点：** `tool_invocations` 里有 `github_daily` 调用；脚本产出进上下文、代码不进；AI 段体现记忆偏好；改一下 `AGENT.md` 正文即时生效。
 

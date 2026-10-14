@@ -92,12 +92,12 @@ spring.threads.virtual.enabled: true   # JDK 21 虚拟线程，单机扛高并�
 
 - 依赖：`springdoc-openapi-starter-webmvc-ui`（Swagger UI 在 `/swagger-ui.html`，spec 在 `/v3/api-docs`）
 - 在 `sableos-web` 建：
-  - `ApiResponse<T>`：统一响应体（`code` / `message` / `data` / `timestamp`），字段口径与 `specs/001-runtime-core/contracts/http-api.md` 逐条一致
+  - `ApiResponse<T>`：统一响应体（`code` / `message` / `data` / `timestamp` / `traceId`），字段口径与 `AGENTS.md` §5.1「响应信封 5 字段契约」逐条一致
   - `GlobalExceptionHandler`（`@RestControllerAdvice`）：异常也走**同一信封**（`code` 非 0 / `message` 可定位 / `data` 为 null），覆盖 400 / 404 / 409 / 500 / 503 / 504
   - REST 约定：资源名词复数、`/api/v1` 前缀、合理 HTTP 状态码
 - 参考实现：OryxOS 的 `oryxos-web`（`ApiResponse` + `GlobalExceptionHandler`）就是同一套统一信封，形状可直接参照；两处差异——`timestamp` 按 SableOS 契约用 ISO-8601 字符串（OryxOS 是 epoch 毫秒）、错误状态码按核心阶段 6 个裁（不含 OryxOS 的 403 / 429）
 - 坑（fat jar 必踩，2026-10-12 实测）：若通过父 POM 覆盖 `org.webjars:swagger-ui` 版本，必须在 `application.yaml` 显式声明 `springdoc.swagger-ui.version`（构建期资源过滤注入，如 `@swagger-ui.version@`）——springdoc 在 fat jar 内自动探测 webjar 版本会失败并回落内置默认，导致 `/swagger-ui/**` 404
-- 与 tasks.md T067 / T077 保持同一口径，不造两套
+- 与本 skill 的落地产物保持同一口径，不造两套
 
 ### 7. 开发规范（Google 格式 + 阿里编码规约，两层互补）
 
@@ -208,12 +208,12 @@ spring.threads.virtual.enabled: true   # JDK 21 虚拟线程，单机扛高并�
 - [ ] 结构化日志（prod 为 JSON，含 traceId；密钥等敏感信息不入日志），无 `System.out`
 - [ ] `/actuator/health` `/info` `/prometheus` 可访问
 - [ ] 虚拟线程开启（`spring.threads.virtual.enabled=true`）
-- [ ] springdoc：`/swagger-ui.html` 可打开，统一 `ApiResponse` + `GlobalExceptionHandler` 就位且与 http-api 契约一致
+- [ ] springdoc：`/swagger-ui.html` 可打开，统一 `ApiResponse` + `GlobalExceptionHandler` 就位且与 `AGENTS.md` §5.1 信封契约一致
 - [ ] Spotless（Google 格式）+ 阿里 P3C（编码规约）+ Checkstyle + `.editorconfig` 全部生效
 - [ ] SpotBugs + Find Security Bugs + PMD + OWASP Dependency-Check 接入 `mvn verify`
 - [ ] pre-commit + CI 跑通，任一检查失败即阻断
 - [ ] 敏感配置全用 `${ENV_VAR}` 占位，无明文密钥
-- [ ] tasks.md 对应任务（T001–T006、T067、T077）已勾选回写，`/speckit-analyze` 无漂移
+- [ ] 落地产物与 `AGENTS.md` 现状同步，`/speckit-analyze` 无漂移
 
 ---
 
@@ -222,6 +222,6 @@ spring.threads.virtual.enabled: true   # JDK 21 虚拟线程，单机扛高并�
 - **本 skill**：把上面这套工程地基"装上"（一次性、可复用、跨模块）
 - **constitution**：把硬约束"钉死"（JDK 21、虚拟线程、审计 day one 落库…；质量门槛由本 skill 定义、与 OryxOS 线一致），让 AI 每次都遵守
 - **CI + pre-commit**：把检查"强制执行"（机器把关，不靠人自觉）
-- **Spec-Kit user story**：地基起好后，再按五大核心能力逐个开发；本仓库 `tasks.md` Phase 1（T001–T006）与 Phase 7（T067 / T077）已登记部分地基任务——执行时与之一致、只做一次，完成后勾选任务并同步 `AGENTS.md`
+- **Spec-Kit user story**：地基起好后，再按五大核心能力**逐节课件**开发（`.qoder/skills/sableos-lesson-dev`，一个 feature 一节课）；地基任务曾登记在 `specs/001-runtime-core/`（已随 `17e2cfc` 移除），执行时以本 skill 的落地产物为准、只做一次，完成后同步 `AGENTS.md`
 
 > 版本号、插件坐标、`google_checks.xml` 路径等以实施时官方文档为准；本 skill 给的是流程与配置骨架，不锁死具体版本。

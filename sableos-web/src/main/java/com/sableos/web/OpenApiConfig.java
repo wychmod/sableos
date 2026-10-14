@@ -15,7 +15,7 @@ public class OpenApiConfig {
         .info(
             new Info()
                 .title("SableOS API")
-                .description("核心阶段 REST API：会话管理、Agent 调用、信息查询、系统状态；统一响应信封见 http-api 契约")
+                .description("核心阶段 REST API：会话管理、Agent 调用、信息查询、系统状态；统一响应信封见 AGENTS.md §5.1")
                 .version("v1"));
   }
 }

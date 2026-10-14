@@ -5,13 +5,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 
 /**
- * 统一 REST 响应信封（契约 http-api.md）：成功与错误共用同一形状。
+ * 统一 REST 响应信封（契约见 AGENTS.md §5.1）：成功与错误共用同一形状。
  *
  * <p>code 为 0 表示成功（message 恒为 ok），非 0 取标准 HTTP 状态值；data 在错误时恒为 null； timestamp 为 ISO-8601 时刻（如
  * 2026-10-05T15:00:00Z）；traceId 为本次调用的链路标识。
  *
  * <p><b>信封形状恒定为这 5 个字段</b>：traceId 为 null 时同样输出，因此不能加 {@code @JsonInclude(NON_NULL)}。 增删字段必须同步
- * {@code contracts/http-api.md} 与 {@code ApiResponseTest}，否则 {@code /speckit-analyze} 会报漂移。
+ * {@code AGENTS.md} §5.1 与 {@code ApiResponseTest}，否则 {@code /speckit-analyze} 会报漂移。
  *
  * @param <T> 业务数据类型
  */

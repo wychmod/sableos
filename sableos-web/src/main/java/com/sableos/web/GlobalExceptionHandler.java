@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-/** 全局异常翻译：未捕获异常一律转成统一信封（契约 http-api.md §统一响应信封）， 状态码只覆盖核心阶段六个：400 / 404 / 409 / 500 / 503 / 504。 */
+/** 全局异常翻译：未捕获异常一律转成统一信封（契约见 AGENTS.md §5.1）， 状态码只覆盖核心阶段六个：400 / 404 / 409 / 500 / 503 / 504。 */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
