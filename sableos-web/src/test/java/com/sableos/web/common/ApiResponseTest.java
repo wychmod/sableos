@@ -10,7 +10,7 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** 契约 http-api.md §统一响应信封：字段口径逐条验收。 */
+/** 契约见 AGENTS.md §5.1（响应信封 5 字段）：字段口径逐条验收。 */
 class ApiResponseTest {
 
   @Test

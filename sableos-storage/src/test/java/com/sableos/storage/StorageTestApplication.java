@@ -11,4 +11,10 @@ public class StorageTestApplication {
   public JpaLlmCallAuditor jpaLlmCallAuditor(LlmCallRepository llmCallRepository) {
     return new JpaLlmCallAuditor(llmCallRepository);
   }
+
+  @Bean
+  public JpaToolInvocationAuditor jpaToolInvocationAuditor(
+      ToolInvocationRepository toolInvocationRepository) {
+    return new JpaToolInvocationAuditor(toolInvocationRepository);
+  }
 }

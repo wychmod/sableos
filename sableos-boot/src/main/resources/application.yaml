@@ -86,7 +86,7 @@ management:
     tags:
       application: sableos
 
-# --- 链路标识（traceId / spanId；对外契约见 contracts/http-api.md「链路标识」小节）---
+# --- 链路标识（traceId / spanId；对外契约见 AGENTS.md §5.1 响应信封 traceId 字段）---
 # MDC 共 5 个键：traceId / spanId / sessionId / profileName / channel；
 # prod 档的 JSON 输出走 logback-spring.xml 里 LogstashEncoder 的 includeMdcKeyName 白名单，新增键必须同步两处。
 sableos:

@@ -198,7 +198,7 @@
 | # | 课件 16 原文口径 | SableOS 采用口径 | 依据 |
 | --- | --- | --- | --- |
 | A | `ProfileLoader` 扫 `.sableos/profiles/*.yaml` | `AgentLoader` 扫 `.sableos/agents/<name>/AGENT.md` | 《技术方案》§8.2 + 宪章原则 V；测试类相应改名 `AgentLoaderTest` |
-| B | Profile 字段含 `skills`、`notify_channels` | 不含二者（字段集按 §8.2：name/description/identity/provider/tools/mcp_servers/channels/schedules/bootstrap/settings） | §8.2 明示 notify_channels 不入 Profile；宪章 v2.0.0：Skill 绑定由软连接表达，不写 frontmatter |
+| B | Profile 字段含 `skills`、`notify_channels` | 不含二者（字段集按 §8.2：name/description/identity/provider/tools/mcp_servers/channels/schedules/bootstrap/settings） | §8.2 明示 notify_channels 不入 Profile；项目约定（《技术方案》§11.1 + AGENTS.md §6）：Skill 绑定由软连接表达，不写 frontmatter |
 | C | 课件未提 `SableTool`/`ToolResult` 归属 | 契约随本节落 core | 课件 16 适配器引用 `getInputSchema()`；§6.1 已定义 |
 | D | 全局层仅 `name` + `api-key` | 增 `type`、`base-url` 两键 | 双协议栈（openai/dashscope）与现实端点要求 |
 | E | 「阿里的 starter」泛指 | `spring-ai-alibaba-starter-dashscope` + 单属性禁用；openai 走 raw jar | 本仓库锁定依赖实测（附录 A） |

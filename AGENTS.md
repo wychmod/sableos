@@ -22,9 +22,9 @@ SableOS 是一个**企业能完全掌控的、Java 原生的、私有可审计�
 
 - 仓库当前包含：`docs/` 六份文档、`design/` 设计留档、`website/` 线上站点、`README.md`、`AGENTS.md`（本文件）、`CLAUDE.md`（指向本文件的入口），以及 **Maven 多模块骨架**（2026-09-27 初始化）：parent POM + 9 个核心模块（core / provider / memory / tool / channel-cli / web / storage / cli / boot），`mvn clean package` 可通过，`sableos-boot` 产出可执行 fat JAR。
 - **工程地基已于 2026-10-12 落地**（按 `sableos-init` skill 执行，提交链 `b37e5f4`→`1ac85d3` + `24dd3b8`）：依赖版本锁定、结构化日志、Actuator/Prometheus、虚拟线程、统一响应信封 + `GlobalExceptionHandler` + OpenAPI、四层质量门槛（见 5.3）、`ci.yml` 与本地钩子。
-- **链路标识（traceId）已于 2026-10-14 落地**（T086–T090）：`com.sableos.core.trace` 内核（W3C `traceparent` 解析 + 快照式跨线程传播）、web 侧 `TraceFilter`、boot 侧唯一 `TaskDecorator`、信封第 5 字段 `traceId`、审计三表 `trace_id` 列已进 data-model（随 T015 建表）。落地代码为信封/异常/`OpenApiConfig`/链路标识与 98 个测试——**业务逻辑（五大核心能力）仍未开始**。
+- **链路标识（traceId）已于 2026-10-14 落地**（提交链 `a206f1a`→`91505fc`→`2b3a691`）：`com.sableos.core.trace` 内核（W3C `traceparent` 解析 + 快照式跨线程传播）、web 侧 `TraceFilter`、boot 侧唯一 `TaskDecorator`、信封第 5 字段 `traceId`。审计表的 `trace_id` 列已随按节迁移落地（`db/migration/{sqlite,postgresql}/V1__llm_calls.sql`、`V2__tool_invocations.sql`；第三表 `sessions` 归 18 节）。
 - 骨架按《技术方案》第 13 章第一周的 9 模块口径落地；第 10 章的 14 模块清单（多 persona / knowledge / 三渠道模块）在实施到对应能力时再补模块。各模块依赖按实施节奏补齐：storage 的 JPA / SQLite / Flyway 已就位，provider 的 Spring AI Alibaba 等随 US1 加入。
-- `git` 仓库已初始化（main 分支）；**Spec-Kit 工作区已于 2026-10-05 就地初始化**（集成键 `qodercli`，技能装在 `.qoder/skills/`，配套 CLI `specify-cli` 1.0.13 锁版本），宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart 与 tasks.md（90 条任务），其中 T001–T006 / T067 / T077 / T086–T090 已实施并勾选。
+- `git` 仓库已初始化（main 分支）；**Spec-Kit 工作区已于 2026-10-05 就地初始化**（集成键 `qodercli`，技能装在 `.qoder/skills/`，配套 CLI `specify-cli` 1.0.13 锁版本），宪章 **v1.0.1**。Spec-Kit 产物按**逐节课件一个 feature** 组织（`specs/001-lesson16-provider/`、`specs/002-lesson17-react/`，每节含 spec / plan / research / data-model / contracts / quickstart / tasks.md）；早期「三合一」试跑的 `specs/001-runtime-core/`（工程地基与链路标识的任务口径曾登记于此）已随 `17e2cfc` 移除，其事实状态见第 10 章。
 - 文档在 2026-09-21 做过一次纯格式整理（统一标题层级、表格分隔符、引用块、列表空行），**内容与整理前逐字一致**，以当前版本为准。
 
 ## 3. 目录分工
@@ -127,15 +127,15 @@ design/assets/*.svg           ->  website/assets/img/*  （线上产物）
 - 两个已踩过的坑（勿回退）：`GlobalExceptionHandler` 的 CRLF 净化必须保持 `String.replaceAll("[\\r\\n]", "_")` 形态（findsecbugs 只认这种写法，换 `Pattern/Matcher` 会挂 SpotBugs）；升级 `org.webjars:swagger-ui` 时必须同步 `application.yaml` 的 `springdoc.swagger-ui.version`（值是 `@swagger-ui.version@`，构建期从父 POM 过滤注入；不同步会因 springdoc 探测失败回落内置版本，导致 `/swagger-ui/**` 404）。
 - depcheck 本地可行性实测（2026-10-12）：NVD 镜像经 IPv6 可连通、数据可下载，但全量首更新出现文件传输中途截断（如 `nvdcve-2012.json.gz` 仅收 2.97/4 MB）与连接停滞（进程 10+ 分钟零进展），且单个辅助文件（`.meta` / RetireJS）下载失败即整体 `UpdateException`；强制 IPv4 反而完全超时。结论：**本地依赖 CVE 首跑不可靠，以 CI 独立 job 为权威门禁**；确需本地跑时，先在有稳定网络的环境预热 Maven 本地仓库的 `dependency-check-data` 目录后再执行。
 - **Boot 3.5 线已 EOL（OSS 支持止于 2026-06-30，3.5.16 为终版），BOM 不再出安全补丁，依赖 CVE 修复只能手动覆盖**：可修构件走父 POM 属性覆盖（先例：`tomcat.version=10.1.61`、`jackson3.version=3.1.7`；覆盖前到 Maven Central 核验目标版本存在且跨过全部已知 CVE 修复线，Boot 3.5 的 Tomcat 10.1.x / Jackson 3.0.x 均有后续线内补丁可跟）。spring-framework 6.2.x 的 6 条 CVSS≥8 CVE（2026-08~09 披露）在 OSS 线**无修复版**（修复仅存在于 6.2.20 商业版与 Boot 4 的 7.0.9），已按规范写入抑制（`config/dependency-check-suppressions.xml`）。2026-10-14 决策：短期留在 3.5.16，Boot 4.x 迁移另排期（见第 10 章）。
-- 响应信封是 **5 字段契约**（`code` / `message` / `data` / `timestamp` / `traceId`）：增删字段必须同步 `specs/001-runtime-core/contracts/http-api.md` 与 `ApiResponseTest`，否则 `/speckit-analyze` 报漂移；`traceId` 为 null 时也要输出（信封形状恒定，**不加** `@JsonInclude(NON_NULL)`）。任何**用户可控字符串**（含入站 `traceparent` / `X-Trace-Id` 头）入日志前一律先 `replaceAll("[\\r\\n]", "_")` 净化（同 CRLF 那条，勿改 `Pattern/Matcher` 形态）。
+- 响应信封是 **5 字段契约**（`code` / `message` / `data` / `timestamp` / `traceId`）：增删字段必须同步 `sableos-web/src/main/java/com/sableos/web/common/ApiResponse.java`、`ApiResponseTest` 与本条口径（本契约的活锚点即本条与代码/测试；原 `specs/001-runtime-core/contracts/http-api.md` 已随 `17e2cfc` 移除），否则 `/speckit-analyze` 报漂移；`traceId` 为 null 时也要输出（信封形状恒定，**不加** `@JsonInclude(NON_NULL)`）。任何**用户可控字符串**（含入站 `traceparent` / `X-Trace-Id` 头）入日志前一律先 `replaceAll("[\\r\\n]", "_")` 净化（同 CRLF 那条，勿改 `Pattern/Matcher` 形态）。
 - MDC 输出的 5 个键（`traceId` / `spanId` / `sessionId` / `profileName` / `channel`）在 prod 档走 `LogstashEncoder` 的 `includeMdcKeyName` **白名单**——漏列即该字段在 JSON 里静默消失而 dev 档正常，是最难查的一类故障；新增 MDC 键必须同步补白名单（勿改用 `includeMdc=true`，白名单能防敏感值混入，见 A-03）。
-- **勿「顺手修掉」`TraceIds` 上的 SpotBugs 抑制**：它用 `ThreadLocalRandom` 生成 trace-id/span-id，并对 findsecbugs 的 `PREDICTABLE_RANDOM` 做了**方法级定点抑制**（带 `justification`）。改成 `SecureRandom` 会引入更严重的问题——其 `nextBytes` 在 `synchronized` 内做阻塞 IO，在 JDK 21 会钉住载体线程，而这是每请求热路径；且 trace-id 非安全凭证（入站本就接受客户端提供的头）。撤销条件与完整理由见 `specs/001-runtime-core/research.md` D-14。`spotbugs-annotations` 以 `provided` 进父 POM 的 `dependencyManagement`，**只允许**用于确证误报的方法级定点抑制且必须写理由。
+- **勿「顺手修掉」`TraceIds` 上的 SpotBugs 抑制**：它用 `ThreadLocalRandom` 生成 trace-id/span-id，并对 findsecbugs 的 `PREDICTABLE_RANDOM` 做了**方法级定点抑制**（带 `justification`）。改成 `SecureRandom` 会引入更严重的问题——其 `nextBytes` 在 `synchronized` 内做阻塞 IO，在 JDK 21 会钉住载体线程，而这是每请求热路径；且 trace-id 非安全凭证（入站本就接受客户端提供的头）。撤销条件与完整理由见该抑制标注处的 `justification`（`sableos-core/src/main/java/com/sableos/core/trace/TraceIds.java`，原 `specs/001-runtime-core/research.md` D-14 已随 `17e2cfc` 移除）。`spotbugs-annotations` 以 `provided` 进父 POM 的 `dependencyManagement`，**只允许**用于确证误报的方法级定点抑制且必须写理由。
 - 同类勿改：`TracedExecutorService` **继承 `AbstractExecutorService`** 而非 `implements ExecutorService`——后者会触发阿里 P3C `ServiceOrDaoClassShouldEndWithImplRule` 误报（它把 JDK 接口当成项目 Service 接口），且继承后 `submit`/`invokeAll`/`invokeAny` 都经由被包装的 `execute`，一处即覆盖全部提交入口。
 
 ## 6. 核心领域概念
 
 - **一个目录 = 一个 Agent**：`.sableos/agents/<name>/AGENT.md`，frontmatter 是运行配置（派生为底座认识的 `Profile`），正文是任务指令；可选 `skills/` 软连接、`scripts/`、`REFERENCE.md`。
-- **Skill 绑定用相对软连接，不写 frontmatter**（宪章 v2.0.0 修订）：公共 Skill 存 `.sableos/skills/<name>/`，Agent 在自身 `skills/<name>` 下建受控相对软连接选择可见集合，**软连接集合是唯一绑定真相源**；删除被引用的 Skill 默认拒绝并返回引用 Agent。
+- **Skill 绑定用相对软连接，不写 frontmatter**（项目约定，见本节与 `.sableos/`；宪法 v1.0.1 尚未收录该条，若拟升格为宪章条款须由项目方另行修订，AI agent 无权自改宪章）：公共 Skill 存 `.sableos/skills/<name>/`，Agent 在自身 `skills/<name>` 下建受控相对软连接选择可见集合，**软连接集合是唯一绑定真相源**；删除被引用的 Skill 默认拒绝并返回引用 Agent。
 - **通知渠道按全局注册名引用**：渠道存 SQLite 全局注册表，`AGENT.md` 正文按名引用，frontmatter **不含** `notify_channels` 字段。
 - **核心阶段 `schedules` 只写在 `AGENT.md` frontmatter**：跟着进程启动注册，改 cron 需重启；API 增删改 cron 定义属扩展阶段。
 
@@ -166,7 +166,7 @@ SableOS 是 Maven 多模块项目，**以《技术方案》第 10 章为准，�
 
 主体开发**不直接写代码**，按 Spec-Kit 流程走：
 
-1. 准备阶段：`specify init` 初始化工作区，产出 `constitution.md`（宪章）、`spec.md`（5 个 user story）、`plan.md`。工作区已于 2026-10-05 就地初始化（集成键 `qodercli`，`specify-cli` 锁 1.0.13，技能以 `/speckit-<command>` 调用），宪章 **v1.0.1**；`specs/001-runtime-core/` 的 spec / plan / tasks 均已产出，工程地基（Phase 1 与 T067/T077）已先行落地。
+1. 准备阶段：`specify init` 初始化工作区，产出 `constitution.md`（宪章）与首个 feature 的 `spec.md` / `plan.md`。工作区已于 2026-10-05 就地初始化（集成键 `qodercli`，`specify-cli` 锁 1.0.13，技能以 `/speckit-<command>` 调用），宪章 **v1.0.1**；此后演进为**逐节课件一个 feature**（`specs/001-lesson16-provider/` → `specs/002-lesson17-react/` → …），每节走 specify → clarify → plan → checklist → tasks（固定软停点）→ analyze → implement；工程地基由 `sableos-init` skill 先行落地。
 2. 实施阶段：按依赖顺序实施 5 个 user story（US-5 Web Service 因依赖前四个能力排最后，但重要性很高）。
 3. **每个 user story 结束后必跑 `/speckit.analyze`**：检查 constitution + spec + plan + tasks + 代码是否一致，发现漂移立刻修正，不能省。
 4. **每个 user story 完成后打 git commit**，方便随时回退到稳定状态。
@@ -197,8 +197,8 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
   - 模块数：`AiProgrammingGuide.md` 五处（第 35/176/204/405/481 行）与《技术方案》第 13 章第一周都还写 9 个模块，第 10 章已是 14 个（含 persona/knowledge/三渠道模块）。
   - CLI 子命令数：第 8.7 节写 12 个，第 10 章写 13 个（025 起加 `agent import`）。
   - 验收 Demo 数：`DemandAnalysis.md` 第 13 章写"两个 Demo"，`TechnicalSolution.md` 第 11.5 / 12 / 15 章写三个（多"每日 GitHub 日报"）——**以技术方案为准（三个）**，需求文档待同步。
-  - 长期记忆后端：`TechnicalSolution.md` 5.1 写"三档后端核心阶段一次交付"，实际本次只交付 Markdown（默认）+ SQLite 两档，Mem0 档（依赖外部自托管服务）后置，见 `specs/001-runtime-core/research.md` 的 D-04。
-- **Spec-Kit 工作区已就位（2026-10-05）**：`.specify/` 就地初始化，集成键 `qodercli`（技能装在 `.qoder/skills/`，以 `/speckit-<command>` 调用），配套 CLI 锁 `specify-cli` 1.0.13，宪章已升到 **v1.0.1**；`specs/001-runtime-core/` 下已产出 spec / plan / research / data-model / contracts / quickstart 与 tasks.md（90 条）。
-- **工程地基已落地（2026-10-12）**：`sableos-init` skill 十步执行完毕（提交链 `b37e5f4`→`1ac85d3` + `24dd3b8`），T001–T006 / T067 / T077 已勾选；业务开发（US1 起）仍未开始编码。质量门槛、钩子启用方式与两个防回退坑见 5.3 节。Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过）。
-- **链路标识已落地（2026-10-14）**：T086–T090 已勾选（core 内核 / web 入口 / boot 装配 / 信封字段 / 传播测试）。**仍待后续任务接手的两处**：① 审计三表的 `trace_id` 列随 T015 建表落地（列与索引口径见 `data-model.md` 2.6），写入点在 T021 / T034 / T035；② CLI 与定时入口的 `openRoot` 分别在 T039 / T073。设计与取舍见 `research.md` D-14。
+  - 长期记忆后端：`TechnicalSolution.md` 5.1 写"三档后端核心阶段一次交付"，实际本次只交付 Markdown（默认）+ SQLite 两档，Mem0 档（依赖外部自托管服务）后置（原 `specs/001-runtime-core/research.md` D-04 记录已随该 spec 目录移除 `17e2cfc`，结论保留于此，待 22 节 Memory 落地时重新留研究记录）。
+- **Spec-Kit 工作区已就位（2026-10-05）**：`.specify/` 就地初始化，集成键 `qodercli`（技能装在 `.qoder/skills/`，以 `/speckit-<command>` 调用），配套 CLI 锁 `specify-cli` 1.0.13，宪章 **v1.0.1**；产物按逐节 feature 组织（见第 2 章），早期 `specs/001-runtime-core/` 已随 `17e2cfc` 移除。
+- **工程地基已落地（2026-10-12）**：`sableos-init` skill 十步执行完毕（提交链 `b37e5f4`→`1ac85d3` + `24dd3b8`；其任务口径原登记在 `specs/001-runtime-core/`，该目录已随 `17e2cfc` 移除）；业务开发自第 16 节起逐节推进。质量门槛、钩子启用方式与两个防回退坑见 5.3 节。Maven 工程骨架与 git 仓库已于 2026-09-27 就位（9 模块，`mvn clean package` 可过）。
+- **链路标识已落地（2026-10-14）**：core 内核 / web 入口 / boot 装配 / 信封字段 / 传播测试（提交链 `a206f1a`→`91505fc`→`2b3a691`）。审计表的 `trace_id` 列已随按节迁移落地（`V1__llm_calls.sql`、`V2__tool_invocations.sql`；口径见 `specs/001-lesson16-provider/data-model.md`、`specs/002-lesson17-react/data-model.md`）；CLI 与定时入口的 `openRoot` 归 18 / 25 节。抑制与取舍理由见 `TraceIds` javadoc。
 - **Boot 4.x 迁移待排期（2026-10-14 决策：短期留在 3.5.16 过渡）**：3.5.16 是 Boot 3.5 OSS 线终版，Spring Framework 6.2.19 的 6 条 CVSS≥8 CVE 在 OSS 线无修复版，过渡期以抑制放行（见 5.3 节，抑制移除条件即迁移落地）。迁移须联动 Spring AI 1.1.x→2.x、springdoc 2.8→3.x、JUnit 6 等，单独走 Spec-Kit 任务排期，勿在业务 task 里顺手升级。
