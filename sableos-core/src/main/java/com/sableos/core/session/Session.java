@@ -10,11 +10,11 @@ import java.util.Objects;
 /**
  * 会话聚合：一次对话的状态载体（技术方案 §4）。
  *
- * <p>字段口径按 18 节 {@code sessions} 表预留（跨重启持久化与状态机归 18 节，本节固定 {@code active} 且只增历史）， 以免 18
- * 节落地时回改。历史只增不减，时间戳单调不减。
+ * <p>字段口径与 18 节 {@code sessions} 表一一对应（{@code session_id}/{@code profile_name}/{@code
+ * channel}/{@code user_id}/{@code messages_json}/{@code status}/三个时间戳）。历史只增不减，时间戳单调不减。
  *
- * <p>本节为 18 节 {@code SessionManager} 的内存前身：由调用方构造、{@code AgentService} 处理时就地累积、{@code
- * InMemorySessionStore} 保存。
+ * <p>17 节为进程内前身（调用方构造、{@code AgentService} 处理时就地累积）；18 节起由 {@code SessionManager} 负责跨重启持久化： 新建走
+ * {@link #Session(String, String, String, String)}，从持久化态重建走 {@link #rehydrate}（追加式，既有构造与方法签名不变）。
  */
 public final class Session {
 
@@ -26,23 +26,65 @@ public final class Session {
   private final String userId;
   private final String status;
   private final Instant createdAt;
-  private final List<SessionMessage> messages = new ArrayList<>();
+  private final List<SessionMessage> messages;
   private Instant lastActiveAt;
 
   /**
-   * @param id 会话标识（{@code llm_calls.session_id} 与 {@code tool_invocations.session_id} 的取值来源）
+   * 新建一个 {@code active} 空历史会话。
+   *
+   * @param id 会话标识（{@code llm_calls.session_id} 与 {@code tool_invocations.session_id} 的取值来源；由
+   *     {@link SessionManager#sessionId} 拼接）
    * @param profileName 所属 Agent 运行配置名（{@link com.sableos.core.profile.ProfileRegistry} 索引键）
    * @param channel 触发渠道（cli / web / scheduler；可空，与 {@code TraceContext.CHANNEL_*} 同口径）
    * @param userId 用户标识（可空）
    */
   public Session(String id, String profileName, String channel, String userId) {
+    this(id, profileName, channel, userId, STATUS_ACTIVE, Instant.now(), null, List.of());
+  }
+
+  /**
+   * 从持久化态重建会话（18 节 {@code SessionManager.get/getOrCreate} 命中既有行时用）：还原历史与原始时间戳， 而非把 {@code
+   * createdAt} 刷成 now、历史清空。
+   *
+   * @param id 会话标识
+   * @param profileName 所属 Agent 运行配置名
+   * @param channel 触发渠道
+   * @param userId 用户标识
+   * @param status 会话状态（核心阶段固定 {@code active}）
+   * @param createdAt 原始创建时间
+   * @param lastActiveAt 原始最后活跃时间（为空则回落 {@code createdAt}）
+   * @param messages 已持久化的对话历史（按序；空历史传空表）
+   * @return 与持久化态一致的会话聚合
+   */
+  public static Session rehydrate(
+      String id,
+      String profileName,
+      String channel,
+      String userId,
+      String status,
+      Instant createdAt,
+      Instant lastActiveAt,
+      List<SessionMessage> messages) {
+    return new Session(id, profileName, channel, userId, status, createdAt, lastActiveAt, messages);
+  }
+
+  private Session(
+      String id,
+      String profileName,
+      String channel,
+      String userId,
+      String status,
+      Instant createdAt,
+      Instant lastActiveAt,
+      List<SessionMessage> messages) {
     this.id = Objects.requireNonNull(id, "id 不能为空");
     this.profileName = Objects.requireNonNull(profileName, "profileName 不能为空");
     this.channel = channel;
     this.userId = userId;
-    this.status = STATUS_ACTIVE;
-    this.createdAt = Instant.now();
-    this.lastActiveAt = this.createdAt;
+    this.status = (status == null) ? STATUS_ACTIVE : status;
+    this.createdAt = Objects.requireNonNull(createdAt, "createdAt 不能为空");
+    this.lastActiveAt = (lastActiveAt == null) ? this.createdAt : lastActiveAt;
+    this.messages = new ArrayList<>(messages == null ? List.of() : messages);
   }
 
   public String id() {
