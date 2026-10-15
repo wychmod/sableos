@@ -70,6 +70,11 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <!-- 18 节：fat JAR 主类 = Picocli 命令行入口（轻命令零 Spring 秒回，重命令自启动 SableOsRuntime）。
+               boot 仍是 fat JAR 的产出方（AGENTS.md 口径不变），只是入口从 SableOsApplication 换成 SableOsCli。 -->
+          <mainClass>com.sableos.cli.SableOsCli</mainClass>
+        </configuration>
       </plugin>
     </plugins>
   </build>

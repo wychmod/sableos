@@ -3,6 +3,7 @@ package com.sableos.boot;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.sableos.cli.SableOsRuntime;
 import com.sableos.core.agent.AgentLoader;
 import com.sableos.core.profile.Profile;
 import com.sableos.core.profile.ProfileRegistry;
@@ -30,7 +31,7 @@ import org.springframework.test.context.DynamicPropertySource;
  * 装配层验收（零 key）：空 providers 清单下上下文可升起、六个 bean 齐备、ProfileRegistry 为空、 未登记 provider 调用抛点名异常。数据源指向临时
  * SQLite，避免污染仓库（真 Flyway 建表随之验证）。
  */
-@SpringBootTest
+@SpringBootTest(classes = SableOsRuntime.class)
 class ProviderAssemblyTest {
 
   private static final String DB_URL = "jdbc:sqlite:" + tempDbPath();
