@@ -3,6 +3,7 @@ package com.sableos.boot;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import com.sableos.cli.SableOsRuntime;
 import com.sableos.core.profile.Profile;
 import com.sableos.core.provider.ProviderRequest;
 import com.sableos.core.provider.ProviderResponse;
@@ -28,7 +29,7 @@ import org.springframework.test.context.DynamicPropertySource;
  * <p>打 {@code @Tag("integration")}，CI 与日常构建默认跳过（外部 API 可用性不绑架流水线）； 手动跑：{@code DEEPSEEK_API_KEY=xxx
  * mvn -pl sableos-boot -am test -DexcludedGroups= -Dgroups=integration -Dtest=ProviderSmokeIT}
  */
-@SpringBootTest
+@SpringBootTest(classes = SableOsRuntime.class)
 @Tag("integration")
 class ProviderSmokeIT {
 

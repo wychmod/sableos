@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.sableos.cli.SableOsRuntime;
 import com.sableos.core.agent.AgentService;
 import com.sableos.core.context.ContextLoader;
 import com.sableos.core.memory.MemoryProvider;
@@ -20,7 +21,7 @@ import com.sableos.core.session.SessionStore;
 import com.sableos.core.tool.ToolCatalog;
 import com.sableos.core.tool.ToolExecutor;
 import com.sableos.core.tool.ToolInvocationAuditor;
-import com.sableos.storage.InMemorySessionStore;
+import com.sableos.storage.JpaSessionManager;
 import com.sableos.storage.JpaToolInvocationAuditor;
 import com.sableos.storage.ToolInvocation;
 import com.sableos.storage.ToolInvocationRepository;
@@ -41,7 +42,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * ReAct 装配层验收（零 key）：空 providers 清单下上下文可升起、九个运行时 bean 齐备、空工具目录与无记忆的前向实现生效， 并以脚本化 Provider
  * 驱动一轮端到端（真循环 + 真审计落库）。数据源指向临时 SQLite，避免污染仓库（真 Flyway 建表随之验证 V2）。
  */
-@SpringBootTest
+@SpringBootTest(classes = SableOsRuntime.class)
 class ReactAssemblyTest {
 
   private static final String DB_URL = "jdbc:sqlite:" + tempDbPath();
@@ -80,7 +81,7 @@ class ReactAssemblyTest {
   @DisplayName("装配_零key可升起且九个bean齐备")
   void contextLoads_withReActBeans() {
     assertThat(toolInvocationAuditor).isInstanceOf(JpaToolInvocationAuditor.class);
-    assertThat(sessionStore).isInstanceOf(InMemorySessionStore.class);
+    assertThat(sessionStore).isInstanceOf(JpaSessionManager.class);
     assertThat(toolCatalog).isNotNull();
     assertThat(memoryProvider).isNotNull();
     assertThat(contextLoader).isNotNull();

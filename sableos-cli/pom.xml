@@ -19,6 +19,16 @@
       <groupId>com.sableos</groupId>
       <artifactId>sableos-core</artifactId>
     </dependency>
+    <!-- 18 节：cli 升为聚合入口——SableOsRuntime 装配根需引用持久化实现与 chat 交互通道。
+         不依赖 sableos-boot（boot→cli 单向，无环）；provider/memory/tool 等 bean 运行期由组件扫描从 boot 的 @Configuration 收编。 -->
+    <dependency>
+      <groupId>com.sableos</groupId>
+      <artifactId>sableos-storage</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.sableos</groupId>
+      <artifactId>sableos-channel-cli</artifactId>
+    </dependency>
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
@@ -26,6 +36,20 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <!-- 重命令（chat/serve/gateway）自启动 Spring + JPA；轻命令 session list 裸 JDBC 直读（运行期驱动） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+    </dependency>
+    <!-- 轻命令 provider list 读 classpath 的 application.yaml（sableos.providers），零 Spring -->
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
     </dependency>
   </dependencies>
 
@@ -42,13 +66,7 @@
           </archive>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <configuration>
-          <classifier>all</classifier>
-        </configuration>
-      </plugin>
+      <!-- 可执行 fat JAR 由 sableos-boot 产出（mainClass=com.sableos.cli.SableOsCli）；cli 是库，不再自行 repackage。 -->
     </plugins>
   </build>
 </project>

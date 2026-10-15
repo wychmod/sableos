@@ -17,4 +17,9 @@ public class StorageTestApplication {
       ToolInvocationRepository toolInvocationRepository) {
     return new JpaToolInvocationAuditor(toolInvocationRepository);
   }
+
+  @Bean
+  public JpaSessionManager jpaSessionManager(SessionRepository sessionRepository) {
+    return new JpaSessionManager(sessionRepository);
+  }
 }
