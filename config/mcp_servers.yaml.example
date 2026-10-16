@@ -1,0 +1,12 @@
+# MCP server 配置示例：复制为 .sableos/mcp_servers.yaml 并按需增删条目。
+# 文件缺失视为零 server（启动照常）；结构非法（servers 非列表 / 条目非对象）会点名报错。
+servers:
+  # server 名：日志与点名使用；重名由注册表统一拒绝
+  - name: filesystem
+    # 核心阶段仅支持 stdio；其它 transport 告警跳过
+    transport: stdio
+    # 命令与参数按空白拆分（可执行文件 + 独立参数；不经 Shell 解释）
+    command: npx -y @modelcontextprotocol/server-filesystem /tmp
+    # 可选：注入子进程的环境变量
+    env:
+      SOME_TOKEN: ${SOME_TOKEN}
