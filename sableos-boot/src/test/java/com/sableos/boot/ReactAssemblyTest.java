@@ -92,8 +92,8 @@ class ReactAssemblyTest {
   }
 
   @Test
-  @DisplayName("装配_空工具目录与无记忆的前向实现生效")
-  void forwardContracts_areInert() {
+  @DisplayName("装配_工具注册表接通且无记忆前向实现仍生效")
+  void toolRegistryWired_memoryStillInert() {
     Profile profile =
         new Profile(
             "ops",
@@ -107,8 +107,9 @@ class ReactAssemblyTest {
             List.of(),
             new Profile.Settings(null, null));
 
+    // 20 节：注册表已接通，内置工具查得到；空 tools 声明的 Profile 过滤后仍为空
+    assertThat(toolCatalog.find("http_get")).isNotNull();
     assertThat(toolCatalog.toolsFor(profile)).isEmpty();
-    assertThat(toolCatalog.find("http_get")).isNull();
     assertThat(memoryProvider.memorySection(profile)).isNull();
   }
 
@@ -130,20 +131,69 @@ class ReactAssemblyTest {
     profileRegistry.register(profile);
     when(providerService.chat(anyString(), any(), any()))
         .thenReturn(
-            new ProviderResponse("", List.of(new ToolCallRequest("c1", "http_get", "{}")), null))
+            new ProviderResponse(
+                "", List.of(new ToolCallRequest("c1", "weather_query", "{}")), null))
         .thenReturn(new ProviderResponse("完成", List.of(), null));
 
     Session session = new Session("s-1", "ops", "cli", "u-1");
     String reply = agentService.process(session, "看看今天天气");
 
     assertThat(reply).isEqualTo("完成");
-    List<ToolInvocation> rows = toolInvocationRepository.findAll();
+    List<ToolInvocation> rows = invocationsOfSession("s-1");
     assertThat(rows).hasSize(1);
     ToolInvocation row = rows.get(0);
     assertThat(row.getSessionId()).isEqualTo("s-1");
-    assertThat(row.getToolName()).isEqualTo("http_get");
+    assertThat(row.getToolName()).isEqualTo("weather_query");
     assertThat(row.isSuccess()).isFalse();
-    assertThat(row.getErrorMessage()).contains("未注册的工具：http_get");
+    assertThat(row.getErrorMessage()).contains("未注册的工具：weather_query");
     assertThat(row.getTraceId()).isNotBlank();
+  }
+
+  @Test
+  @DisplayName("装配_零key驱动注册工具成功调用并落成功审计")
+  void process_registeredToolSuccess_landsSuccessAudit() throws IOException {
+    Path tempFile = Files.createTempFile("sableos-tool-ok-", ".txt");
+    tempFile.toFile().deleteOnExit();
+    Files.writeString(tempFile, "hello-tool");
+    // Windows 反斜杠会破坏 JSON，统一转正斜杠（JDK 在 Windows 也接受）
+    String path = tempFile.toAbsolutePath().toString().replace('\\', '/');
+
+    Profile profile =
+        new Profile(
+            "ops-reader",
+            null,
+            null,
+            new Profile.ProviderRef("deepseek", "deepseek-chat", null),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            new Profile.Settings(5, 20));
+    profileRegistry.register(profile);
+    when(providerService.chat(anyString(), any(), any()))
+        .thenReturn(
+            new ProviderResponse(
+                "",
+                List.of(new ToolCallRequest("c1", "read_file", "{\"path\":\"" + path + "\"}")),
+                null))
+        .thenReturn(new ProviderResponse("读到了", List.of(), null));
+
+    Session session = new Session("s-2", "ops-reader", "cli", "u-1");
+    String reply = agentService.process(session, "读这个文件");
+
+    assertThat(reply).isEqualTo("读到了");
+    List<ToolInvocation> rows = invocationsOfSession("s-2");
+    assertThat(rows).hasSize(1);
+    ToolInvocation row = rows.get(0);
+    assertThat(row.getToolName()).isEqualTo("read_file");
+    assertThat(row.isSuccess()).isTrue();
+    assertThat(row.getTraceId()).isNotBlank();
+  }
+
+  private List<ToolInvocation> invocationsOfSession(String sessionId) {
+    return toolInvocationRepository.findAll().stream()
+        .filter(row -> sessionId.equals(row.getSessionId()))
+        .toList();
   }
 }
