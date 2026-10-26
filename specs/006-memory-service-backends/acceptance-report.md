@@ -47,7 +47,7 @@ This section delivers the pluggable long-term memory subsystem for SableOS:
 | `memory_entries` table | T007, T008, T009 | delivered |
 | `.sableos/memory/<profile>/MEMORY.md` | T013 | delivered |
 | `memory.backend` configuration | T015, T023 | delivered |
-| Mem0 `${MEM0_BASE_URL}` env var | T020 | delivered |
+| `memory.mem0.mode` + `MEM0_API_KEY` | T020 | delivered |
 | PromptBuilder integration | T015 | delivered |
 
 ## Build Evidence
@@ -88,7 +88,7 @@ Tests run: 31, Failures: 0, Errors: 0, Skipped: 0 -- module total
 | --- | --- | --- |
 | 1 | External IO goes through `Sandbox.enforce` first | N/A for Memory: `MemoryTools` operates on internal storage only; no external IO |
 | 2 | LLM calls / tool invocations audited | `MemoryTools` is executed by `ToolExecutor`, which records `tool_invocations`; no direct LLM calls in this section |
-| 3 | No plaintext keys | Verified: Mem0 credentials come from `MEM0_BASE_URL` / `MEM0_API_KEY` env vars only |
+| 3 | No plaintext keys | Verified: Mem0 credentials come from `memory.mem0.api-key` / `MEM0_API_KEY` only; `memory.mem0.mode` selects platform vs oss |
 | 4 | `session_id` assembled only in core's single point | `MemoryService` receives `Session` and uses `session.profileName()`; does not construct session IDs |
 | 5 | No Reactor / `CompletableFuture` / custom thread pools | Verified |
 | 6 | No Spring AI automatic tool execution | Verified: `MemoryTools` is registered via `ToolRegistry.registerAnnotated` and invoked by `ReActLoop` + `ToolExecutor` |
@@ -122,7 +122,7 @@ All existing modules pass `mvn verify`:
 The automated harness covers all four behavioral contracts and the three backend implementations. Manual checks left to the user:
 
 1. **Backend switch smoke test**: set `memory.backend` to `markdown` and `sqlite` in turn, run a chat, and confirm `save_memory` writes and the next `buildContext` carries the memory.
-2. **Mem0 real connection** (optional): create a Mem0 Platform API key, set `memory.backend: mem0` + `MEM0_API_KEY`, verify `save_memory` lands in Mem0 and `recall` returns semantic results.
+2. **Mem0 real connection** (optional): create a Mem0 Platform API key (or start an OSS server), set `memory.backend: mem0` + `memory.mem0.mode` (`platform` / `oss`), verify `save_memory` lands in the chosen store and `recall` returns archival hits.
 3. **Real-model end-to-end**: say something worth remembering in a real chat, start a new session, and confirm the core memory appears in the system prompt.
 4. **USER.md vs MEMORY.md role check**: confirm `USER.md` is read-only and `MEMORY.md` is written by the Agent.
 

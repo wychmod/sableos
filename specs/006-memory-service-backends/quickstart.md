@@ -59,23 +59,40 @@ Repeat the chat. Verify `memory_entries` table has rows:
 sqlite3 .sableos/sableos.db "SELECT scope, content FROM memory_entries;"
 ```
 
-### Mem0 backend (requires Mem0 Platform API key)
+### Mem0 backend: Platform or self-hosted OSS
 
-Set the API key (get one from the Mem0 dashboard); `MEM0_BASE_URL` is optional and only needed for a proxy:
+`memory.mem0.mode` 决定接口形态，两者路径与鉴权不同，不能只改 base URL。
+
+**Platform（默认）**
 
 ```bash
-export MEM0_API_KEY=...
-# export MEM0_BASE_URL=https://api.mem0.ai   # 默认值，可覆盖
+export MEM0_API_KEY=...          # Mem0 dashboard 获取
 ```
-
-Edit `application.yaml`:
 
 ```yaml
 memory:
   backend: mem0
+  mem0:
+    mode: platform               # 默认值，可省略
+    # base-url: https://api.mem0.ai
 ```
 
-Repeat the chat and verify entries appear in the Mem0 Platform dashboard (user id is `sableos:<profile>`).
+**自托管 OSS server**
+
+```bash
+cd server && make bootstrap      # 或 docker compose up -d；API 在 http://localhost:8888
+export MEM0_API_KEY=m0sk_...     # dashboard 的 API Keys 页创建；AUTH_DISABLED=true 时可留空
+```
+
+```yaml
+memory:
+  backend: mem0
+  mem0:
+    mode: oss
+    base-url: http://localhost:8888
+```
+
+Repeat the chat and verify entries appear in the corresponding Mem0 store (user id is `sableos:<profile>`).
 
 ## Expected end-to-end behavior
 
