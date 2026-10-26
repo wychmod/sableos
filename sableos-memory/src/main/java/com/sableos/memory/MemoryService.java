@@ -18,6 +18,12 @@ public interface MemoryService {
   /** 记住一条内容，按 scope 路由到核心区或归档区。 */
   void remember(String content, MemoryScope scope, Profile profile);
 
-  /** 按关键词检索归档记忆，返回匹配条目列表。 */
+  /**
+   * 按关键词检索归档记忆，返回匹配条目列表。
+   *
+   * <p>只搜归档区；返回的是后端渲染后的文本（Markdown / SQLite 带 {@code - [时间] } 前缀，Mem0 为原始 {@code
+   * memory}，顺序也由后端决定）。Mem0 档当前不过滤 scope，可能返回核心记忆，见 {@link com.sableos.memory.store.Mem0MemoryStore}
+   * 类注释。
+   */
   List<String> recall(String keyword, Profile profile);
 }

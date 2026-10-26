@@ -13,10 +13,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * 长期记忆后端契约测试：同一套断言对 Markdown 档与内存替身（代表 Mem0 档语义）统一跑。
+ * 长期记忆后端契约测试：同一套断言对 Markdown 档与内存替身统一跑。
  *
- * <p>SQLite 档由于需要真实 JPA 仓库，其等价契约由 {@link SqliteMemoryStoreTest} 单独覆盖。
- * 任何一档后端破了四条行为契约（不缓存、核心不截断、scope 显式路由、recall 只搜归档），对应测试立即红。
+ * <p>内存替身 {@link InMemoryMemoryStore} 只作为“契约可实现”的基准，<b>不代表真实 Mem0 实现</b>： 真实 {@link
+ * Mem0MemoryStore} 当前只由 {@link Mem0MemoryStoreTest} 验证请求协议，未纳入本契约测试； 其 {@code recall} 不按 scope
+ * 过滤、{@code load} 不做归档截断，与契约四及截断约定存在已知差异 （见该类 Javadoc）。SQLite 档需要真实 JPA 仓库，其等价契约由 {@link
+ * SqliteMemoryStoreTest} 单独覆盖。
+ *
+ * <p>Markdown 与内存替身任一后端破了四条行为契约（不缓存、核心不截断、scope 显式路由、recall 只搜归档）， 对应参数化用例立即红。
  */
 class MemoryStoreContractTest {
 
