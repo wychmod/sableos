@@ -1,5 +1,6 @@
 package com.sableos.boot.tool;
 
+import com.sableos.memory.tool.MemoryTools;
 import com.sableos.tool.ToolRegistry;
 import com.sableos.tool.builtin.FileTools;
 import com.sableos.tool.builtin.HttpTools;
@@ -85,7 +86,8 @@ public class ToolConfiguration {
       RestClient restClient,
       UserInteraction userInteraction,
       SearchProvider searchProvider,
-      McpClientService mcpClientService) {
+      McpClientService mcpClientService,
+      MemoryTools memoryTools) {
     ToolRegistry registry = new ToolRegistry();
     registry.registerAnnotated(new FileTools(sandbox));
     registry.registerAnnotated(new ShellTools(sandbox));
@@ -94,6 +96,7 @@ public class ToolConfiguration {
     registry.registerAnnotated(new WebSearchTools(searchProvider));
     // 空渠道表：调用即失败点名「无已注册渠道」、零请求（渠道注册表本体归后续节，届时不改 NotifyTools）
     registry.register(new NotifyTools(sandbox, new WebhookNotifyAdapter(restClient), Map.of()));
+    registry.registerAnnotated(memoryTools);
     mcpClientService.connectAll(registry);
     return registry;
   }
