@@ -125,17 +125,17 @@ flowchart TB
 
 ```mermaid
 sequenceDiagram
-  participant Loop as ReActLoop
+  participant RL as ReActLoop
   participant Cat as ToolRegistry (ToolCatalog)
   participant Ex as ToolExecutor
   participant T as SableTool
   participant SB as Sandbox
   participant Audit as JpaToolInvocationAuditor
 
-  Note over Loop,Cat: 装配期：ToolConfiguration.toolRegistry() 三来源注册
-  Loop->>Cat: find(name) / toolsFor(profile)
-  Cat-->>Loop: SableTool
-  Loop->>Ex: execute(name, jsonInput)
+  Note over RL,Cat: 装配期：ToolConfiguration.toolRegistry() 三来源注册
+  RL->>Cat: find(name) / toolsFor(profile)
+  Cat-->>RL: SableTool
+  RL->>Ex: execute(name, jsonInput)
   Ex->>T: execute(JsonNode)
   alt 注解工具（FileTools 等）
     T->>T: ToolCallback.call → 反射业务方法
@@ -146,7 +146,7 @@ sequenceDiagram
   end
   T-->>Ex: ToolResult（异常由 Ex 兜底转 failure）
   Ex->>Audit: 落 tool_invocations（成败都记）
-  Ex-->>Loop: ToolResult → 下一轮 prompt
+  Ex-->>RL: ToolResult → 下一轮 prompt
 ```
 
 **要点**：执行发起方永远是 `ToolExecutor`（审计唯一收口），`AnnotatedToolAdapter` 内不捕获异常是刻意的——异常上抛由 Executor 统一转失败结果，保证「失败也落审计」不变量。

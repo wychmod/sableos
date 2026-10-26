@@ -17,6 +17,7 @@
 
 ---
 
+
 ## 2. 关键实现步骤（按执行顺序）
 
 | # | 环节                  | 文件 / 模块                                                                                                                             | 职责                                                                                                                                | 为什么必须看                                                                                                                                                         | 阅读建议                                                                                                                                                                      |
@@ -111,7 +112,6 @@ void run(String profileName, String userId, BufferedReader in, PrintStream out) 
   }
 }
 ```
-
 
 读这段代码只要抓住三件事：**会话在循环外取一次**（所以同一次对话的连续多行复用同一个 session，多轮上下文才串得起来）；**`/quit` 与 EOF 等价退出**（管道喂完就自然结束，不抛堆栈）；**整段没有任何模型调用与工具执行**——想、调模型、执行工具全在 `AgentService` → `ReActLoop` 里。channel 字面量 `"cli"` 只是作为三元组的一个参数传进去，session_id 拼接发生在 `SessionManager` 内部。
 
