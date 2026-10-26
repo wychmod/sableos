@@ -25,7 +25,7 @@ This section delivers the pluggable long-term memory subsystem for SableOS:
 - `LongTermMemoryStore` backend interface with three implementations:
   - `MarkdownMemoryStore` (default): per-profile `MEMORY.md` under `.sableos/memory/<profile>/`.
   - `SqliteMemoryStore`: `memory_entries` table via `sableos-storage` + Flyway.
-  - `Mem0MemoryStore`: REST integration to a self-hosted Mem0 server.
+  - `Mem0MemoryStore`: REST integration to Mem0 Platform (v3 API).
 - `MemoryTools` (`save_memory` / `recall_memory`) registered into `ToolRegistry` via `sableos-boot`.
 - `MemoryConfiguration` selects backend by `memory.backend` and wires `MemoryService` into `PromptBuilder`.
 
@@ -122,7 +122,7 @@ All existing modules pass `mvn verify`:
 The automated harness covers all four behavioral contracts and the three backend implementations. Manual checks left to the user:
 
 1. **Backend switch smoke test**: set `memory.backend` to `markdown` and `sqlite` in turn, run a chat, and confirm `save_memory` writes and the next `buildContext` carries the memory.
-2. **Mem0 real connection** (optional): deploy a self-hosted Mem0, set `memory.backend: mem0` + `MEM0_BASE_URL`, verify `save_memory` lands in Mem0 and `recall` returns semantic results.
+2. **Mem0 real connection** (optional): create a Mem0 Platform API key, set `memory.backend: mem0` + `MEM0_API_KEY`, verify `save_memory` lands in Mem0 and `recall` returns semantic results.
 3. **Real-model end-to-end**: say something worth remembering in a real chat, start a new session, and confirm the core memory appears in the system prompt.
 4. **USER.md vs MEMORY.md role check**: confirm `USER.md` is read-only and `MEMORY.md` is written by the Agent.
 

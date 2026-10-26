@@ -55,7 +55,8 @@ sandbox:
   # 单次工具结果截断阈值；超阈值截断并在结果中标注
   tool_result_max_chars: 16384
 
-# 长期记忆后端：markdown（默认，.sableos/memory/MEMORY.md）| sqlite（memory_entries 表）
+# 长期记忆后端：markdown（默认，.sableos/memory/<profile>/MEMORY.md）| sqlite（memory_entries 表）
+# | mem0（Mem0 Platform，需 MEM0_API_KEY，可用 MEM0_BASE_URL 覆盖默认 https://api.mem0.ai）
 memory:
   backend: markdown
 

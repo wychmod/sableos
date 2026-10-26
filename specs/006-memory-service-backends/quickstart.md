@@ -59,13 +59,13 @@ Repeat the chat. Verify `memory_entries` table has rows:
 sqlite3 .sableos/sableos.db "SELECT scope, content FROM memory_entries;"
 ```
 
-### Mem0 backend (requires self-hosted Mem0)
+### Mem0 backend (requires Mem0 Platform API key)
 
-Set environment variables:
+Set the API key (get one from the Mem0 dashboard); `MEM0_BASE_URL` is optional and only needed for a proxy:
 
 ```bash
-export MEM0_BASE_URL=https://mem0.internal.example.com
 export MEM0_API_KEY=...
+# export MEM0_BASE_URL=https://api.mem0.ai   # 默认值，可覆盖
 ```
 
 Edit `application.yaml`:
@@ -75,7 +75,7 @@ memory:
   backend: mem0
 ```
 
-Repeat the chat and verify entries appear in the Mem0 server.
+Repeat the chat and verify entries appear in the Mem0 Platform dashboard (user id is `sableos:<profile>`).
 
 ## Expected end-to-end behavior
 

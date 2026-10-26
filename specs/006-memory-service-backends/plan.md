@@ -6,7 +6,7 @@
 
 ## Summary
 
-Deliver a pluggable long-term memory subsystem for the SableOS runtime kernel. A unified `MemoryService` facade exposes build-context, remember, and recall operations to the ReAct loop and prompt assembly. A `LongTermMemoryStore` backend interface isolates persistence details, allowing three backends to coexist and be selected by configuration: a human-readable Markdown file backend, a structured SQLite backend, and a self-hosted Mem0 REST backend. The `save_memory` / `recall_memory` capabilities are exposed as built-in Agent tools, backend-agnostic and registered into the existing `ToolRegistry`.
+Deliver a pluggable long-term memory subsystem for the SableOS runtime kernel. A unified `MemoryService` facade exposes build-context, remember, and recall operations to the ReAct loop and prompt assembly. A `LongTermMemoryStore` backend interface isolates persistence details, allowing three backends to coexist and be selected by configuration: a human-readable Markdown file backend, a structured SQLite backend, and a Mem0 Platform REST backend. The `save_memory` / `recall_memory` capabilities are exposed as built-in Agent tools, backend-agnostic and registered into the existing `ToolRegistry`.
 
 ## Technical Context
 
@@ -75,7 +75,7 @@ sableos-memory/src/main/java/com/sableos/memory/
   store/
     MarkdownMemoryStore.java    # default file backend
     SqliteMemoryStore.java      # structured SQLite backend
-    Mem0MemoryStore.java        # self-hosted Mem0 REST backend
+    Mem0MemoryStore.java        # Mem0 Platform REST backend
   tool/
     MemoryTools.java            # @Tool bean: save_memory / recall_memory
 

@@ -52,16 +52,17 @@ public class MemoryConfiguration {
   @Bean
   @ConditionalOnProperty(name = "memory.backend", havingValue = "mem0")
   public LongTermMemoryStore mem0MemoryStore(RestClient.Builder builder) {
+    String apiKey = System.getenv("MEM0_API_KEY");
+    if (apiKey == null || apiKey.isBlank()) {
+      throw new IllegalStateException("memory.backend=mem0 需要环境变量 MEM0_API_KEY");
+    }
+    // Platform 默认地址；私有网关/代理可用 MEM0_BASE_URL 覆盖
     String baseUrl = System.getenv("MEM0_BASE_URL");
     if (baseUrl == null || baseUrl.isBlank()) {
-      throw new IllegalStateException("memory.backend=mem0 需要环境变量 MEM0_BASE_URL");
+      baseUrl = "https://api.mem0.ai";
     }
-    String apiKey = System.getenv("MEM0_API_KEY");
     RestClient restClient =
-        builder
-            .baseUrl(baseUrl)
-            .defaultHeader("Authorization", "Bearer " + (apiKey == null ? "" : apiKey))
-            .build();
+        builder.baseUrl(baseUrl).defaultHeader("Authorization", "Token " + apiKey).build();
     return new Mem0MemoryStore(restClient, "sableos");
   }
 }

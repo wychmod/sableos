@@ -30,4 +30,4 @@ All implementations MUST honor:
 
 - `MarkdownMemoryStore` — file backend, default.
 - `SqliteMemoryStore` — row backend in `memory_entries`.
-- `Mem0MemoryStore` — REST backend to self-hosted Mem0.
+- `Mem0MemoryStore` — REST backend to Mem0 Platform (v3 API).

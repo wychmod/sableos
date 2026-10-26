@@ -21,9 +21,9 @@
 
 - `MarkdownMemoryStore` — human-readable `.sableos/memory/MEMORY.md`, zero external dependencies, default.
 - `SqliteMemoryStore` — row-per-entry in `memory_entries`, structured query and `LIMIT` truncation, still zero external dependencies.
-- `Mem0MemoryStore` — REST client to a self-hosted Mem0 server, for semantic retrieval / conflict resolution.
+- `Mem0MemoryStore` — REST client to Mem0 Platform (v3 API), for semantic retrieval; writes are verbatim (`infer=false`) to keep store contracts.
 
-**Rationale**: Matches the staged evolution in §21: file-first, then structured DB, then external intelligence. The default keeps the runtime self-contained; Mem0 is opt-in and self-hosted to respect data-sovereignty requirements.
+**Rationale**: Matches the staged evolution in §21: file-first, then structured DB, then external intelligence. The default keeps the runtime self-contained; Mem0 is opt-in and points at Platform by default; enabling it sends memory content off-host, so it is only for deployments that accept that trade-off.
 
 **Alternatives considered**:
 - Only Markdown — rejected because it would not prove the pluggability contract under volume.
@@ -45,9 +45,9 @@
 
 **Rationale**: Tool semantics belong with the Memory capability, while the registry/MCP/Sandbox infrastructure remains centralized in `sableos-tool` per Constitution V.
 
-### D-05: Mem0 REST API shape (self-hosted)
+### D-05: Mem0 REST API shape (Platform v3)
 
-**Decision**: Use Spring `RestClient` to call a self-hosted Mem0 server's v1 REST endpoints. The implementation treats the exact JSON shape as an integration detail and uses a small internal DTO layer so tests can mock `RestClient` without relying on a live server.
+**Decision**: Use Spring `RestClient` to call Mem0 Platform v3 endpoints (`/v3/memories/add/`, `/v3/memories/`, `/v3/memories/search/`) with `Authorization: Token`. The implementation treats the exact JSON shape as an integration detail and uses a small internal DTO layer so tests can mock `RestClient` without relying on a live server.
 
 **Rationale**: Mem0's API is versioned; pinning to exact field names in core code would create fragility. Mock-based tests assert request structure and response handling.
 

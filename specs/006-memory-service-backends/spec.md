@@ -42,7 +42,7 @@ As the number of stored memories grows from a handful to hundreds or thousands, 
 
 ### User Story 3 - Optional Semantic Recall via Self-Hosted External Memory (Priority: P3)
 
-When the organization needs semantic retrieval, conflict resolution, or automatic summarization beyond simple keyword search, it can point the system to a self-hosted external memory service. The Agent-facing save and recall tools continue to work unchanged, and data remains within the organization's network.
+When the organization needs semantic retrieval, conflict resolution, or automatic summarization beyond simple keyword search, it can point the system to an external memory service (Mem0 Platform). The Agent-facing save and recall tools continue to work unchanged, and data remains within the organization's network.
 
 **Why this priority**: Keeps the core codebase free of heavy retrieval infrastructure while providing a credible upgrade path for advanced use cases.
 
@@ -50,7 +50,7 @@ When the organization needs semantic retrieval, conflict resolution, or automati
 
 **Acceptance Scenarios**:
 
-1. **Given** the system is configured to use the external backend, **When** the Agent saves a memory, **Then** the request is forwarded to the configured self-hosted service with the correct scope metadata.
+1. **Given** the system is configured to use the external backend, **When** the Agent saves a memory, **Then** the request is forwarded to the configured external service with the correct scope metadata.
 2. **Given** the system is configured to use the external backend, **When** the Agent recalls a keyword, **Then** the query is forwarded to the external service and the result is returned in the same format as other backends.
 
 ---
@@ -71,7 +71,7 @@ When the organization needs semantic retrieval, conflict resolution, or automati
 - **FR-003**: The facade MUST allow memories to be recalled by keyword, returning only matching archival memories.
 - **FR-004**: The system MUST provide a default backend that stores memories in a human-readable file with clear core and archival sections.
 - **FR-005**: The system MUST provide a structured backend that stores memories as individual records, supporting volume growth without changing the facade contract.
-- **FR-006**: The system MUST provide an external integration backend that delegates storage and semantic retrieval to a self-hosted service, keeping the same facade contract.
+- **FR-006**: The system MUST provide an external integration backend that delegates storage and semantic retrieval to an external service (Mem0 Platform), keeping the same facade contract.
 - **FR-007**: All backends MUST read fresh data on every context build so that memories saved in one turn are visible in the next turn.
 - **FR-008**: All backends MUST preserve core memories in full and apply any size limits only to archival memories.
 - **FR-009**: The system MUST expose save and recall capabilities as built-in tools that the Agent can invoke during the ReAct loop.
@@ -98,6 +98,6 @@ When the organization needs semantic retrieval, conflict resolution, or automati
 ## Assumptions
 
 - The Agent is responsible for deciding when to save a memory and which scope to use; the system does not automatically extract memories from conversation history.
-- The external memory backend requires a separately deployed self-hosted instance; it is not bundled with the runtime.
+- The external memory backend requires a Mem0 Platform API key and sends memory content off-host; it is not bundled with the runtime.
 - The existing session manager continues to own short-term conversation history; this feature focuses on long-term memory only.
 - The prompt assembly flow already has a defined integration point for injecting a memory section.
