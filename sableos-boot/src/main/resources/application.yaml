@@ -55,9 +55,18 @@ sandbox:
   # 单次工具结果截断阈值；超阈值截断并在结果中标注
   tool_result_max_chars: 16384
 
-# 长期记忆后端：markdown（默认，.sableos/memory/MEMORY.md）| sqlite（memory_entries 表）
+# 长期记忆后端：markdown（默认，.sableos/memory/<profile>/MEMORY.md）| sqlite（memory_entries 表）| mem0
 memory:
   backend: markdown
+  # Mem0 形态二选一：platform（云，默认）| oss（自托管 server）
+  mem0:
+    mode: platform
+    # 缺省：platform → https://api.mem0.ai；oss → http://localhost:8888
+    # base-url: http://localhost:8888
+    # 建议用环境变量 MEM0_API_KEY 注入；oss 关闭鉴权时可留空
+    api-key: ${MEM0_API_KEY:}
+    # Mem0 侧 user_id 前缀，实际值为 <prefix>:<profile>
+    user-prefix: sableos
 
 # --- 应用元信息（/actuator/info）---
 # 注意：Boot 2.6+ 起 info 端点的 env 贡献者默认关闭，须开 management.info.env.enabled（见下方）。

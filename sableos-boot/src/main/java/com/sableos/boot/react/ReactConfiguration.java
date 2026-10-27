@@ -24,9 +24,11 @@ import org.springframework.context.annotation.Configuration;
  * ReAct 运行时装配：把 core 的循环组件与本节前向契约接成一条可运行的处理链。
  *
  * <p>{@link ToolCatalog} 由第 20 节的 {@code ToolConfiguration} 提供（{@code ToolRegistry}），本配置只消费不定义；
- * {@link MemoryProvider} 返回 null（长期记忆注入归 22 节）。会话保存由 18 节的 {@link SessionManager}（{@code
- * JpaSessionManager}）落地—— {@code SessionManager} is-a {@link SessionStore}，故 {@code agentService}
- * 仍按 {@link SessionStore} 注入。审计落 {@link JpaToolInvocationAuditor}（原则 VI）。
+ * {@link MemoryProvider} 由第 22 节的 {@code MemoryConfiguration} 提供（{@code
+ * MemoryServiceImpl}），本配置同样只消费不定义 —— 全容器只允许这一个 Provider 定义，在此再定义会因按名解析静默改变 {@code PromptBuilder}
+ * 的注入来源。会话保存由 18 节的 {@link SessionManager}（{@code JpaSessionManager}）落地—— {@code SessionManager}
+ * is-a {@link SessionStore}， 故 {@code agentService} 仍按 {@link SessionStore} 注入。审计落 {@link
+ * JpaToolInvocationAuditor}（原则 VI）。
  *
  * <p><b>不新增第二个 {@code TaskDecorator}</b>：全容器只允许 {@code ObservabilityConfig} 那一个（AGENTS.md §5.2）。
  */
@@ -46,11 +48,6 @@ public class ReactConfiguration {
   @Bean
   public SessionManager sessionManager(SessionRepository sessionRepository) {
     return new JpaSessionManager(sessionRepository);
-  }
-
-  @Bean
-  public MemoryProvider memoryProvider() {
-    return profile -> null;
   }
 
   @Bean
