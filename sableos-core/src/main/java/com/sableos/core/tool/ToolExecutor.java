@@ -48,9 +48,8 @@ public final class ToolExecutor {
       return result;
     }
 
-    // ---- 对外动作白名单校验位（FR-009；具体规则归 24 节）----
-    // TODO(24 节): Sandbox.enforce(...) 接线处——本节只留调用位，不实现规则
-    // （Sandbox 接口五件归 20 节课件、WhitelistSandbox 实现归 24 节；本节不新建 Sandbox 类型）
+    // 对外动作白名单校验在工具入口完成（20 节接线、24 节 WhitelistSandbox 实现）：
+    // 文件 / Shell / HTTP / 通知各自在执行前调用 Sandbox.enforce，本层只负责把失败收敛为审计结果
 
     JsonNode input;
     try {

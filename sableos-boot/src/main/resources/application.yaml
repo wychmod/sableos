@@ -39,9 +39,10 @@ server:
 workspace:
   root: .sableos
 
-# --- Sandbox 白名单（契约 §7）---
-# 四个键各自独立；**空列表 = 该类全部拒绝（deny-all）**，不是"不校验"。
-# 最小可用白名单由 `sableos init`（T019）按示例 Agent 需要生成，勿在此预先放宽。
+# --- Sandbox 白名单（契约 §3）---
+# 三个核心键各自独立；**空列表 = 该类全部拒绝（deny-all）**，不是"不校验"。
+# 示例工作区不预置白名单；跑 Demo 前按需填入，勿预先放宽。
+# smtp.allowed_endpoints 是扩展阶段邮件通知的预留键，核心阶段不读取。
 file:
   allowed_paths: []
 shell:

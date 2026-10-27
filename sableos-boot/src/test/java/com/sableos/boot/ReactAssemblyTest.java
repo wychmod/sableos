@@ -56,6 +56,8 @@ class ReactAssemblyTest {
   static void overrideDatasource(DynamicPropertyRegistry registry) {
     registry.add("spring.datasource.url", () -> DB_URL);
     registry.add("workspace.root", () -> WORKSPACE_DIR);
+    // 24 节起默认 deny-all：成功读文件用例必须让文件落在显式白名单内
+    registry.add("file.allowed_paths[0]", () -> WORKSPACE_DIR);
   }
 
   private static String tempDbPath() {
@@ -196,7 +198,7 @@ class ReactAssemblyTest {
   @Test
   @DisplayName("装配_零key驱动注册工具成功调用并落成功审计")
   void process_registeredToolSuccess_landsSuccessAudit() throws IOException {
-    Path tempFile = Files.createTempFile("sableos-tool-ok-", ".txt");
+    Path tempFile = Files.createTempFile(Path.of(WORKSPACE_DIR), "sableos-tool-ok-", ".txt");
     tempFile.toFile().deleteOnExit();
     Files.writeString(tempFile, "hello-tool");
     // Windows 反斜杠会破坏 JSON，统一转正斜杠（JDK 在 Windows 也接受）

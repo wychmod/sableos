@@ -44,5 +44,10 @@
       <artifactId>spotbugs-annotations</artifactId>
       <scope>provided</scope>
     </dependency>
+    <!-- @ConfigurationProperties 注解（24 节 sandbox 三个白名单属性记录），版本由 Boot BOM 管理 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
   </dependencies>
 </project>

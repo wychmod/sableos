@@ -4,9 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 临时放行装配（24 节替换为 {@code WhitelistSandbox}）：放行一切、但每次放行记 WARN 留痕——绝不静默裸奔（spec 边界）。
+ * 测试替身：放行一切，供不关心校验的用例构造工具；生产装配只使用 {@link WhitelistSandbox}。
  *
- * <p>target 为用户可控字符串：入日志前 CRLF 净化（形态与 AGENTS.md §5.2 一致，勿改）。
+ * <p>每次放行记 WARN 留痕——绝不静默裸奔。target 为用户可控字符串：入日志前 CRLF 净化（形态与 AGENTS.md §5.2 一致，勿改）。
  */
 public class PermissiveSandbox implements Sandbox {
 
@@ -15,7 +15,7 @@ public class PermissiveSandbox implements Sandbox {
   @Override
   public void enforce(SandboxAction action) {
     LOG.warn(
-        "PermissiveSandbox 放行（24 节白名单实现替换）: type={}, target={}",
+        "PermissiveSandbox 测试替身放行: type={}, target={}",
         safe(String.valueOf(action.type())),
         safe(action.target()));
   }
