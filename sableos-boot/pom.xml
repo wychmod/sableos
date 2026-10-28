@@ -63,6 +63,13 @@
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
     </dependency>
+
+    <!-- 架构约束测试（test scope，版本由父 POM 锁定）：boot 是唯一依赖全部模块的汇编模块，
+         只有在这里才能观察到跨模块依赖方向（见 ArchitectureTest） -->
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
