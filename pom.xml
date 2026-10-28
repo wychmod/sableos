@@ -75,6 +75,10 @@
          修于 3.1.6），显式提升到 3.1.7。 -->
     <jackson3.version>3.1.7</jackson3.version>
 
+    <!-- 架构约束测试：ArchUnit 1.4.x（1.x 线最新）；仅 test scope，
+         用于把"结构性纪律"变成 CI 红线（见 sableos-tool 的 ToolSandboxWiringTest）。 -->
+    <archunit.version>1.4.1</archunit.version>
+
     <!-- 开发规范：Google 格式（Spotless）+ 阿里 P3C（PMD 6.x，2.1.1 为兼容线）+ Checkstyle 兜底 -->
     <spotless.version>2.43.0</spotless.version>
     <maven-pmd-plugin.version>3.21.2</maven-pmd-plugin.version>
@@ -91,6 +95,11 @@
     <nvd.datafeed.url>https://dependency-check.github.io/DependencyCheck_Builder/nvd_cache/</nvd.datafeed.url>
     <!-- 本地快速构建默认跳过 OWASP（首跑需拉 NVD 缓存）；CI 与发版用 -Dowasp.skip=false 开启 -->
     <owasp.skip>true</owasp.skip>
+
+    <!-- 依赖收敛钉版（与 dependencyManagement 中的覆盖配套，勿单独改一处） -->
+    <antlr4-runtime.version>4.13.2</antlr4-runtime.version>
+    <swagger-annotations.version>2.2.47</swagger-annotations.version>
+    <json-schema-validator.version>3.0.0</json-schema-validator.version>
   </properties>
 
   <dependencyManagement>
@@ -145,6 +154,33 @@
         <groupId>org.webjars</groupId>
         <artifactId>swagger-ui</artifactId>
         <version>${swagger-ui.version}</version>
+      </dependency>
+
+      <!-- 依赖收敛（enforcer 只告警不阻断，这里把运行期版本钉死，消除版本漂移）：
+           Hibernate 6.6 / Spring Data JPA 需要 antlr4-runtime 4.13.2，Spring AI 传递 4.13.1；
+           springdoc 2.8.17 需要 swagger-annotations-jakarta 2.2.47，Spring AI 传递 2.2.38。 -->
+      <dependency>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr4-runtime</artifactId>
+        <version>${antlr4-runtime.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations-jakarta</artifactId>
+        <version>${swagger-annotations.version}</version>
+      </dependency>
+      <!-- MCP SDK：Spring AI 1.1.8 经 mcp-json-jackson2 传递 mcp-core 0.18.3 /
+           json-schema-validator 2.0.0，与项目直连的 mcp 1.1.4（mcp-core 1.1.4 / validator 3.0.0）
+           不一致。以下两个 pin 只是把 Maven 最近优先的既有裁决（1.1.4 / 3.0.0）显式化，运行期版本不变。 -->
+      <dependency>
+        <groupId>io.modelcontextprotocol.sdk</groupId>
+        <artifactId>mcp-core</artifactId>
+        <version>${mcp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.networknt</groupId>
+        <artifactId>json-schema-validator</artifactId>
+        <version>${json-schema-validator.version}</version>
       </dependency>
 
       <!-- Jackson 3 覆盖（见 properties 中 jackson3.version 注释）。annotations
@@ -218,6 +254,13 @@
         <artifactId>spotbugs-annotations</artifactId>
         <version>${spotbugs.version}</version>
         <scope>provided</scope>
+      </dependency>
+      <!-- ArchUnit：架构约束测试（test scope）。只做"结构纪律"断言，不参与运行时。 -->
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5</artifactId>
+        <version>${archunit.version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -452,6 +495,10 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludedGroups>integration</excludedGroups>
+          <!-- Mockito 5 的 inline mock maker 在测试期动态挂载 byte-buddy agent，JDK 21 默认
+               打印 4 行「dynamic agent loading」警告（未来 JDK 将直接禁止）。显式开启后只保留
+               Mockito 自己打印的 self-attaching 提示（那是 Mockito 的行为，不受此开关影响）。 -->
+          <argLine>-XX:+EnableDynamicAgentLoading</argLine>
         </configuration>
       </plugin>
       <plugin>

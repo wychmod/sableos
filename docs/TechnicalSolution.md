@@ -323,12 +323,13 @@ ActionType     = FILE_READ | FILE_WRITE | SHELL_COMMAND | HTTP_REQUEST
 
 接口签名里不出现"白名单""容器镜像""VM 配置"这类某一档实现特有的词——用最重的 microVM 实现去反向套这个签名，也应该能干净套入，这是校验接口是否中立的办法。
 
-**`WhitelistSandbox`（核心阶段唯一实现）。** 配置在 `application.yaml`（`file.allowed_paths`、`shell.allowed_commands`、`http.allowed_domains`、`smtp.allowed_endpoints`），内部按 `ActionType` 路由到四个私有校验方法：
+**`WhitelistSandbox`（核心阶段唯一实现）。** 配置在 `application.yaml`（`file.allowed_paths`、`shell.allowed_commands`、`http.allowed_domains`），内部按 `ActionType` 路由到三个私有校验方法：
 
 - `checkFilePath`（路径标准化后比对白名单，需处理 `../` 路径穿越）
 - `checkShellCommand`（精确比对可执行文件白名单；解释器仅在管理员显式列入时允许，并授予宿主机进程权限）
 - `checkHttpUrl`（解析 host 后做通配符匹配）
-- `checkSmtpEndpoint`（按 `host:port` 精确放行 SMTP 端点，端口缺省=任意）
+
+`ActionType` 四值中没有 SMTP 动作，核心阶段不实现 `checkSmtpEndpoint`；`smtp.allowed_endpoints` 作为扩展阶段邮件通知的预留键保留在 `application.yaml`，核心阶段不读取。待 `EmailNotifyAdapter` 落地时再按扩展阶段口径补齐 SMTP 端点校验。
 
 任意校验失败抛 `SandboxViolationException`，Tool 执行终止；异常信息直接复用 `ToolExecutor` 已有的失败审计路径写入 `tool_invocations`（`success=false`、`error_message`），不需要为 Sandbox 单独新增审计逻辑。
 

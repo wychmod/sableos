@@ -31,3 +31,7 @@ Thumbs.db
 
 # 字体构建中间产物
 design/assets/_fontcache/
+
+# 学习笔记（课件走读/导读）：只留本地，不入库；
+# 该目录同时不适用 AGENTS.md 第 9 章的 docs/ 格式约定与 markdownlint 门禁
+/docs/study/
