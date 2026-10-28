@@ -75,6 +75,10 @@
          修于 3.1.6），显式提升到 3.1.7。 -->
     <jackson3.version>3.1.7</jackson3.version>
 
+    <!-- 架构约束测试：ArchUnit 1.4.x（1.x 线最新）；仅 test scope，
+         用于把"结构性纪律"变成 CI 红线（见 sableos-tool 的 ToolSandboxWiringTest）。 -->
+    <archunit.version>1.4.1</archunit.version>
+
     <!-- 开发规范：Google 格式（Spotless）+ 阿里 P3C（PMD 6.x，2.1.1 为兼容线）+ Checkstyle 兜底 -->
     <spotless.version>2.43.0</spotless.version>
     <maven-pmd-plugin.version>3.21.2</maven-pmd-plugin.version>
@@ -218,6 +222,13 @@
         <artifactId>spotbugs-annotations</artifactId>
         <version>${spotbugs.version}</version>
         <scope>provided</scope>
+      </dependency>
+      <!-- ArchUnit：架构约束测试（test scope）。只做"结构纪律"断言，不参与运行时。 -->
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5</artifactId>
+        <version>${archunit.version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
