@@ -15,6 +15,9 @@ spring:
         busy_timeout: 5000
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
+    # 纯 REST 应用，没有视图渲染层；显式关闭可避免 Boot 默认开启 open-in-view 的告警
+    # （也会把数据库连接持有到响应序列化结束，关掉更利于虚拟线程下的连接复用）。
+    open-in-view: false
     hibernate:
       # 表结构唯一权威是 db/migration/{vendor}（Flyway），禁止 ddl-auto 改结构（约定见 AGENTS.md §5.1）
       ddl-auto: none
@@ -132,3 +135,7 @@ logging:
   level:
     root: INFO
     com.sableos: DEBUG
+    # Hibernate 6.6 把 hibernate.type.preferred_instant_jdbc_type 归入 incubating，每次建
+    # SessionFactory 都打 HHH90006001 告警；该设置是 SQLite Instant 绑定所需的有意选择（见 spring.jpa.properties），
+    # 属预期噪音，降到 ERROR。
+    org.hibernate.orm.incubating: ERROR
