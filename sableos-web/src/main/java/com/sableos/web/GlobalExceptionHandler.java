@@ -1,5 +1,8 @@
 package com.sableos.web;
 
+import com.sableos.core.sandbox.WhitelistDuplicateException;
+import com.sableos.core.sandbox.WhitelistEntryNotFoundException;
+import com.sableos.core.sandbox.WhitelistValidationException;
 import com.sableos.web.common.ApiResponse;
 import com.sableos.web.error.AgentTimeoutException;
 import com.sableos.web.error.ConflictException;
@@ -55,6 +58,35 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException ex) {
     LOG.warn("Resource not found: {}", sanitize(ex.getMessage()));
     return error(HttpStatus.NOT_FOUND, ex.getMessage());
+  }
+
+  /**
+   * 400 — Sandbox 白名单值校验失败。
+   *
+   * <p>单独一个 handler 而不是复用上面的 {@code IllegalArgumentException}：领域异常的 message 由服务层逐条构造、**不含调用方输入**，
+   * 而通用 400 会原样回显 {@code ex.getMessage()}。两者共用一条路径时，一旦有人在 message 里拼进用户输入，就会直接反射到响应体。
+   */
+  @ExceptionHandler(WhitelistValidationException.class)
+  public ResponseEntity<ApiResponse<Void>> handleWhitelistValidation(
+      WhitelistValidationException ex) {
+    LOG.warn("Whitelist validation failed: {}", sanitize(ex.getMessage()));
+    return badRequest(ex.getMessage());
+  }
+
+  /** 404 — Sandbox 白名单条目不存在。 */
+  @ExceptionHandler(WhitelistEntryNotFoundException.class)
+  public ResponseEntity<ApiResponse<Void>> handleWhitelistEntryNotFound(
+      WhitelistEntryNotFoundException ex) {
+    LOG.warn("Whitelist entry not found: {}", sanitize(ex.getMessage()));
+    return error(HttpStatus.NOT_FOUND, ex.getMessage());
+  }
+
+  /** 409 — Sandbox 白名单条重复。 */
+  @ExceptionHandler(WhitelistDuplicateException.class)
+  public ResponseEntity<ApiResponse<Void>> handleWhitelistDuplicate(
+      WhitelistDuplicateException ex) {
+    LOG.warn("Whitelist duplicate: {}", sanitize(ex.getMessage()));
+    return error(HttpStatus.CONFLICT, ex.getMessage());
   }
 
   /** 409 — 定位冲突：同一名称匹配多个实体等。 */
