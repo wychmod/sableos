@@ -87,6 +87,12 @@ public final class AgentScheduler {
     }
   }
 
+  /**
+   * 注册单条定时任务；单条失败只记日志并跳过，不阻断其余任务的注册（FR-010）。
+   *
+   * <p>这里只捕获 {@link RuntimeException}：能抛在此处的是 cron 解析（IllegalArgumentException）、时区解析
+   * （DateTimeException）与调度器拒绝注册；任务执行期的异常由 {@link #runOnce} 另行兜住，两类失败刻意不混在一起。
+   */
   private void registerOne(Profile profile, Profile.ScheduleConfig schedule) {
     String taskId = schedule.id();
     if (isBlank(taskId) || isBlank(schedule.cron()) || isBlank(schedule.zone())) {
