@@ -47,5 +47,12 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
     </dependency>
+    <!-- test scope：首次导入测试要用 tool 的 WhitelistRules 归一配置值。
+         生产代码不依赖 tool（依赖方向仍是 tool → core ← storage），测试类路径不影响架构约束。 -->
+    <dependency>
+      <groupId>com.sableos</groupId>
+      <artifactId>sableos-tool</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>
