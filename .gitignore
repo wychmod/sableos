@@ -35,3 +35,7 @@ design/assets/_fontcache/
 # 学习笔记（课件走读/导读）：只留本地，不入库；
 # 该目录同时不适用 AGENTS.md 第 9 章的 docs/ 格式约定与 markdownlint 门禁
 /docs/study/
+
+# 本地分析报告（改动分析 HTML 等生成物）：只留本地，不入库；
+# 同样不适用 AGENTS.md 第 9 章的 docs/ 格式约定与 markdownlint 门禁
+/docs/reports/

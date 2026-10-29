@@ -124,10 +124,10 @@ design/assets/*.svg           ->  website/assets/img/*  （线上产物）
 
 - 提交前钩子在 `.githooks/`：启用一次 `git config core.hooksPath .githooks`（或改用 pre-commit 框架读 `.pre-commit-config.yaml`，二选一）；紧急跳过 `SKIP_SABLEOS_HOOKS=1 git commit ...`。**仓库默认不启用钩子（`core.hooksPath` 未设置）**，新环境先启用再开发。
 - 写 Java 的节奏：改完 → `mvn spotless:apply` → `mvn -q -B verify` 全绿再提交；CI 任一关卡不过即红、禁止合并。
-- 两个已踩过的坑（勿回退）：`GlobalExceptionHandler` 的 CRLF 净化必须保持 `String.replaceAll("[\\r\\n]", "_")` 形态（findsecbugs 只认这种写法，换 `Pattern/Matcher` 会挂 SpotBugs）；升级 `org.webjars:swagger-ui` 时必须同步 `application.yaml` 的 `springdoc.swagger-ui.version`（值是 `@swagger-ui.version@`，构建期从父 POM 过滤注入；不同步会因 springdoc 探测失败回落内置版本，导致 `/swagger-ui/**` 404）。
+- 两个已踩过的坑（勿回退）：`GlobalExceptionHandler` 的 CRLF 净化必须保持 `String.replaceAll("[\r\n]", "_")` 形态（findsecbugs 只认这种写法，换 `Pattern/Matcher` 会挂 SpotBugs）；升级 `org.webjars:swagger-ui` 时必须同步 `application.yaml` 的 `springdoc.swagger-ui.version`（值是 `@swagger-ui.version@`，构建期从父 POM 过滤注入；不同步会因 springdoc 探测失败回落内置版本，导致 `/swagger-ui/**` 404）。
 - depcheck 本地可行性实测（2026-10-12）：NVD 镜像经 IPv6 可连通、数据可下载，但全量首更新出现文件传输中途截断（如 `nvdcve-2012.json.gz` 仅收 2.97/4 MB）与连接停滞（进程 10+ 分钟零进展），且单个辅助文件（`.meta` / RetireJS）下载失败即整体 `UpdateException`；强制 IPv4 反而完全超时。结论：**本地依赖 CVE 首跑不可靠，以 CI 独立 job 为权威门禁**；确需本地跑时，先在有稳定网络的环境预热 Maven 本地仓库的 `dependency-check-data` 目录后再执行。
 - **Boot 3.5 线已 EOL（OSS 支持止于 2026-06-30，3.5.16 为终版），BOM 不再出安全补丁，依赖 CVE 修复只能手动覆盖**：可修构件走父 POM 属性覆盖（先例：`tomcat.version=10.1.61`、`jackson3.version=3.1.7`；覆盖前到 Maven Central 核验目标版本存在且跨过全部已知 CVE 修复线，Boot 3.5 的 Tomcat 10.1.x / Jackson 3.0.x 均有后续线内补丁可跟）。spring-framework 6.2.x 的 6 条 CVSS≥8 CVE（2026-08~09 披露）在 OSS 线**无修复版**（修复仅存在于 6.2.20 商业版与 Boot 4 的 7.0.9），已按规范写入抑制（`config/dependency-check-suppressions.xml`）。2026-10-14 决策：短期留在 3.5.16，Boot 4.x 迁移另排期（见第 10 章）。
-- 响应信封是 **5 字段契约**（`code` / `message` / `data` / `timestamp` / `traceId`）：增删字段必须同步 `sableos-web/src/main/java/com/sableos/web/common/ApiResponse.java`、`ApiResponseTest` 与本条口径（本契约的活锚点即本条与代码/测试；原 `specs/001-runtime-core/contracts/http-api.md` 已随 `17e2cfc` 移除），否则 `/speckit-analyze` 报漂移；`traceId` 为 null 时也要输出（信封形状恒定，**不加** `@JsonInclude(NON_NULL)`）。任何**用户可控字符串**（含入站 `traceparent` / `X-Trace-Id` 头）入日志前一律先 `replaceAll("[\\r\\n]", "_")` 净化（同 CRLF 那条，勿改 `Pattern/Matcher` 形态）。
+- 响应信封是 **5 字段契约**（`code` / `message` / `data` / `timestamp` / `traceId`）：增删字段必须同步 `sableos-web/src/main/java/com/sableos/web/common/ApiResponse.java`、`ApiResponseTest` 与本条口径（本契约的活锚点即本条与代码/测试；原 `specs/001-runtime-core/contracts/http-api.md` 已随 `17e2cfc` 移除），否则 `/speckit-analyze` 报漂移；`traceId` 为 null 时也要输出（信封形状恒定，**不加** `@JsonInclude(NON_NULL)`）。任何**用户可控字符串**（含入站 `traceparent` / `X-Trace-Id` 头）入日志前一律先 `replaceAll("[\r\n]", "_")` 净化（同 CRLF 那条，勿改 `Pattern/Matcher` 形态）。
 - MDC 输出的 5 个键（`traceId` / `spanId` / `sessionId` / `profileName` / `channel`）在 prod 档走 `LogstashEncoder` 的 `includeMdcKeyName` **白名单**——漏列即该字段在 JSON 里静默消失而 dev 档正常，是最难查的一类故障；新增 MDC 键必须同步补白名单（勿改用 `includeMdc=true`，白名单能防敏感值混入，见 A-03）。
 - **勿「顺手修掉」`TraceIds` 上的 SpotBugs 抑制**：它用 `ThreadLocalRandom` 生成 trace-id/span-id，并对 findsecbugs 的 `PREDICTABLE_RANDOM` 做了**方法级定点抑制**（带 `justification`）。改成 `SecureRandom` 会引入更严重的问题——其 `nextBytes` 在 `synchronized` 内做阻塞 IO，在 JDK 21 会钉住载体线程，而这是每请求热路径；且 trace-id 非安全凭证（入站本就接受客户端提供的头）。撤销条件与完整理由见该抑制标注处的 `justification`（`sableos-core/src/main/java/com/sableos/core/trace/TraceIds.java`，原 `specs/001-runtime-core/research.md` D-14 已随 `17e2cfc` 移除）。`spotbugs-annotations` 以 `provided` 进父 POM 的 `dependencyManagement`，**只允许**用于确证误报的方法级定点抑制且必须写理由。
 - 同类勿改：`TracedExecutorService` **继承 `AbstractExecutorService`** 而非 `implements ExecutorService`——后者会触发阿里 P3C `ServiceOrDaoClassShouldEndWithImplRule` 误报（它把 JDK 接口当成项目 Service 接口），且继承后 `submit`/`invokeAll`/`invokeAny` 都经由被包装的 `execute`，一处即覆盖全部提交入口。
@@ -190,6 +190,8 @@ SableOS 是 Maven 多模块项目，**以《技术方案》第 10 章为准，�
 npx -y markdownlint-cli --disable MD013 MD025 -- *.md
 ```
 
+> **豁免**：`docs/study/`（课件走读 / 学习笔记）与 `docs/reports/`（本地改动分析等生成物）不受本节约束、不跑上面的 lint，且已在 `.gitignore` 中（只留本地、不入库）。`docs/` 根目录的六份正式文档仍按本节执行。
+
 ## 10. 已知待办与文档漂移
 
 - **图片引用悬空**：`docs/` 里 12 处图片引用（`TechnicalSolution.md` 11 处 + `sableos.md` 1 处）现统一指向同目录下的 `images/*.svg`（与 `docs/images/architecture.svg` 同一约定，不再跨到 `website/`）。`images/logo.svg` 已于 2026-09-29 换为新标识；剩余 **11 张架构/流程图尚未绘制**，引用仍悬空。清单见 `design/README.md`「已知待办」。
@@ -211,4 +213,9 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
   - **`WhitelistSandbox` 不再标 `@Component`**：初始策略必须"先导入/从库恢复再构造"，组件扫描无法表达该顺序且会尝试无参实例化而失败；改由 `SableOsRuntime` 的 `@Bean` 显式创建，并额外以 `Sandbox` 接口类型暴露同一实例供工具注入。
   - FILE_PATH 入库形态 = `Path.normalize()` + 分隔符统一 `/`（盘符大小写不归一）；HTTP_DOMAIN 只接受 ASCII（口径见上一条）。
   - 本 feature 只写操作日志（`DefaultSandboxWhitelistAdmin.logChange`），**不建白名单审计表**（设计稿 §11 口径）。
+- **定时任务调度（009-lesson25-scheduler，2026-10-29 落地）**：第三触发源按 §8.5 落 `sableos-core` 的 `AgentScheduler`（`registerAll` / `runOnce`），由 `serve` / `gateway` 启动后显式注册，`chat` 不调度（§8.6）。四条需记住：
+  - **`sableos-core` 自本节起 compile 依赖 `spring-context`**（仅用 `TaskScheduler` / `CronTrigger`），core 不再是「零 Spring」模块；依据是 §8.5 明定该类归 core 并使用 Spring 调度能力。
+  - **任务执行权键 = `(profileName, scheduleId)` 的私有 record**，不是裸 `scheduleId`：两个 Agent 各自声明 `id: daily` 是两条独立任务，不得互相跳过（FR-004），也与 §8.5 第 28 节的 `(profile_name, schedule_key)` 口径一致。
+  - **同一 Agent 的多条 schedules 共享 `scheduler:scheduler:<profile>` 会话**，`runOnce` 在任务锁内再按会话加**阻塞锁**串行化；否则两边各取历史快照、`save` 整列覆盖 `messages_json`，后写者抹掉前者（lost update）。该锁是进程内的，多实例竞争仍归扩展阶段分布式协调。
+  - 注册时机用 `ServeCommand.startScheduler(context)` 显式调用而非 `@PostConstruct`：三种运行模式共用同一装配根，自注册会让 `chat` 也跑起定时任务。
 - **Boot 4.x 迁移待排期（2026-10-14 决策：短期留在 3.5.16 过渡）**：3.5.16 是 Boot 3.5 OSS 线终版，Spring Framework 6.2.19 的 6 条 CVSS≥8 CVE 在 OSS 线无修复版，过渡期以抑制放行（见 5.3 节，抑制移除条件即迁移落地）。迁移须联动 Spring AI 1.1.x→2.x、springdoc 2.8→3.x、JUnit 6 等，单独走 Spec-Kit 任务排期，勿在业务 task 里顺手升级。
