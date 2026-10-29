@@ -14,11 +14,18 @@
   <name>sableos-core</name>
   <description>核心抽象与接口：SableTool、Session、Profile、ContextLoader、ReActLoop、PromptBuilder、ToolExecutor、AgentService、AgentScheduler 等</description>
   <dependencies>
-    <!-- 链路标识（com.sableos.core.trace）只需日志门面：core 保持框架无关，
-         版本由父 POM 的 Spring Boot BOM 管理，勿在此写 <version> -->
+    <!-- 链路标识（com.sableos.core.trace）只需日志门面，版本由父 POM 的 Spring Boot BOM 管理，
+         勿在此写 <version> -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <!-- 定时任务（com.sableos.core.scheduler）按技术方案 §8.5 归 core，且规定基于 Spring
+         TaskScheduler + CronTrigger 动态注册，故 core 自此需要 spring-context（compile）。
+         仅用调度与 cron API；版本同样由 Boot BOM 管理，勿写 <version>。 -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
     </dependency>
     <!-- 仅供 TraceIds 上那处带理由的 SpotBugs 定点抑制使用，编译期依赖 -->
     <dependency>
