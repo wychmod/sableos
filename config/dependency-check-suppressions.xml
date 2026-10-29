@@ -78,11 +78,14 @@ Timestamp: 2026-10-29
      SableOS 的 Swagger UI 仅在本机开发时访问，不对外开放、不渲染
      第三方内容；生产部署不暴露 /swagger-ui/**。
   4) 匹配方式用 sha1 而非 packageUrl：该条目是 jar 内的 JS 文件，
-     没有 maven packageUrl。sha1 精确锁定 5.32.13 的这个文件内容，
+     没有 maven packageUrl。sha1 精确锁定 5.32.13 的文件内容，
      一旦升级 swagger-ui 即不再命中，不会遮蔽新版本的真实问题。
+     同一 jar 有两个完整产物（swagger-ui-bundle.js 与
+     swagger-ui-es-bundle.js），内容不同、sha1 各异，两条都要列。
 何时移除：swagger-ui 发布内嵌 DOMPurify >= 3.4.17 的版本后删除本条。
         ]]></notes>
         <sha1>a8327db20951219a6eebc8784b818ca08a7d61ce</sha1>
+        <sha1>c49fff383db3cd1bb9593d241979167790e77601</sha1>
         <cve>CVE-2026-116804</cve>
         <cve>CVE-2026-116803</cve>
     </suppress>
