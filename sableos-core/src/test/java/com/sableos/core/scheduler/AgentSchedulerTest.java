@@ -19,6 +19,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -191,6 +193,56 @@ class AgentSchedulerTest {
     assertThat(traceIds).hasSize(2).doesNotContainNull();
     assertThat(traceIds.get(0)).isNotEqualTo(traceIds.get(1));
     assertThat(channels).containsOnly(TraceContext.CHANNEL_SCHEDULER);
+  }
+
+  @Test
+  @DisplayName("同一 Agent 的不同定时任务并发时串行访问同一会话")
+  void runOnce_differentSchedulesOfSameAgent_serializeSessionAccess() throws InterruptedException {
+    Profile.ScheduleConfig first = schedule("task-a", "0 0 9 * * *", "Asia/Shanghai", MESSAGE);
+    Profile.ScheduleConfig second = schedule("task-b", "0 0 9 * * *", "Asia/Shanghai", MESSAGE);
+    Profile profile = profile(first, second);
+    when(sessionManager.getOrCreate(anyString(), anyString(), anyString()))
+        .thenReturn(
+            new Session(
+                "scheduler:scheduler:" + PROFILE_NAME, PROFILE_NAME, "scheduler", "scheduler"));
+    CountDownLatch firstInside = new CountDownLatch(1);
+    CountDownLatch releaseFirst = new CountDownLatch(1);
+    AtomicInteger active = new AtomicInteger();
+    AtomicInteger maxActive = new AtomicInteger();
+    when(agentService.process(any(), any()))
+        .thenAnswer(
+            invocation -> {
+              maxActive.accumulateAndGet(active.incrementAndGet(), Math::max);
+              firstInside.countDown();
+              awaitQuietly(releaseFirst);
+              active.decrementAndGet();
+              return "ok";
+            });
+
+    AgentScheduler scheduler = scheduler();
+    Thread firstRun = new Thread(() -> scheduler.runOnce(profile, first), "scheduler-first");
+    firstRun.start();
+    assertThat(firstInside.await(2, TimeUnit.SECONDS)).isTrue();
+
+    Thread secondRun = new Thread(() -> scheduler.runOnce(profile, second), "scheduler-second");
+    secondRun.start();
+    // 给第二个触发足够时间抵达会话锁：若未串行化，它此刻已进入 process、并发计数变 2。
+    Thread.sleep(300);
+    assertThat(maxActive.get()).as("同一 Agent 的两个定时任务不得并发处理同一会话").isEqualTo(1);
+
+    releaseFirst.countDown();
+    firstRun.join(2000);
+    secondRun.join(2000);
+    assertThat(maxActive.get()).isEqualTo(1);
+    verify(agentService, times(2)).process(any(), any());
+  }
+
+  private static void awaitQuietly(CountDownLatch latch) {
+    try {
+      latch.await(2, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   private static Profile.ScheduleConfig schedule(

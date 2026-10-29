@@ -28,6 +28,8 @@ import org.springframework.scheduling.support.CronTrigger;
  * <ul>
  *   <li><b>配置驱动</b>：注册内容全部来自 {@link Profile#schedules()}，不用 {@code @Scheduled} 这类编译期常量。
  *   <li><b>本地锁防重叠</b>：按任务 id 的进程内 {@link ReentrantLock}，拿不到即跳过——核心阶段单实例，不做分布式协调。
+ *   <li><b>会话内串行</b>：同一 Agent 的多条 schedules 共用一个会话，故再按会话加一把锁、阻塞获取——否则两边各自加载历史快照、
+ *       后写覆盖前写，历史会静默丢失（M-01）。
  *   <li><b>失败隔离</b>：单次执行异常只记日志、{@code finally} 释锁，绝不外抛、不拖垮调度器；审计仍走 AgentService 内部既有路径。
  * </ul>
  *
@@ -46,6 +48,7 @@ public final class AgentScheduler {
   private final AgentService agentService;
   private final SessionManager sessionManager;
   private final ConcurrentMap<String, Lock> taskLocks = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Lock> sessionLocks = new ConcurrentHashMap<>();
 
   /**
    * @param taskScheduler 触发调度器（装配层提供 {@code ThreadPoolTaskScheduler}）
@@ -135,11 +138,20 @@ public final class AgentScheduler {
       return;
     }
     try {
-      // session_id 只由 SessionManager 拼接（H4④）：这里只给三元组，绝不自行拼 channel:user:profile。
-      Session session =
-          sessionManager.getOrCreate(
-              TraceContext.CHANNEL_SCHEDULER, SCHEDULER_USER_ID, profile.name());
-      agentService.process(session, schedule.message());
+      // 任务锁只防「同一任务」重叠；同一 Agent 的多条 schedules 共享同一个会话，
+      // 并发处理会各自加载历史快照、后写覆盖前写（last-write-wins 丢历史）。
+      // 故在任务锁之内再按会话串行化：两把锁顺序固定（先任务、后会话），不会形成环。
+      Lock sessionLock = sessionLockFor(profile.name());
+      sessionLock.lock();
+      try {
+        // session_id 只由 SessionManager 拼接（H4④）：这里只给三元组，绝不自行拼 channel:user:profile。
+        Session session =
+            sessionManager.getOrCreate(
+                TraceContext.CHANNEL_SCHEDULER, SCHEDULER_USER_ID, profile.name());
+        agentService.process(session, schedule.message());
+      } finally {
+        sessionLock.unlock();
+      }
     } catch (Exception e) {
       // 坑三：失败不能悄悄没声音，也不能把调度器带崩；异常对象入日志保留堆栈，message 先做 CRLF 净化。
       LOG.error("定时任务执行失败：id={} reason={}", safe(schedule.id()), safe(e.getMessage()), e);
@@ -151,6 +163,18 @@ public final class AgentScheduler {
   /** 按任务 id 取（首次惰性创建）执行权；包级可见供同包测试模拟「上一次仍占着锁」。 */
   Lock lockFor(String taskId) {
     return taskLocks.computeIfAbsent(taskId, id -> new ReentrantLock());
+  }
+
+  /**
+   * 按定时会话取（首次惰性创建）串行化锁：同一 Agent 的历次定时触发共用一个会话，必须串行读写。
+   *
+   * <p>键调 {@link SessionManager#sessionId} 这个唯一公式生成，不在本类另拼字符串（H4④）。用阻塞获取而非 {@code
+   * tryLock}：两条不同任务的触发都应有结果，不能把后到的一次静默丢掉。
+   */
+  Lock sessionLockFor(String profileName) {
+    return sessionLocks.computeIfAbsent(
+        SessionManager.sessionId(TraceContext.CHANNEL_SCHEDULER, SCHEDULER_USER_ID, profileName),
+        id -> new ReentrantLock());
   }
 
   private static boolean isBlank(String value) {
