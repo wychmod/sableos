@@ -47,7 +47,7 @@ public final class AgentScheduler {
   private final ProfileRegistry profileRegistry;
   private final AgentService agentService;
   private final SessionManager sessionManager;
-  private final ConcurrentMap<String, Lock> taskLocks = new ConcurrentHashMap<>();
+  private final ConcurrentMap<TaskKey, Lock> taskLocks = new ConcurrentHashMap<>();
   private final ConcurrentMap<String, Lock> sessionLocks = new ConcurrentHashMap<>();
 
   /**
@@ -128,13 +128,13 @@ public final class AgentScheduler {
   @SuppressFBWarnings(
       value = "CRLF_INJECTION_LOGS",
       justification =
-          "确认误报：进入日志模板的动态值只有 safe(id) 与 safe(e.getMessage())，两者都经 replaceAll(\"[\\r\\n]\", \"_\") "
+          "确认误报：进入日志模板的动态值只有 safe(profile.name())、safe(id) 与 safe(e.getMessage())，都经 replaceAll(\"[\\r\\n]\", \"_\") "
               + "移除了 CR/LF；末尾的 Throwable 只用于渲染堆栈，不参与 {} 插值，其 message 已在 reason 位置以净化形态出现。"
               + "撤销条件：改为把异常对象以外的未净化字符串拼进日志。")
   void runOnce(Profile profile, Profile.ScheduleConfig schedule) {
-    Lock lock = lockFor(schedule.id());
+    Lock lock = lockFor(profile.name(), schedule.id());
     if (!lock.tryLock()) {
-      LOG.warn("定时任务上一次尚未结束，跳过本次触发：id={}", safe(schedule.id()));
+      LOG.warn("定时任务上一次尚未结束，跳过本次触发：profile={} id={}", safe(profile.name()), safe(schedule.id()));
       return;
     }
     try {
@@ -154,16 +154,29 @@ public final class AgentScheduler {
       }
     } catch (Exception e) {
       // 坑三：失败不能悄悄没声音，也不能把调度器带崩；异常对象入日志保留堆栈，message 先做 CRLF 净化。
-      LOG.error("定时任务执行失败：id={} reason={}", safe(schedule.id()), safe(e.getMessage()), e);
+      LOG.error(
+          "定时任务执行失败：profile={} id={} reason={}",
+          safe(profile.name()),
+          safe(schedule.id()),
+          safe(e.getMessage()),
+          e);
     } finally {
       lock.unlock();
     }
   }
 
-  /** 按任务 id 取（首次惰性创建）执行权；包级可见供同包测试模拟「上一次仍占着锁」。 */
-  Lock lockFor(String taskId) {
-    return taskLocks.computeIfAbsent(taskId, id -> new ReentrantLock());
+  /**
+   * 按「Agent 名 + 任务 id」取（首次惰性创建）执行权；包级可见供同包测试模拟「上一次仍占着锁」。
+   *
+   * <p>任务的身份是 {@code (profileName, id)} 而不是裸 id：两个 Agent 各自声明 {@code id: daily} 是两条独立任务，
+   * 不能因为撞名而互相跳过（FR-004「不同任务互不阻塞」）。这也与 §8.5 的 {@code (profile_name, schedule_key)} 口径一致。
+   */
+  Lock lockFor(String profileName, String taskId) {
+    return taskLocks.computeIfAbsent(new TaskKey(profileName, taskId), key -> new ReentrantLock());
   }
+
+  /** 任务身份键：用 record 而非拼接字符串，避免 Agent 名 / 任务 id 含分隔符时两条任务撞成同一把锁。 */
+  private record TaskKey(String profileName, String taskId) {}
 
   /**
    * 按定时会话取（首次惰性创建）串行化锁：同一 Agent 的历次定时触发共用一个会话，必须串行读写。

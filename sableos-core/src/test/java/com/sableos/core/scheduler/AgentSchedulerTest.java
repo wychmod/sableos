@@ -9,6 +9,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.sableos.core.agent.AgentService;
 import com.sableos.core.profile.Profile;
 import com.sableos.core.profile.ProfileRegistry;
@@ -29,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronTrigger;
@@ -106,35 +111,36 @@ class AgentSchedulerTest {
   void runOnce_whenPreviousStillRunning_skipsThisTrigger() throws InterruptedException {
     Profile.ScheduleConfig schedule = schedule(TASK_ID, "0 0 9 * * *", "Asia/Shanghai", MESSAGE);
     AgentScheduler scheduler = scheduler();
-    Lock lock = scheduler.lockFor(TASK_ID);
-    // ReentrantLock 对同线程可重入：本线程自己 lock 完再调 runOnce 仍会拿到锁。
-    // 因此必须由另一线程占住，才等价于「上一次还在调度线程上跑」。
-    CountDownLatch holding = new CountDownLatch(1);
-    CountDownLatch release = new CountDownLatch(1);
-    Thread previousRun =
-        new Thread(
-            () -> {
-              lock.lock();
-              holding.countDown();
-              try {
-                release.await();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              } finally {
-                lock.unlock();
-              }
-            },
-            "scheduler-previous-run");
-    previousRun.start();
-    holding.await();
+    LockHolder holder = holdLockInOtherThread(scheduler.lockFor(PROFILE_NAME, TASK_ID));
     try {
       scheduler.runOnce(profile(schedule), schedule);
 
       verify(agentService, never()).process(any(), any());
     } finally {
-      release.countDown();
-      previousRun.join();
+      holder.releaseAndJoin();
     }
+  }
+
+  @Test
+  @DisplayName("不同 Agent 使用相同任务标识时互不阻塞")
+  void runOnce_sameTaskIdDifferentAgents_doNotBlockEachOther() throws InterruptedException {
+    Profile.ScheduleConfig schedule = schedule("daily", "0 0 9 * * *", "Asia/Shanghai", MESSAGE);
+    Profile agentA = profile("agent-a", schedule);
+    Profile agentB = profile("agent-b", schedule);
+    Session sessionB =
+        new Session("scheduler:scheduler:agent-b", "agent-b", "scheduler", "scheduler");
+    when(sessionManager.getOrCreate("scheduler", "scheduler", "agent-b")).thenReturn(sessionB);
+
+    AgentScheduler scheduler = scheduler();
+    LockHolder holder = holdLockInOtherThread(scheduler.lockFor("agent-a", "daily"));
+    try {
+      scheduler.runOnce(agentA, schedule); // 撞名且自身被占住：本次跳过
+      scheduler.runOnce(agentB, schedule); // 另一个 Agent 的同名任务照常执行
+    } finally {
+      holder.releaseAndJoin();
+    }
+
+    verify(agentService, times(1)).process(sessionB, MESSAGE);
   }
 
   @Test
@@ -196,6 +202,42 @@ class AgentSchedulerTest {
   }
 
   @Test
+  @DisplayName("跳过分支同样每次开新链路，不复用上一次 traceId")
+  void skippedTrigger_opensFreshTracePerTrigger() throws InterruptedException {
+    Profile.ScheduleConfig schedule = schedule(TASK_ID, "0 0 9 * * *", "Asia/Shanghai", MESSAGE);
+    profileRegistry.register(profile(schedule));
+    AgentScheduler scheduler = scheduler();
+    scheduler.registerAll();
+    ArgumentCaptor<Runnable> task = ArgumentCaptor.forClass(Runnable.class);
+    verify(taskScheduler).schedule(task.capture(), any(Trigger.class));
+
+    Logger schedulerLogger = (Logger) LoggerFactory.getLogger(AgentScheduler.class);
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+    schedulerLogger.addAppender(appender);
+    try {
+      LockHolder holder = holdLockInOtherThread(scheduler.lockFor(PROFILE_NAME, TASK_ID));
+      try {
+        task.getValue().run();
+        task.getValue().run();
+      } finally {
+        holder.releaseAndJoin();
+      }
+    } finally {
+      schedulerLogger.detachAppender(appender);
+    }
+
+    List<String> traceIds =
+        appender.list.stream()
+            .filter(event -> event.getLevel() == Level.WARN)
+            .map(event -> event.getMDCPropertyMap().get(TraceContext.MDC_TRACE_ID))
+            .toList();
+    assertThat(traceIds).hasSize(2).doesNotContainNull();
+    assertThat(traceIds.get(0)).isNotEqualTo(traceIds.get(1));
+    verify(agentService, never()).process(any(), any());
+  }
+
+  @Test
   @DisplayName("同一 Agent 的不同定时任务并发时串行访问同一会话")
   void runOnce_differentSchedulesOfSameAgent_serializeSessionAccess() throws InterruptedException {
     Profile.ScheduleConfig first = schedule("task-a", "0 0 9 * * *", "Asia/Shanghai", MESSAGE);
@@ -245,16 +287,53 @@ class AgentSchedulerTest {
     }
   }
 
+  /**
+   * 在另一线程占住锁：{@link java.util.concurrent.locks.ReentrantLock} 对同线程可重入，本线程自己 lock 完再调 {@code
+   * runOnce} 仍会拿到锁，必须换线程才等价于「上一次还在调度线程上跑」。
+   */
+  private static LockHolder holdLockInOtherThread(Lock lock) throws InterruptedException {
+    CountDownLatch held = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    Thread holder =
+        new Thread(
+            () -> {
+              lock.lock();
+              held.countDown();
+              try {
+                release.await();
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              } finally {
+                lock.unlock();
+              }
+            },
+            "scheduler-lock-holder");
+    holder.start();
+    held.await();
+    return new LockHolder(release, holder);
+  }
+
+  private record LockHolder(CountDownLatch release, Thread holder) {
+    void releaseAndJoin() throws InterruptedException {
+      release.countDown();
+      holder.join(2000);
+    }
+  }
+
   private static Profile.ScheduleConfig schedule(
       String id, String cron, String zone, String message) {
     return new Profile.ScheduleConfig(id, cron, zone, message);
   }
 
   private static Profile profile(Profile.ScheduleConfig... schedules) {
+    return profile(PROFILE_NAME, schedules);
+  }
+
+  private static Profile profile(String name, Profile.ScheduleConfig... schedules) {
     return new Profile(
-        PROFILE_NAME,
+        name,
         "测试 Agent",
-        new Profile.Identity(PROFILE_NAME, "你是定时简报助手。"),
+        new Profile.Identity(name, "你是定时简报助手。"),
         new Profile.ProviderRef("deepseek", "deepseek-chat", null),
         List.of(),
         List.of(),
