@@ -12,7 +12,7 @@ public final class AgentScheduler {
                         AgentService agentService, SessionManager sessionManager);
   public void registerAll();
   void runOnce(Profile profile, Profile.ScheduleConfig schedule);   // 包级可见，供同包测试直接驱动
-  Lock lockFor(String taskId);                                      // 包级可见，供测试占用/释放执行权
+  Lock lockFor(String profileName, String taskId);                  // 任务身份 = (Agent 名, 任务 id)
   Lock sessionLockFor(String profileName);                          // 包级可见，键 = SessionManager.sessionId(...)
 }
 ```
@@ -36,7 +36,8 @@ public final class AgentScheduler {
 
 执行顺序固定：
 
-1. `Lock taskLock = lockFor(schedule.id())`；`if (!taskLock.tryLock())` → 记 WARN「task {id} still running, skip this trigger」→ 返回（不排队）。
+1. `Lock taskLock = lockFor(profile.name(), schedule.id())`；`if (!taskLock.tryLock())` → 记 WARN「task {id} still running, skip this trigger」→ 返回（不排队）。
+   任务身份是 `(Agent 名, 任务 id)` 的 record 键，不是裸 id：两个 Agent 各自声明 `id: daily` 是两条独立任务，不得互相跳过（FR-004）。
 2. `Lock sessionLock = sessionLockFor(profile.name())`；**阻塞** `lock()`。同一 Agent 的多条 schedules 共用
    `scheduler:scheduler:<profile>` 会话，若并发执行会各自加载历史快照、`save` 整列覆盖 `messages_json`，后写者把前者抹掉；
    故此锁必须串行化。用阻塞而非 `tryLock`：两条不同任务的触发都应有结果，不能把后到的一次静默丢掉。
@@ -51,7 +52,7 @@ public final class AgentScheduler {
 
 - `session_id` 只由 `SessionManager` 拼接，本类不出现 `channel + ":" + user + ":" + profile` 形态的字符串拼接（H4④）。
 - 审计不经本类：`llm_calls` / `tool_invocations` 由 `AgentService` 链路内既有组件写入，本节零改动。
-- 日志中的 `id` / `message` 来自用户可编辑的 `AGENT.md`，入日志前先 `replaceAll("[\\r\\n]", "_")`。
+- 日志中的 `id` / `message` 来自用户可编辑的 `AGENT.md`，入日志前先 `replaceAll("[\r\n]", "_")`。
 
 ## 4. 装配契约
 

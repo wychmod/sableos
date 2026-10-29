@@ -67,7 +67,7 @@ Maven 多模块：`sableos-core/`、`sableos-boot/`、`sableos-cli/`（见 plan.
 
 ## Phase 4: User Story 2 - 上一次没跑完，本次跳过 (Priority: P2)
 
-**Goal**: 按任务 id 的 `tryLock` 防重叠，拿不到即跳过并留 WARN
+**Goal**: 按 `(Agent 名, 任务 id)` 的 `tryLock` 防重叠，拿不到即跳过并留 WARN
 
 **Independent Test**: 测试先 `lockFor("task-1").lock()` 占住执行权 → `runOnce` → `verify(agentService, never()).process(any(), any())`；释放后再次 `runOnce` 能进入
 
@@ -96,7 +96,7 @@ Maven 多模块：`sableos-core/`、`sableos-boot/`、`sableos-cli/`（见 plan.
 
 ### Implementation for User Story 3
 
-- [x] T014 [US3] `runOnce` 加 `catch (Exception e)`：`LOG.error("定时任务执行失败：id={} reason={}", safe(sc.id()), safe(e.getMessage()), e)`；`safe()` 用 `replaceAll("[\\r\\n]", "_")` 字面形态
+- [x] T014 [US3] `runOnce` 加 `catch (Exception e)`：`LOG.error("定时任务执行失败：id={} reason={}", safe(sc.id()), safe(e.getMessage()), e)`；`safe()` 用 `replaceAll("[\r\n]", "_")` 字面形态
 - [x] T015 [US3] 跑 `mvn -pl sableos-core test -Dtest=AgentSchedulerTest`，红则当场修
 
 **Checkpoint**: 三个故事全部独立可验
@@ -112,6 +112,7 @@ Maven 多模块：`sableos-core/`、`sableos-boot/`、`sableos-cli/`（见 plan.
 - [x] T018 跑 `mvn spotless:apply`，再跑 `mvn clean verify` 全绿（含 P3C / Checkstyle / SpotBugs / 全部单测）
 - [x] T019 按「本节交付物」逐项 grep/ls 核对：`AgentScheduler`（`registerAll`/`runOnce`/`lockFor`）、`Profile.ScheduleConfig` 四字段、`AgentSchedulerTest` 四个关键用例、会话常量 `scheduler`、无新增表/接口/配置键
 - [x] T020 评审修复（M-01）：`AgentScheduler` 增 `sessionLockFor`（键 = `SessionManager.sessionId(...)`），`runOnce` 在任务锁内再取会话锁并阻塞串行化；新增 `runOnce_differentSchedulesOfSameAgent_serializeSessionAccess`，并以「临时去掉会话锁后该用例转红」验证断言有效
+- [x] T021 评审修复（M-02~M-05）：任务锁键改为 `(profileName, taskId)` 私有 record（跨 Agent 同名任务互不阻塞）；新增跨 Agent 回归用例与「跳过分支新链路」用例（logback `ListAppender` 读 MDC `traceId`），两者均已用「改回旧实现后转红」验证；新增 `ServeCommandTest` 守住 serve/gateway 的注册调用；docs 统一 `replaceAll("[\r\n]", "_")` 形态并复算验收数字
 
 ---
 

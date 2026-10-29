@@ -24,10 +24,11 @@
 - **时区断言策略**：测试无法从 `CronTrigger` 读回时区，改为**行为断言**——给定 `lastActualExecution` 固定时刻，用 `trigger.nextExecution(SimpleTriggerContext)` 求下一次触发时刻，断言其等于「按配置时区解释后」的即时点。同一 cron 在 UTC 与 `Asia/Shanghai` 下结果相差 8 小时，该断言足以钉死时区没有被服务器默认时区顶替。
 - **时区缺失**：视为非法配置（FR-003 要求按声明时区解释），记错误日志并跳过该条，不回落服务器默认时区。
 
-## D-04 重叠保护：按任务 id 的 `ConcurrentHashMap<String, Lock>` + `tryLock`
+## D-04 重叠保护：按 `(Agent 名, 任务 id)` 的 `ConcurrentHashMap<TaskKey, Lock>` + `tryLock`
 
-- **决策**：与课件骨架逐字同构——`ConcurrentMap<String, Lock> taskLocks`，`computeIfAbsent(id, k -> new ReentrantLock())`，`tryLock()` 失败即记 WARN 并返回；`finally` 无条件 `unlock()`。
-- **测试入口**：`lockFor(String taskId)` 提供包级可见的取锁方法，供 harness 用真实锁模拟「上一次仍占着」；不新增 public API 之外的对外概念（同包测试可直接调用）。
+- **决策**：`ConcurrentMap<TaskKey, Lock> taskLocks`（`TaskKey` 是私有 record），`computeIfAbsent(key, k -> new ReentrantLock())`，`tryLock()` 失败即记 WARN 并返回；`finally` 无条件 `unlock()`。
+- **键为什么不是裸 id**：课件骨架写的是 `sc.getId()`，但那是单 Agent 视角的示意。两个 Agent 各自声明 `id: daily` 是两条独立任务，裸 id 会让其中一个长任务把另一个静默跳过，与 FR-004「不同任务互不阻塞」冲突；`(profile_name, schedule_key)` 也与 §8.5 第 28 节的 `schedule_id` 口径一致。用 record 而非 `profile + ":" + id` 拼接，避免名称含分隔符时误撞键。
+- **测试入口**：`lockFor(String profileName, String taskId)` 提供包级可见的取锁方法，供 harness 用真实锁模拟「上一次仍占着」；不新增 public API 之外的对外概念（同包测试可直接调用）。
 - **`synchronized` 规避**：用 `ReentrantLock` 而非 `synchronized`，与 AGENTS §5.2「`synchronized` 内不得阻塞」同向——虽然锁内会跑完整 ReAct（必然含 IO），但这正是 `ReentrantLock` 的适用场景；锁只在同一任务的触发之间互斥，不与其他任务共享。
 
 ## D-05 链路标识：每次触发用 `TracedExecutors.wrapRoot` 开新根链路
@@ -49,7 +50,7 @@
 ## D-08 失败隔离与日志
 
 - **决策**：`runOnce` 内部 `try { … } catch (Exception e) { LOG.error("定时任务执行失败：id={} reason={}", safe(id), safe(e.getMessage()), e); } finally { lock.unlock(); }`。
-- **日志净化**：任务 id 与消息内容都来自用户可编辑的 `AGENT.md`，入日志前一律 `replaceAll("[\\r\\n]", "_")`（AGENTS §5.3 指定形态，勿改 `Pattern/Matcher`）。
+- **日志净化**：任务 id 与消息内容都来自用户可编辑的 `AGENT.md`，入日志前一律 `replaceAll("[\r\n]", "_")`（AGENTS §5.3 指定形态，勿改 `Pattern/Matcher`）。
 - **不外抛**：异常在 `runOnce` 内吞掉并记账；`ScheduledFuture` 的异常不会把 `ThreadPoolTaskScheduler` 带崩，但吞在入口处更明确，也让「失败后锁已释放」可被单测直接验证。
 
 ## D-09 注册期校验（FR-010）

@@ -23,10 +23,10 @@
 
 | 概念 | 形态 | 生命周期 |
 |---|---|---|
-| 任务锁 | `ConcurrentMap<String, Lock>`，键 = `ScheduleConfig.id`，值 = `ReentrantLock` | 进程内；首次触发时惰性创建，进程退出即失去 |
+| 任务锁 | `ConcurrentMap<TaskKey, Lock>`，键 = `(profileName, ScheduleConfig.id)` 的私有 record，值 = `ReentrantLock` | 进程内；首次触发时惰性创建，进程退出即失去 |
 
-- 语义：同一 id 的上一次 `runOnce` 未结束时，`tryLock()` 失败 → 本次触发跳过（不排队、不并发）。
-- 非语义：不是分布式锁，不跨进程；两个 Agent 若声明了相同 `id`，在这张表里被视为同一个任务（与课件骨架一致，课件的锁键就是 `sc.getId()`）。
+- 语义：同一 `(Agent 名, 任务 id)` 的上一次 `runOnce` 未结束时，`tryLock()` 失败 → 本次触发跳过（不排队、不并发）。
+- 非语义：不是分布式锁，不跨进程。两个 Agent 声明相同 `id` 是**两条独立任务**，各持一把锁、互不阻塞（FR-004）；键用 record 而非字符串拼接，避免名称含分隔符时误撞。
 
 ### 2.1.1 会话锁表
 

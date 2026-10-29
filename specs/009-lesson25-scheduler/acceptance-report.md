@@ -8,19 +8,21 @@
 
 | 模块 | 单测结果 |
 |---|---|
-| sableos-core | 102 run, 0 fail, 0 err |
+| sableos-core | 104 run, 0 fail, 0 err |
 | sableos-provider | 21 run, 0 fail, 0 err |
-| sableos-tool | 110 run, 0 fail, 0 err |
+| sableos-tool | 152 run, 0 fail, 0 err |
 | sableos-storage | 38 run, 0 fail, 0 err |
-| sableos-memory | 28 run, 0 fail, 0 err |
+| sableos-memory | 35 run, 0 fail, 0 err |
 | sableos-channel-cli | 2 run, 0 fail, 0 err |
 | sableos-web | 49 run, 0 fail, 0 err |
-| sableos-cli | 无测试源（仅编译 + 门禁） |
+| sableos-cli | 1 run, 0 fail, 0 err |
 | sableos-boot | 31 run, 0 fail, 0 err |
 
-合计 **381** 个测试全绿；Spotless / Checkstyle / P3C(PMD) / SpotBugs(FindSecBugs) 全部通过，OWASP 按本地默认跳过（CI 独立 job 为权威）。
+合计 **433** 个测试全绿；Spotless / Checkstyle / P3C(PMD) / SpotBugs(FindSecBugs) 全部通过，OWASP 按本地默认跳过（CI 独立 job 为权威）。
 
-**过程中修复的两处红（未放宽任何断言）**：
+> 计数口径：按 `target/surefire-reports/TEST-*.xml` 的 `tests` 属性汇总。`@Nested` 用例只挂在父类 XML 里，per-class 的 `.txt` 汇总会把父类记成 0（如 `WhitelistRulesTest` 42 例被记成 0），故不能用 `.txt`。
+
+**实现期间修复的问题（未放宽任何断言）**：
 
 1. 时区断言最初用 `0 9 * * * *`（= 每小时第 9 分），与「每天 9 点」的意图不符——改正为 `0 0 9 * * *`，断言保持原强度。
 2. 「锁被占即跳过」用例：`ReentrantLock` 对同线程可重入，测试线程自己 `lock()` 后 `tryLock()` 仍成功。改为由另一线程持锁（CountDownLatch 同步），才等价于课件里「上一次还在跑」的场景。
@@ -28,7 +30,7 @@
 
 ## 2. 课件 harness 映射
 
-`AgentSchedulerTest`（7 个用例，方法名英文、`@DisplayName` 保留课件原文）：
+`AgentSchedulerTest`（9 个用例，方法名英文、`@DisplayName` 保留课件原文）：
 
 | 课件验收点 | 测试方法 |
 |---|---|
@@ -39,10 +41,20 @@
 | 补充：每次触发开新根链路（FR-009 / H4 traceId） | `registeredTask_opensFreshTracePerTrigger` |
 | 补充：非法配置只跳过该条（FR-010） | `registerAll_skipsOnlyInvalidSchedule` |
 | 补充：同一 Agent 的不同任务并发时串行访问共享会话（FR-011） | `runOnce_differentSchedulesOfSameAgent_serializeSessionAccess` |
+| 补充：不同 Agent 的同名任务互不阻塞（FR-004） | `runOnce_sameTaskIdDifferentAgents_doNotBlockEachOther` |
+| 补充：跳过分支同样单独成链、不复用上次 traceId（FR-009） | `skippedTrigger_opensFreshTracePerTrigger`（logback `ListAppender` 读 WARN 事件的 MDC `traceId`） |
+| 补充：serve/gateway 启动后注册全部定时任务（§8.6 装配） | `ServeCommandTest#startScheduler_registersAllTasks` |
 
 时区断言说明：Spring 6.2.19 的 `CronTrigger` 不暴露 `getTimeZone()`，且 `equals()` 只比较表达式（`javap` 已核），故以固定 `lastActualExecution` 求 `nextExecution` 的行为断言钉死时区。
 
 **评审修复 M-01（会话丢失）**：任务锁按 `schedule.id()` 划分，而会话是 `scheduler:scheduler:<profile>`；同一 Agent 两条 schedules 并发时，`JpaSessionManager.getOrCreate` 各返回独立 `Session` 快照，`save` 整列覆盖 `messages_json`，后写者抹掉前者历史。修复为在任务锁内再取**会话锁**（键由 `SessionManager.sessionId(...)` 唯一公式生成，阻塞获取、不丢触发），两把锁固定「先任务后会话」顺序。回归用例的有效性已实证：临时去掉会话锁后该用例转红（AssertionFailedError），恢复后转绿。
+
+**第二轮评审修复（M-02 ~ M-05）**：
+
+- **任务身份改 `(profileName, taskId)`**：原裸 id 锁会让两个 Agent 的同名任务互相跳过，与 FR-004 冲突；改为私有 record 键（同时避免拼接字符串在名称含分隔符时误撞）。回归用例 `runOnce_sameTaskIdDifferentAgents_doNotBlockEachOther` 已实证——改回裸 id 后转红。
+- **装配链路测试**：新增 `ServeCommandTest`，断言 `serve` / `gateway` 共用的 `ServeCommand.startScheduler(context)` 会调用 `registerAll()`；`chat` 不注册靠「无调用点」保证，不做源码扫描式断言。
+- **跳过分支链路**：新增 `skippedTrigger_opensFreshTracePerTrigger`，用 logback `ListAppender` 捕获两条 WARN 事件的 MDC `traceId`，断言非空且互异；已实证——去掉 `wrapRoot` 后转红。
+- **CRLF 写法统一**：`AGENTS.md` §5.3 两处与 009 各文档统一为代码实际形态 `replaceAll("[\r\n]", "_")`；历史 specs 属存档，未批量重写。
 
 ## 3. 本节交付物存在性
 
@@ -50,11 +62,11 @@
 |---|---|
 | `AgentScheduler.registerAll` | `AgentScheduler.java:82` |
 | `AgentScheduler.runOnce` | `AgentScheduler.java:134`（包级可见） |
-| 按任务 id 的 `ReentrantLock` 表 | `AgentScheduler.java:164` `lockFor` + `ConcurrentMap` 字段 |
-| 会话维度串行锁（M-01） | `AgentScheduler.java:174` `sessionLockFor`（键 = `SessionManager.sessionId(...)`） |
+| 按 `(Agent 名, 任务 id)` 的 `ReentrantLock` 表 | `AgentScheduler.java:169` `lockFor` + `AgentScheduler.java:174` `TaskKey` record |
+| 会话维度串行锁（M-01） | `AgentScheduler.java:182` `sessionLockFor`（键 = `SessionManager.sessionId(...)`） |
 | `ScheduleConfig`（id/cron/zone/message） | `Profile.java:51`（16 节已落地，本节消费） |
 | Profile `schedules` 字段 | 既有 `Profile.java:30` + `AgentLoader.parseSchedules` + `AgentLoaderTest` 既有断言 |
-| `AgentSchedulerTest` | 7 个 `@Test` |
+| `AgentSchedulerTest` | 9 个 `@Test`；另有 `ServeCommandTest` 1 个 |
 | 会话身份固定 `scheduler/scheduler/profileName` | `runOnce` 调 `getOrCreate(CHANNEL_SCHEDULER, SCHEDULER_USER_ID, profile.name())`；测试以字面量 `"scheduler","scheduler",profileName` 断言 |
 | 失败只记日志不崩调度器 | `catch (Exception)` + `LOG.error` + `finally unlock` |
 
@@ -71,7 +83,7 @@
 | ① 涉外 IO 过 `Sandbox.enforce` | ✅ N/A | 调度器不做直接 IO；工具执行仍走既有白名单 |
 | ② LLM/工具审计落库 | ✅ | 经 `AgentService.process` 继承 `llm_calls` / `tool_invocations`，本期无新增记账路径 |
 | ③ 无明文 key | ✅ | grep 无命中 |
-| ④ `session_id` 单点拼接 | ✅ | 只调 `SessionManager.getOrCreate`，调度器内无 `":"` 拼接 |
+| ④ `session_id` 单点拼接 | ✅ | 只调 `SessionManager.getOrCreate` / `sessionId(...)`；任务锁键用 `TaskKey` record，不做字符串拼接 |
 | ⑤ 无 Reactor / `CompletableFuture` / 自建线程池 | ✅ | 主代码无；`ThreadPoolTaskScheduler` 是技术方案 §8.5 点名的 Spring 调度器（bean 装配，非手写池） |
 | ⑥ 无 Spring AI 自动工具执行 | ✅ | 本节不涉 Spring AI |
 | traceId 跨线程 | ✅ | 注册时 `TracedExecutors.wrapRoot(...)`，每次触发新根链路；跳过分支同链 |
@@ -90,4 +102,12 @@
 
 ## 7. 备注：两处净化写法并存
 
-`DefaultSandboxWhitelistAdmin` 的 `sanitize` 使用 `"[\\r\\n]"`，与本节/`AgentLoader` 的 `"[\r\n]"` 写法不同。`javac` 实测两者**功能等价**（都把 CR/LF 替换为 `_`），差异只在静态检查能否识别——前者需显式 `@SuppressFBWarnings`（该类已有）。属 008 既有实现，本节不改动。
+`DefaultSandboxWhitelistAdmin` 的 `sanitize` 使用 `"[\\r\\n]"`，与本节/`AgentLoader` 的 `"[\r\n]"` 写法不同。`javac` 实测两者**功能等价**（都把 CR/LF 替换为 `_`），差异只在静态检查能否识别——前者需显式 `@SuppressFBWarnings`（该类已有）。属 008 既有实现，本节不改动；`AGENTS.md` 与 009 文档已统一为后者。
+
+## 8. 规格一致性分析（/speckit-analyze）
+
+2026-10-29 在 `tasks.md` 产出后跑过一次 `/speckit-analyze`，结论无 CRITICAL：
+
+- **C1（FR-009 无直接测试）**：实现时折进 `registeredTask_opensFreshTracePerTrigger`，第二轮评审又补了跳过分支的同名断言；
+- **C2（FR-008 无显式任务）**：审计复用既有路径，无需新代码，已在前序回归中覆盖；
+- **I1（池大小「≥2」表述含糊）**：落为常量 4，不新增配置键。
