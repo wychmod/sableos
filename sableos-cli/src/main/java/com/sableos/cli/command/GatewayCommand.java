@@ -3,6 +3,7 @@ package com.sableos.cli.command;
 import com.sableos.cli.SableOsRuntime;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
 import picocli.CommandLine.Command;
 
 /**
@@ -20,7 +21,9 @@ public class GatewayCommand implements Runnable {
 
   @Override
   public void run() {
-    new SpringApplicationBuilder(SableOsRuntime.class).web(WebApplicationType.SERVLET).run();
+    ConfigurableApplicationContext context =
+        new SpringApplicationBuilder(SableOsRuntime.class).web(WebApplicationType.SERVLET).run();
+    ServeCommand.startScheduler(context);
     System.out.println("gateway：多通道守护进程的完整实现归后续渠道节；本节仅登记命令外壳（上下文已启动，Ctrl-C 退出）。");
     ServeCommand.keepAlive();
   }

@@ -1,9 +1,11 @@
 package com.sableos.cli.command;
 
 import com.sableos.cli.SableOsRuntime;
+import com.sableos.core.scheduler.AgentScheduler;
 import java.util.concurrent.CountDownLatch;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
 import picocli.CommandLine.Command;
 
 /**
@@ -21,9 +23,20 @@ public class ServeCommand implements Runnable {
 
   @Override
   public void run() {
-    new SpringApplicationBuilder(SableOsRuntime.class).web(WebApplicationType.SERVLET).run();
+    ConfigurableApplicationContext context =
+        new SpringApplicationBuilder(SableOsRuntime.class).web(WebApplicationType.SERVLET).run();
+    startScheduler(context);
     System.out.println("serve：Web Service 的完整实现归第 26 节；本节仅登记命令外壳（上下文已启动，Ctrl-C 退出）。");
     keepAlive();
+  }
+
+  /**
+   * 定时任务随 {@code serve} / {@code gateway} 常驻调度（技术方案 §8.6）。
+   *
+   * <p>由子命令显式调用而非 Bean 自注册：三种模式共用同一装配根，Bean 自注册会让 {@code chat} 也跑起定时任务。
+   */
+  static void startScheduler(ConfigurableApplicationContext context) {
+    context.getBean(AgentScheduler.class).registerAll();
   }
 
   /**
