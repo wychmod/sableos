@@ -60,12 +60,15 @@ jobs:
           java-version: '21'
           cache: maven
       # 跳过静态门禁：本 job 只验证跨平台的运行时行为，格式/规约/安全扫描在 Ubuntu job 已经跑过。
+      #
+      # 显式 shell: bash：Windows runner 默认用 PowerShell，会把 -Dsurefire.failIfNoSpecifiedTests=false
+      # 拆成 "-Dsurefire" + ".failIfNoSpecifiedTests=false"（点号被当作 .NET 属性访问），
+      # 导致 "Unknown lifecycle phase .failIfNoSpecifiedTests=false"。Git for Windows 自带 bash，三平台统一。
       - name: focused tests
+        shell: bash
         run: >-
           mvn -B -pl sableos-core,sableos-storage,sableos-tool,sableos-web -am test
-          -Dtest='WhitelistRulesTest,WhitelistPolicyRefreshTest,WhitelistSandboxTest,
-          SandboxWhitelistAdminTest,SandboxWhitelistEntryRepositoryTest,JpaSandboxWhitelistStoreTest,
-          SandboxWhitelistSeedTest,SandboxWhitelistControllerTest'
+          -Dtest='WhitelistRulesTest,WhitelistPolicyRefreshTest,WhitelistSandboxTest,SandboxWhitelistAdminTest,SandboxWhitelistEntryRepositoryTest,JpaSandboxWhitelistStoreTest,SandboxWhitelistSeedTest,SandboxWhitelistControllerTest'
           -Dsurefire.failIfNoSpecifiedTests=false
           -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dspotbugs.skip=true -Denforcer.skip=true
