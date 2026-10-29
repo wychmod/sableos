@@ -65,8 +65,8 @@ AGENTS.md 第 10 章；迁移后本 packageUrl 不再命中，若 CI 仍报 spri
     <suppress>
         <notes><![CDATA[
 Timestamp: 2026-10-29
-命中构件：org.webjars:swagger-ui@5.32.13 内嵌的 swagger-ui-bundle.js 与
-          swagger-ui-es-bundle.js（内含 DOMPurify 3.4.13）
+命中构件：org.webjars:swagger-ui@5.32.13 内嵌的 swagger-ui-bundle.js
+          （内含 DOMPurify 3.4.13）
 为何暂以抑制放行：
   1) 上游无修复版：Maven Central 核验 5.34.0 为当前 latest，其实测内嵌
      DOMPurify 3.4.16；两字段 CVE 的修复版本是 DOMPurify 3.4.17
@@ -80,11 +80,24 @@ Timestamp: 2026-10-29
   4) 匹配方式用 sha1 而非 packageUrl：该条目是 jar 内的 JS 文件，
      没有 maven packageUrl。sha1 精确锁定 5.32.13 的文件内容，
      一旦升级 swagger-ui 即不再命中，不会遮蔽新版本的真实问题。
-     同一 jar 有两个完整产物（swagger-ui-bundle.js 与
-     swagger-ui-es-bundle.js），内容不同、sha1 各异，两条都要列。
+     同一 jar 有两个完整产物，内容与 sha1 各异，故分两条 suppress
+     （同一 suppress 内多写一个 sha1 会被当作 AND 条件，导致互斥不命中）。
 何时移除：swagger-ui 发布内嵌 DOMPurify >= 3.4.17 的版本后删除本条。
         ]]></notes>
         <sha1>a8327db20951219a6eebc8784b818ca08a7d61ce</sha1>
+        <cve>CVE-2026-116804</cve>
+        <cve>CVE-2026-116803</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+Timestamp: 2026-10-29
+命中构件：org.webjars:swagger-ui@5.32.13 内嵌的 swagger-ui-es-bundle.js
+          （ES 模块版完整产物，同样内嵌 DOMPurify 3.4.13，内容与 base 版不同）
+为何暂以抑制放行：与上一条同因——上游无 DOMPurify >= 3.4.17 的发布版、
+条目来自 RetireJS 且无 CVSS 分数、Swagger UI 不对外暴露。
+何时移除：与上一条同步删除（swagger-ui 发布内嵌 DOMPurify >= 3.4.17 后）。
+        ]]></notes>
         <sha1>c49fff383db3cd1bb9593d241979167790e77601</sha1>
         <cve>CVE-2026-116804</cve>
         <cve>CVE-2026-116803</cve>
