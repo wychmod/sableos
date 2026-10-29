@@ -33,5 +33,12 @@
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
     </dependency>
+    <!-- 仅用于确证误报的方法/类级定点抑制（AGENTS §5.3）：SandboxWhitelistController 的
+         EI_EXPOSE_REP2（注入单例）与 SPRING_ENDPOINT（无认证端点属既定前提）。 -->
+    <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 </project>

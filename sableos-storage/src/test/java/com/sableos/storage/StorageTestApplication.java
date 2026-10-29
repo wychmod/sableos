@@ -22,4 +22,12 @@ public class StorageTestApplication {
   public JpaSessionManager jpaSessionManager(SessionRepository sessionRepository) {
     return new JpaSessionManager(sessionRepository);
   }
+
+  @Bean
+  public com.sableos.storage.sandbox.JpaSandboxWhitelistStore sandboxWhitelistStore(
+      com.sableos.storage.sandbox.SandboxWhitelistEntryRepository entryRepository,
+      com.sableos.storage.sandbox.SandboxWhitelistSeedRepository seedRepository) {
+    return new com.sableos.storage.sandbox.JpaSandboxWhitelistStore(
+        entryRepository, seedRepository);
+  }
 }

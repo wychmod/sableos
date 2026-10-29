@@ -29,6 +29,12 @@
       <groupId>com.sableos</groupId>
       <artifactId>sableos-channel-cli</artifactId>
     </dependency>
+    <!-- 008：白名单首次导入与装配需要 WhitelistSandbox.refresh / DefaultSandboxWhitelistAdmin。
+         tool 只依赖 core，加这条边不成环（cli→tool→core）；对齐 oryxos-cli 依赖 oryxos-tool 的做法。 -->
+    <dependency>
+      <groupId>com.sableos</groupId>
+      <artifactId>sableos-tool</artifactId>
+    </dependency>
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>

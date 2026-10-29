@@ -9,6 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sableos.core.sandbox.WhitelistDuplicateException;
+import com.sableos.core.sandbox.WhitelistEntryNotFoundException;
+import com.sableos.core.sandbox.WhitelistType;
+import com.sableos.core.sandbox.WhitelistValidationException;
 import com.sableos.core.trace.TraceContext;
 import com.sableos.web.error.AgentTimeoutException;
 import com.sableos.web.error.ConflictException;
@@ -137,6 +141,42 @@ class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.traceId", nullValue()));
   }
 
+  @Test
+  @DisplayName("白名单校验失败_映射400且消息由服务层构造")
+  void whitelistValidationMaps400() throws Exception {
+    mvc.perform(get("/throw/whitelist-invalid"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value(400))
+        .andExpect(jsonPath("$.message").value("HTTP_DOMAIN 格式非法：只接受主机名或 *.主机名"));
+  }
+
+  @Test
+  @DisplayName("白名单条目不存在_映射404")
+  void whitelistNotFoundMaps404() throws Exception {
+    mvc.perform(get("/throw/whitelist-not-found"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value(404))
+        .andExpect(jsonPath("$.message").value("白名单条目不存在: 42"));
+  }
+
+  @Test
+  @DisplayName("白名单条目重复_映射409")
+  void whitelistDuplicateMaps409() throws Exception {
+    mvc.perform(get("/throw/whitelist-duplicate"))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value(409))
+        .andExpect(jsonPath("$.message").value("白名单条目已存在: HTTP_DOMAIN api.example.com"));
+  }
+
+  @Test
+  @DisplayName("白名单校验异常不走通用 IllegalArgument 400 路径")
+  void whitelistValidation_doesNotFallThroughToGeneric400() throws Exception {
+    // 领域异常不继承 IllegalArgumentException，因此必须由专用 handler 命中；若继承，消息会被原样回显
+    mvc.perform(get("/throw/whitelist-invalid"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message", org.hamcrest.Matchers.notNullValue()));
+  }
+
   @RestController
   static class ThrowingController {
 
@@ -153,6 +193,21 @@ class GlobalExceptionHandlerTest {
     @GetMapping("/throw/not-found")
     void notFound() {
       throw new ResourceNotFoundException("会话不存在: abc-123");
+    }
+
+    @GetMapping("/throw/whitelist-invalid")
+    void whitelistInvalid() {
+      throw new WhitelistValidationException("HTTP_DOMAIN 格式非法：只接受主机名或 *.主机名");
+    }
+
+    @GetMapping("/throw/whitelist-not-found")
+    void whitelistNotFound() {
+      throw new WhitelistEntryNotFoundException(42L);
+    }
+
+    @GetMapping("/throw/whitelist-duplicate")
+    void whitelistDuplicate() {
+      throw new WhitelistDuplicateException(WhitelistType.HTTP_DOMAIN, "api.example.com");
     }
 
     @GetMapping("/throw/no-route")

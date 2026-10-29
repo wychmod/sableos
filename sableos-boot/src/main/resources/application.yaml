@@ -112,6 +112,13 @@ sableos:
       # 是否同时回写 W3C 的 traceparent / tracestate
       propagate-w3c: true
 
+  # --- 沙箱白名单管理接口（008-sandbox-whitelist-admin）---
+  # 等价 root 权限：可以加任意目录、任意解释器。默认开启（产品决策），必须只绑回环
+  # 或置于认证反向代理之后；不需要时设为 false，该路径即不存在（404）。
+  sandbox:
+    admin:
+      enabled: true
+
   # --- Provider 清单（核心能力一；契约见 specs/001-lesson16-provider/contracts/provider-config.md）---
   # 空清单 = 无 provider 可路由（未登记名调用抛点名异常），零 key 可正常启动；凭证一律环境变量占位。
   providers: []
