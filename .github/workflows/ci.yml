@@ -42,6 +42,34 @@ jobs:
       - name: mvn verify
         run: mvn -B clean verify
 
+  # 008：白名单规则与存储行为必须三平台一致（Windows 路径分隔符 / 盘符、macOS 大小写）。
+  # 只跑聚焦测试，全量门禁仍由上面的 Ubuntu job 承担，避免 macOS runner 拖慢流水线。
+  sandbox-compat:
+    name: Sandbox compat (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # 跳过静态门禁：本 job 只验证跨平台的运行时行为，格式/规约/安全扫描在 Ubuntu job 已经跑过。
+      - name: focused tests
+        run: >-
+          mvn -B -pl sableos-core,sableos-storage,sableos-tool,sableos-web -am test
+          -Dtest='WhitelistRulesTest,WhitelistPolicyRefreshTest,WhitelistSandboxTest,
+          SandboxWhitelistAdminTest,SandboxWhitelistEntryRepositoryTest,JpaSandboxWhitelistStoreTest,
+          SandboxWhitelistSeedTest,SandboxWhitelistControllerTest'
+          -Dsurefire.failIfNoSpecifiedTests=false
+          -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
+          -Dspotbugs.skip=true -Denforcer.skip=true
+
   dependency-check:
     name: OWASP Dependency-Check (CVE scan)
     runs-on: ubuntu-latest
