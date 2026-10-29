@@ -190,6 +190,8 @@ SableOS 是 Maven 多模块项目，**以《技术方案》第 10 章为准，�
 npx -y markdownlint-cli --disable MD013 MD025 -- *.md
 ```
 
+> **豁免**：`docs/study/`（课件走读 / 学习笔记）与 `docs/reports/`（本地改动分析等生成物）不受本节约束、不跑上面的 lint，且已在 `.gitignore` 中（只留本地、不入库）。`docs/` 根目录的六份正式文档仍按本节执行。
+
 ## 10. 已知待办与文档漂移
 
 - **图片引用悬空**：`docs/` 里 12 处图片引用（`TechnicalSolution.md` 11 处 + `sableos.md` 1 处）现统一指向同目录下的 `images/*.svg`（与 `docs/images/architecture.svg` 同一约定，不再跨到 `website/`）。`images/logo.svg` 已于 2026-09-29 换为新标识；剩余 **11 张架构/流程图尚未绘制**，引用仍悬空。清单见 `design/README.md`「已知待办」。
