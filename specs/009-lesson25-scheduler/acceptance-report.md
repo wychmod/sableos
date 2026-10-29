@@ -8,7 +8,7 @@
 
 | 模块 | 单测结果 |
 |---|---|
-| sableos-core | 101 run, 0 fail, 0 err |
+| sableos-core | 102 run, 0 fail, 0 err |
 | sableos-provider | 21 run, 0 fail, 0 err |
 | sableos-tool | 110 run, 0 fail, 0 err |
 | sableos-storage | 38 run, 0 fail, 0 err |
@@ -18,7 +18,7 @@
 | sableos-cli | 无测试源（仅编译 + 门禁） |
 | sableos-boot | 31 run, 0 fail, 0 err |
 
-合计 **380** 个测试全绿；Spotless / Checkstyle / P3C(PMD) / SpotBugs(FindSecBugs) 全部通过，OWASP 按本地默认跳过（CI 独立 job 为权威）。
+合计 **381** 个测试全绿；Spotless / Checkstyle / P3C(PMD) / SpotBugs(FindSecBugs) 全部通过，OWASP 按本地默认跳过（CI 独立 job 为权威）。
 
 **过程中修复的两处红（未放宽任何断言）**：
 
@@ -28,7 +28,7 @@
 
 ## 2. 课件 harness 映射
 
-`AgentSchedulerTest`（6 个用例，方法名英文、`@DisplayName` 保留课件原文）：
+`AgentSchedulerTest`（7 个用例，方法名英文、`@DisplayName` 保留课件原文）：
 
 | 课件验收点 | 测试方法 |
 |---|---|
@@ -38,19 +38,23 @@
 | 会话三元组固定 `("scheduler","scheduler",profileName)`，两次触发同一 Session | `runOnce_usesSchedulerIdentityAndReusesSession` |
 | 补充：每次触发开新根链路（FR-009 / H4 traceId） | `registeredTask_opensFreshTracePerTrigger` |
 | 补充：非法配置只跳过该条（FR-010） | `registerAll_skipsOnlyInvalidSchedule` |
+| 补充：同一 Agent 的不同任务并发时串行访问共享会话（FR-011） | `runOnce_differentSchedulesOfSameAgent_serializeSessionAccess` |
 
 时区断言说明：Spring 6.2.19 的 `CronTrigger` 不暴露 `getTimeZone()`，且 `equals()` 只比较表达式（`javap` 已核），故以固定 `lastActualExecution` 求 `nextExecution` 的行为断言钉死时区。
+
+**评审修复 M-01（会话丢失）**：任务锁按 `schedule.id()` 划分，而会话是 `scheduler:scheduler:<profile>`；同一 Agent 两条 schedules 并发时，`JpaSessionManager.getOrCreate` 各返回独立 `Session` 快照，`save` 整列覆盖 `messages_json`，后写者抹掉前者历史。修复为在任务锁内再取**会话锁**（键由 `SessionManager.sessionId(...)` 唯一公式生成，阻塞获取、不丢触发），两把锁固定「先任务后会话」顺序。回归用例的有效性已实证：临时去掉会话锁后该用例转红（AssertionFailedError），恢复后转绿。
 
 ## 3. 本节交付物存在性
 
 | 交付物 | 证据 |
 |---|---|
-| `AgentScheduler.registerAll` | `AgentScheduler.java:79` |
-| `AgentScheduler.runOnce` | `AgentScheduler.java:131`（包级可见） |
-| 按任务 id 的 `ReentrantLock` 表 | `AgentScheduler.java:152` `lockFor` + `ConcurrentMap` 字段 |
+| `AgentScheduler.registerAll` | `AgentScheduler.java:82` |
+| `AgentScheduler.runOnce` | `AgentScheduler.java:134`（包级可见） |
+| 按任务 id 的 `ReentrantLock` 表 | `AgentScheduler.java:164` `lockFor` + `ConcurrentMap` 字段 |
+| 会话维度串行锁（M-01） | `AgentScheduler.java:174` `sessionLockFor`（键 = `SessionManager.sessionId(...)`） |
 | `ScheduleConfig`（id/cron/zone/message） | `Profile.java:51`（16 节已落地，本节消费） |
 | Profile `schedules` 字段 | 既有 `Profile.java:30` + `AgentLoader.parseSchedules` + `AgentLoaderTest` 既有断言 |
-| `AgentSchedulerTest` | 6 个 `@Test` |
+| `AgentSchedulerTest` | 7 个 `@Test` |
 | 会话身份固定 `scheduler/scheduler/profileName` | `runOnce` 调 `getOrCreate(CHANNEL_SCHEDULER, SCHEDULER_USER_ID, profile.name())`；测试以字面量 `"scheduler","scheduler",profileName` 断言 |
 | 失败只记日志不崩调度器 | `catch (Exception)` + `LOG.error` + `finally unlock` |
 

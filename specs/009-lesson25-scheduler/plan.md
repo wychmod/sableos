@@ -6,7 +6,7 @@
 
 ## Summary
 
-在 `sableos-core` 新增 `AgentScheduler`：启动时遍历 `ProfileRegistry` 中所有 Profile 的 `schedules`，把每条配置（id / cron / zone / message）经 `CronTrigger` 动态注册到 Spring `TaskScheduler`；到点触发时按任务 id 取 `ReentrantLock` 做 `tryLock`，拿不到即跳过（不排队），拿到则以固定三元组 `("scheduler","scheduler",profileName)` 取会话、调用 `AgentService.process`，异常只记日志、`finally` 释锁。每次触发用 `TracedExecutors.wrapRoot` 开新根链路，审计沿用既有 `llm_calls` / `tool_invocations` 路径。装配在 `sableos-boot` 新增 `SchedulerConfiguration`；`serve` / `gateway` 启动后显式调用 `registerAll()`，`chat` 不调度。新增 `AgentSchedulerTest` 覆盖课件的四类验收点（另加一条注册期非法配置隔离）。
+在 `sableos-core` 新增 `AgentScheduler`：启动时遍历 `ProfileRegistry` 中所有 Profile 的 `schedules`，把每条配置（id / cron / zone / message）经 `CronTrigger` 动态注册到 Spring `TaskScheduler`；到点触发时按任务 id 取 `ReentrantLock` 做 `tryLock`，拿不到即跳过（不排队），拿到后再按会话取第二把锁（阻塞）串行化同一 Agent 多条 schedules 对共享会话的读写，随后以固定三元组 `("scheduler","scheduler",profileName)` 取会话、调用 `AgentService.process`，异常只记日志、`finally` 依次释锁。每次触发用 `TracedExecutors.wrapRoot` 开新根链路，审计沿用既有 `llm_calls` / `tool_invocations` 路径。装配在 `sableos-boot` 新增 `SchedulerConfiguration`；`serve` / `gateway` 启动后显式调用 `registerAll()`，`chat` 不调度。新增 `AgentSchedulerTest` 覆盖课件的四类验收点（另加注册期非法配置隔离、每次触发新链路、同 Agent 不同任务串行访问会话三条）。
 
 ## Technical Context
 

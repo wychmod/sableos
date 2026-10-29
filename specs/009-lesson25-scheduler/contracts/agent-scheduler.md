@@ -13,6 +13,7 @@ public final class AgentScheduler {
   public void registerAll();
   void runOnce(Profile profile, Profile.ScheduleConfig schedule);   // 包级可见，供同包测试直接驱动
   Lock lockFor(String taskId);                                      // 包级可见，供测试占用/释放执行权
+  Lock sessionLockFor(String profileName);                          // 包级可见，键 = SessionManager.sessionId(...)
 }
 ```
 
@@ -35,11 +36,16 @@ public final class AgentScheduler {
 
 执行顺序固定：
 
-1. `Lock lock = lockFor(schedule.id())`；`if (!lock.tryLock())` → 记 WARN「task {id} still running, skip this trigger」→ 返回（不排队）。
-2. `Session session = sessionManager.getOrCreate("scheduler", "scheduler", profile.name())`。
-3. `agentService.process(session, schedule.message())`。
-4. 任何 `Exception`：记 error（含净化后的 id 与原因）后吞掉，**不外抛**。
-5. `finally`：`lock.unlock()`——成功、失败、跳过以外的任何路径都必须释放。
+1. `Lock taskLock = lockFor(schedule.id())`；`if (!taskLock.tryLock())` → 记 WARN「task {id} still running, skip this trigger」→ 返回（不排队）。
+2. `Lock sessionLock = sessionLockFor(profile.name())`；**阻塞** `lock()`。同一 Agent 的多条 schedules 共用
+   `scheduler:scheduler:<profile>` 会话，若并发执行会各自加载历史快照、`save` 整列覆盖 `messages_json`，后写者把前者抹掉；
+   故此锁必须串行化。用阻塞而非 `tryLock`：两条不同任务的触发都应有结果，不能把后到的一次静默丢掉。
+3. `Session session = sessionManager.getOrCreate("scheduler", "scheduler", profile.name())`。
+4. `agentService.process(session, schedule.message())`。
+5. 任何 `Exception`：记 error（含净化后的 id 与原因）后吞掉，**不外抛**。
+6. `finally`：先释放会话锁，再释放任务锁——成功、失败、跳过以外的任何路径都必须释放；两把锁的获取顺序固定为「先任务、后会话」，杜绝环。
+
+锁键：`sessionLockFor` 调 `SessionManager.sessionId(CHANNEL_SCHEDULER, "scheduler", profileName)` 生成，不在调度器内另拼字符串（H4④）。
 
 不变式：
 

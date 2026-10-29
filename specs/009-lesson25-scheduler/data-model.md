@@ -28,6 +28,15 @@
 - 语义：同一 id 的上一次 `runOnce` 未结束时，`tryLock()` 失败 → 本次触发跳过（不排队、不并发）。
 - 非语义：不是分布式锁，不跨进程；两个 Agent 若声明了相同 `id`，在这张表里被视为同一个任务（与课件骨架一致，课件的锁键就是 `sc.getId()`）。
 
+### 2.1.1 会话锁表
+
+| 概念 | 形态 | 生命周期 |
+|---|---|---|
+| 会话锁 | `ConcurrentMap<String, Lock>`，键 = `SessionManager.sessionId("scheduler","scheduler",profileName)`，值 = `ReentrantLock` | 进程内；首次触发时惰性创建 |
+
+- 语义：同一 Agent 的多条 schedules 共用一个会话，对会话的「加载 → 追加 → 保存」必须串行；后到者**阻塞等待**（不是跳过）。
+- 为什么需要：领域 `Session` 是一次快照对象，`JpaSessionManager.save` 整列覆盖 `messages_json`；两个并行触发会让后写者抹掉前者的历史（lost update）。
+
 ### 2.2 已注册任务
 
 | 概念 | 形态 | 说明 |

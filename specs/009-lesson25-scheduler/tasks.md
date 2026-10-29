@@ -111,6 +111,7 @@ Maven 多模块：`sableos-core/`、`sableos-boot/`、`sableos-cli/`（见 plan.
 - [x] T017 [P] 修改 `sableos-cli/src/main/java/com/sableos/cli/command/ServeCommand.java` 与 `GatewayCommand.java`：保留 `ConfigurableApplicationContext`，启动成功后调用 `context.getBean(AgentScheduler.class).registerAll()`；`ChatCommand` 不动
 - [x] T018 跑 `mvn spotless:apply`，再跑 `mvn clean verify` 全绿（含 P3C / Checkstyle / SpotBugs / 全部单测）
 - [x] T019 按「本节交付物」逐项 grep/ls 核对：`AgentScheduler`（`registerAll`/`runOnce`/`lockFor`）、`Profile.ScheduleConfig` 四字段、`AgentSchedulerTest` 四个关键用例、会话常量 `scheduler`、无新增表/接口/配置键
+- [x] T020 评审修复（M-01）：`AgentScheduler` 增 `sessionLockFor`（键 = `SessionManager.sessionId(...)`），`runOnce` 在任务锁内再取会话锁并阻塞串行化；新增 `runOnce_differentSchedulesOfSameAgent_serializeSessionAccess`，并以「临时去掉会话锁后该用例转红」验证断言有效
 
 ---
 
