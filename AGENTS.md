@@ -218,4 +218,10 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
   - **任务执行权键 = `(profileName, scheduleId)` 的私有 record**，不是裸 `scheduleId`：两个 Agent 各自声明 `id: daily` 是两条独立任务，不得互相跳过（FR-004），也与 §8.5 第 28 节的 `(profile_name, schedule_key)` 口径一致。
   - **同一 Agent 的多条 schedules 共享 `scheduler:scheduler:<profile>` 会话**，`runOnce` 在任务锁内再按会话加**阻塞锁**串行化；否则两边各取历史快照、`save` 整列覆盖 `messages_json`，后写者抹掉前者（lost update）。该锁是进程内的，多实例竞争仍归扩展阶段分布式协调。
   - 注册时机用 `ServeCommand.startScheduler(context)` 显式调用而非 `@PostConstruct`：三种运行模式共用同一装配根，自注册会让 `chat` 也跑起定时任务。
+- **Web Service 门面（010-lesson26-web-service，2026-10-29 落地）**：`sableos-web` 新增六个 Controller、10 个 `/api/v1` 端点（会话 4 / Agent 调用 1 / 信息查询 3 / 系统状态 2）、CORS（仅 `/api/**`）与 60 秒调用上限；复用既有 `ApiResponse` 信封与 `GlobalExceptionHandler`。五条口径需记住：
+  - **`sableos-web` 新增 `sableos-tool` 编译依赖**（`GET /tools` 列 `ToolRegistry.all()`，`web→tool→core` 不成环）；记忆查询走 core 的 `MemoryProvider`，不新增 web→memory/provider 模块边。
+  - **core 新增 `ProviderHealthProbe` / `ProviderStatus` / `ProviderFailureException`**，provider 新增 `HttpProviderHealthProbe`（对 base-url 发 `HEAD`，2s connect / 3s read，任何 HTTP 响应即可达，不调模型、不耗 token）并由 `ProviderConfiguration` 装配；提供方调用失败包装为 `ProviderFailureException` → 503 通用话术（不回显原始 message）。
+  - **`SessionManager` 新增 `archive(String): boolean`**：软归档置 `status=archived` + 首次写 `archived_at`，行保留；归档后 `GET /sessions/{id}` 仍可查，重复归档幂等。`session_id` 拼接仍只在 `SessionManager.sessionId` 一处。
+  - **60 秒超时的执行器**：Boot 的 `TaskExecutionAutoConfiguration` 因容器已有 `agentTaskScheduler`（也是 `Executor`）而**不会创建 `applicationTaskExecutor`**；故 `sableos-web` 的 `ApiConfiguration` 显式声明仅服务 Agent 调用的虚拟线程执行器，并复用容器唯一 `TraceTaskDecorator`。超时 `cancel` 后返回 504，底层调用允许在后台收尾。
+  - **课件“排除 `OpenAiAutoConfiguration`”在本仓库不适用**：classpath 上只有 `spring-ai-openai` raw jar，没有 starter/autoconfig；Boot 3.x 排除不存在的自动配置类会让 `serve` 启动失败。虚拟线程与 8080 端口既有 `application.yaml` 已配置，未改动。管理台前端/静态资源/SPA 回落/前端风格 skill 按用户决定不交付，由独立 agent 基于本节接口实现。
 - **Boot 4.x 迁移待排期（2026-10-14 决策：短期留在 3.5.16 过渡）**：3.5.16 是 Boot 3.5 OSS 线终版，Spring Framework 6.2.19 的 6 条 CVSS≥8 CVE 在 OSS 线无修复版，过渡期以抑制放行（见 5.3 节，抑制移除条件即迁移落地）。迁移须联动 Spring AI 1.1.x→2.x、springdoc 2.8→3.x、JUnit 6 等，单独走 Spec-Kit 任务排期，勿在业务 task 里顺手升级。
