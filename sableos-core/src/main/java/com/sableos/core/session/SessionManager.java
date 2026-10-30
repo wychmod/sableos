@@ -49,5 +49,16 @@ public interface SessionManager extends SessionStore {
    */
   Optional<Session> get(String sessionId);
 
+  /**
+   * 软归档：把会话状态置为 {@code archived}，首次归档记录 {@code archived_at}，物理行保留（26 节）。
+   *
+   * <p>重复归档幂等：已归档的会话保持原 {@code archived_at} 并同样返回 {@code true}。归档不阻止后续消息，也不改变历史可读性——
+   * 它只是一个生命周期标记，供列表过滤与审计使用。
+   *
+   * @param sessionId 会话标识
+   * @return 命中并（或已）归档返回 {@code true}；会话不存在返回 {@code false}
+   */
+  boolean archive(String sessionId);
+
   // void save(Session) 继承自 SessionStore：序列化历史后 upsert 到 sessions 表（处理完成后调用）。
 }

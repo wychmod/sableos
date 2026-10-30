@@ -60,6 +60,21 @@ public class JpaSessionManager implements SessionManager {
   }
 
   @Override
+  public boolean archive(String sessionId) {
+    SessionEntity entity = repository.findById(sessionId).orElse(null);
+    if (entity == null) {
+      return false;
+    }
+    entity.setStatus("archived");
+    // 首次归档才写时间；重复归档保持原值（幂等，便于审计追溯第一次归档时刻）
+    if (entity.getArchivedAt() == null) {
+      entity.setArchivedAt(Instant.now());
+    }
+    repository.save(entity);
+    return true;
+  }
+
+  @Override
   public void save(Session session) {
     // sableos 的领域 Session 自带 channel/userId/status/createdAt（比 oryxos 的瘦 Session 富），
     // 故 save 做 upsert：命中既有行只更新易变列，未命中则从 Session 补全整行插入——
