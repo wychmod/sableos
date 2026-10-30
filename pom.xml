@@ -494,6 +494,13 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <!-- 26 节：课件锚点 WebSmokeIT 必须随常规 mvn test 执行（它不依赖模型/外网）；
+               surefire 默认不匹配 *IT，故显式纳入。ProviderSmokeIT 仍由 @Tag("integration") 排除。 -->
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*Tests.java</include>
+            <include>**/*IT.java</include>
+          </includes>
           <excludedGroups>integration</excludedGroups>
           <!-- Mockito 5 的 inline mock maker 在测试期动态挂载 byte-buddy agent，JDK 21 默认
                打印 4 行「dynamic agent loading」警告（未来 JDK 将直接禁止）。显式开启后只保留
