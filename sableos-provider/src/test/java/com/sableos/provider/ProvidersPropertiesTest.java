@@ -84,6 +84,15 @@ class ProvidersPropertiesTest {
   }
 
   @Test
+  @DisplayName("mock型_无key无base_url也合法")
+  void validate_mockProviderWithoutKeyOrBaseUrl_passes() {
+    ProvidersProperties properties =
+        new ProvidersProperties(List.of(provider("mock", "mock", null, null)));
+
+    assertThatCode(properties::validate).doesNotThrowAnyException();
+  }
+
+  @Test
   @DisplayName("openai型缺base_url_报错点名provider")
   void validate_openAiMissingBaseUrl_reportsProvider() {
     assertThatThrownBy(

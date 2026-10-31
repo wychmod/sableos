@@ -39,6 +39,10 @@ public class ProviderChatModelFactory {
   }
 
   private static ChatModel create(ProvidersProperties.Provider provider) {
+    if (ProvidersProperties.TYPE_MOCK.equals(provider.effectiveType())) {
+      // 27 节：显式映射表里的确定性 mock provider，不建 HTTP 客户端、不读 key。
+      return new MockChatModel();
+    }
     RetryTemplate retryTemplate = RetryTemplate.builder().maxAttempts(1).build();
     String baseUrl = normalizeBaseUrl(provider.baseUrl());
     if (ProvidersProperties.TYPE_DASHSCOPE.equals(provider.effectiveType())) {
