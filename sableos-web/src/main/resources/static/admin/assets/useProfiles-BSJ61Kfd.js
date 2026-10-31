@@ -1,0 +1,1 @@
+import{N as t,ad as f,P as u,l as a}from"./index-SXW-IAp3.js";const i=a([]),e=a(!1),r=t(null),s=a(!1);let l=null;async function p(o=!1){if(l)return l;if(!(s.value&&!o))return l=(async()=>{e.value=!0,r.value=null;try{i.value=await f(),s.value=!0}catch(n){r.value=u(n)}finally{e.value=!1,l=null}})(),l}export{e as a,i as b,p as l,r as p};

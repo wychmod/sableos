@@ -6,7 +6,7 @@ import ErrorState from '../components/ErrorState.vue'
 import PageHeader from '../components/PageHeader.vue'
 import SkeletonBlock from '../components/SkeletonBlock.vue'
 import { normalizeError, type ApiError } from '../api/client'
-import { getMemory } from '../api/endpoints'
+import { getAgentMemory } from '../api/endpoints'
 import { loadProfiles, profiles, profilesError, profilesLoading } from '../composables/useProfiles'
 import { refreshTick } from '../composables/useRefreshSignal'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
@@ -21,8 +21,8 @@ interface MemorySection {
   raw: string
 }
 
-const profileInput = ref('default')
-const activeProfile = ref('default')
+const profileInput = ref('')
+const activeProfile = ref('')
 const memory = shallowRef<MemoryView | null>(null)
 const loading = ref(false)
 const refreshing = ref(false)
@@ -93,7 +93,7 @@ function selectProfile(name: string): void {
 async function loadMemory(name: string, options: { silent?: boolean } = {}): Promise<void> {
   const profile = name.trim()
   if (!profile) {
-    fieldError.value = '请输入 profile 名称，默认使用 default。'
+    fieldError.value = '请输入 Agent 名称。'
     profileField.value?.focus()
     return
   }
@@ -105,7 +105,7 @@ async function loadMemory(name: string, options: { silent?: boolean } = {}): Pro
   error.value = null
   activeProfile.value = profile
   try {
-    memory.value = await getMemory(profile)
+    memory.value = await getAgentMemory(profile)
     lastLoadedAt.value = new Date()
   } catch (caught) {
     const apiError = normalizeError(caught)
@@ -137,10 +137,28 @@ watch(refreshTick, () => {
   void loadMemory(activeProfile.value, { silent: true })
 })
 
-onMounted(() => {
-  void loadProfiles()
-  void loadMemory('default', { silent: true })
+onMounted(async () => {
+  await loadProfiles()
+  // 第 30 节：记忆按 Agent 隔离，默认选第一个已注册 Agent（不再有全局 memory 端点）
+  const first = profiles.value[0]?.name
+  if (first) {
+    profileInput.value = first
+    void loadMemory(first, { silent: true })
+  }
 })
+
+watch(
+  () => profiles.value.length,
+  (length) => {
+    if (length > 0 && !activeProfile.value) {
+      const first = profiles.value[0]?.name
+      if (first) {
+        profileInput.value = first
+        void loadMemory(first, { silent: true })
+      }
+    }
+  },
+)
 </script>
 
 <template>
@@ -170,14 +188,14 @@ onMounted(() => {
     <section class="panel memory-selector" aria-label="选择 Profile">
       <form class="memory-form" @submit.prevent="loadCurrent">
         <div class="form-field memory-form__field">
-          <label class="form-label" for="memory-profile">Profile</label>
+          <label class="form-label" for="memory-profile">Agent</label>
           <input
             id="memory-profile"
             ref="profileField"
             v-model="profileInput"
             class="input mono"
             list="memory-profile-options"
-            placeholder="default"
+            placeholder="weather-daily"
             autocomplete="off"
             :aria-invalid="Boolean(fieldError)"
             @input="fieldError = ''"

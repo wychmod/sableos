@@ -28,6 +28,12 @@ const router = createRouter({
       meta: { title: '定时任务' },
     },
     {
+      path: '/agents/:name',
+      name: 'agent-detail',
+      component: () => import('../pages/AgentDetailPage.vue'),
+      meta: { title: 'Agent 详情' },
+    },
+    {
       path: '/tools',
       name: 'tools',
       component: () => import('../pages/ToolsPage.vue'),

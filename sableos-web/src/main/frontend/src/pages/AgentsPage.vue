@@ -1,48 +1,119 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import EmptyState from '../components/EmptyState.vue'
 import ErrorState from '../components/ErrorState.vue'
 import PageHeader from '../components/PageHeader.vue'
 import SkeletonBlock from '../components/SkeletonBlock.vue'
 import { normalizeError, type ApiError } from '../api/client'
-import { invokeAgent } from '../api/endpoints'
+import { createAgent, deleteAgent } from '../api/endpoints'
 import { loadProfiles, profiles, profilesError, profilesLoading } from '../composables/useProfiles'
 import { refreshTick } from '../composables/useRefreshSignal'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
-import type { ProfileView } from '../types/api'
+import type { AgentView } from '../types/api'
 
-const MAX_MESSAGE_CHARS = 32_768
+const router = useRouter()
+
+const MAX_DESCRIPTION_CHARS = 2000
+const NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/
 
 const refreshing = ref(false)
-const invokeTarget = shallowRef<ProfileView | null>(null)
-const invokeMessage = ref('')
-const invokePending = ref(false)
-const invokeError = shallowRef<ApiError | null>(null)
-const invokeReply = ref('')
-const invokeFieldError = ref('')
-
-const dialog = ref<HTMLDialogElement | null>(null)
-const messageField = ref<HTMLTextAreaElement | null>(null)
-const closeButton = ref<HTMLButtonElement | null>(null)
 
 const agentCount = computed(() => profiles.value.length)
-const toolCount = computed(
-  () => new Set(profiles.value.flatMap((profile) => profile.tools)).size,
-)
-const channelCount = computed(
-  () => new Set(profiles.value.flatMap((profile) => profile.channels)).size,
+const toolCount = computed(() => new Set(profiles.value.flatMap((agent) => agent.tools)).size)
+const scheduleCount = computed(() =>
+  profiles.value.reduce((total, agent) => total + agent.schedules.length, 0),
 )
 
-const charCount = computed(() => invokeMessage.value.length)
-const overLimit = computed(() => charCount.value > MAX_MESSAGE_CHARS)
-const canInvoke = computed(
+// ---------------------------------------------------------------- 新建
+
+const createOpen = ref(false)
+const createName = ref('')
+const createDescription = ref('')
+const createPending = ref(false)
+const createError = shallowRef<ApiError | null>(null)
+const createFieldError = ref('')
+const createDialog = ref<HTMLDialogElement | null>(null)
+const nameField = ref<HTMLInputElement | null>(null)
+
+const canCreate = computed(
   () =>
-    Boolean(invokeTarget.value) &&
-    !invokePending.value &&
-    invokeMessage.value.trim().length > 0 &&
-    !overLimit.value,
+    !createPending.value &&
+    createName.value.trim().length > 0 &&
+    createDescription.value.length <= MAX_DESCRIPTION_CHARS,
 )
+
+function openCreate(): void {
+  createName.value = ''
+  createDescription.value = ''
+  createError.value = null
+  createFieldError.value = ''
+  createOpen.value = true
+}
+
+function closeCreate(): void {
+  if (createPending.value) return
+  createOpen.value = false
+}
+
+async function submitCreate(): Promise<void> {
+  if (!canCreate.value) return
+  const name = createName.value.trim()
+  if (!NAME_PATTERN.test(name)) {
+    createFieldError.value = '名字只允许字母、数字、_ . -；首字符须为字母或数字，最多 64 字符。'
+    nameField.value?.focus()
+    return
+  }
+  createFieldError.value = ''
+  createError.value = null
+  createPending.value = true
+  try {
+    const created = await createAgent(name, createDescription.value.trim())
+    await loadProfiles(true)
+    pushToast(`Agent ${created.agent.name} 已创建`, 'success')
+    createOpen.value = false
+    void router.push(`/agents/${encodeURIComponent(created.agent.name)}`)
+  } catch (error) {
+    const apiError = normalizeError(error)
+    createError.value = apiError
+    reportError(apiError, { toast: false })
+  } finally {
+    createPending.value = false
+  }
+}
+
+// ---------------------------------------------------------------- 删除
+
+const deleteTarget = shallowRef<AgentView | null>(null)
+const deletePending = ref(false)
+
+function openDelete(agent: AgentView): void {
+  deleteTarget.value = agent
+}
+
+function closeDelete(): void {
+  if (deletePending.value) return
+  deleteTarget.value = null
+}
+
+async function confirmDelete(): Promise<void> {
+  const target = deleteTarget.value
+  if (!target || deletePending.value) return
+  deletePending.value = true
+  try {
+    await deleteAgent(target.name)
+    await loadProfiles(true)
+    pushToast(`Agent ${target.name} 已删除并归档`, 'success')
+    deleteTarget.value = null
+  } catch (error) {
+    reportError(normalizeError(error), { toast: true })
+  } finally {
+    deletePending.value = false
+  }
+}
+
+// ---------------------------------------------------------------- 通用
 
 async function refresh(): Promise<void> {
   if (refreshing.value) return
@@ -56,77 +127,17 @@ async function refresh(): Promise<void> {
   refreshing.value = false
 }
 
-function openInvoke(profile: ProfileView): void {
-  invokeTarget.value = profile
-  invokeMessage.value = ''
-  invokeReply.value = ''
-  invokeError.value = null
-  invokeFieldError.value = ''
-}
-
-function closeInvoke(): void {
-  if (invokePending.value) return
-  invokeTarget.value = null
-}
-
-function onDialogBackdrop(event: MouseEvent): void {
-  if (event.target === dialog.value) {
-    closeInvoke()
-  }
-}
-
-watch(
-  invokeTarget,
-  async (target) => {
+watch(createOpen, async (open) => {
+  await nextTick()
+  if (!createDialog.value) return
+  if (open && !createDialog.value.open) {
+    createDialog.value.showModal()
     await nextTick()
-    if (!dialog.value) return
-    if (target && !dialog.value.open) {
-      dialog.value.showModal()
-      await nextTick()
-      messageField.value?.focus()
-    } else if (!target && dialog.value.open) {
-      dialog.value.close()
-    }
-  },
-  { flush: 'post' },
-)
-
-async function submitInvoke(): Promise<void> {
-  const target = invokeTarget.value
-  if (!target || invokePending.value) return
-  if (invokeMessage.value.trim().length === 0) {
-    invokeFieldError.value = '请输入要发送给 Agent 的消息。'
-    messageField.value?.focus()
-    return
+    nameField.value?.focus()
+  } else if (!open && createDialog.value.open) {
+    createDialog.value.close()
   }
-  if (overLimit.value) {
-    invokeFieldError.value = '消息超过 32,768 字符上限，请删减后再调用。'
-    return
-  }
-
-  invokeFieldError.value = ''
-  invokeError.value = null
-  invokeReply.value = ''
-  invokePending.value = true
-  try {
-    const result = await invokeAgent(target.name, invokeMessage.value)
-    invokeReply.value = result.reply
-    pushToast(`Agent ${target.name} 调用完成`, 'success')
-  } catch (error) {
-    const apiError = normalizeError(error)
-    invokeError.value = apiError
-    reportError(apiError, { toast: true })
-  } finally {
-    invokePending.value = false
-  }
-}
-
-function handleMessageKeydown(event: KeyboardEvent): void {
-  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-    event.preventDefault()
-    if (canInvoke.value) void submitInvoke()
-  }
-}
+})
 
 watch(refreshTick, () => {
   void loadProfiles(true)
@@ -142,18 +153,17 @@ onMounted(() => {
     <PageHeader
       eyebrow="Agent registry / 03"
       title="Agents"
-      description="工作区已注册的 Agent 档案。试运行使用一次性会话，不保留历史，也不返回会话 ID。"
+      description="丢一个目录、填一段描述，Agent 就上线——不需要重启进程。点卡片进入详情可看文件、聊天、查记忆。"
     >
       <template #actions>
         <span class="registry-caption mono">{{ agentCount }} agents</span>
-        <button
-          type="button"
-          class="btn btn--secondary btn--sm"
-          :disabled="refreshing || profilesLoading"
-          @click="refresh"
-        >
+        <button type="button" class="btn btn--secondary btn--sm" :disabled="refreshing" @click="refresh">
           <AppIcon name="refresh" size="14" :class="{ spinning: refreshing || profilesLoading }" />
           {{ refreshing ? '刷新中' : '刷新' }}
+        </button>
+        <button type="button" class="btn btn--primary btn--sm" @click="openCreate">
+          <AppIcon name="plus" size="14" />
+          新建 Agent
         </button>
       </template>
     </PageHeader>
@@ -168,12 +178,12 @@ onMounted(() => {
         <strong class="registry-cell__value mono">{{ toolCount }}</strong>
       </div>
       <div class="registry-cell">
-        <span class="registry-cell__label">接入渠道</span>
-        <strong class="registry-cell__value mono">{{ channelCount }}</strong>
+        <span class="registry-cell__label">定时声明</span>
+        <strong class="registry-cell__value mono">{{ scheduleCount }}</strong>
       </div>
       <div class="registry-cell registry-cell--note">
-        <span class="registry-cell__label">调用语义</span>
-        <span class="registry-cell__text">每次试运行独立建会话，调用结束即弃用</span>
+        <span class="registry-cell__label">录入方式</span>
+        <span class="registry-cell__text">API 创建 / 往 agents/ 丢目录 / 页面上改，三条路径殊途同归</span>
       </div>
     </section>
 
@@ -201,11 +211,11 @@ onMounted(() => {
 
     <EmptyState
       v-else-if="agentCount === 0"
-      title="尚未加载任何 Agent"
-      description="尚未加载任何 Agent，请检查工作区 agents 目录。"
-      action-label="重新加载"
+      title="还没有 Agent"
+      description="点「新建 Agent」填一个名字和一句描述，系统会按模板脚手架出完整目录。"
+      action-label="新建 Agent"
       icon="agents"
-      @action="refresh"
+      @action="openCreate"
     />
 
     <template v-else>
@@ -221,11 +231,13 @@ onMounted(() => {
       </div>
 
       <div class="profile-grid">
-        <article v-for="(profile, index) in profiles" :key="profile.name" class="profile-card">
+        <article v-for="(agent, index) in profiles" :key="agent.name" class="profile-card">
           <header class="profile-card__head">
             <div class="profile-identity">
               <span class="profile-index mono">#{{ String(index + 1).padStart(2, '0') }}</span>
-              <h2 class="profile-name mono">{{ profile.name }}</h2>
+              <h2 class="profile-name mono">
+                <RouterLink :to="`/agents/${encodeURIComponent(agent.name)}`">{{ agent.name }}</RouterLink>
+              </h2>
             </div>
             <span class="profile-state">
               <span class="status-dot" aria-hidden="true" />
@@ -233,152 +245,140 @@ onMounted(() => {
             </span>
           </header>
 
-          <p class="profile-description" :class="{ 'profile-description--empty': !profile.description }">
-            {{ profile.description || '该 Agent 未提供描述。' }}
+          <p class="profile-description" :class="{ 'profile-description--empty': !agent.description }">
+            {{ agent.description || '该 Agent 未提供描述。' }}
           </p>
 
           <dl class="profile-meta">
             <div class="profile-meta__item">
               <dt>Provider</dt>
-              <dd class="mono">{{ profile.provider || '—' }}</dd>
+              <dd class="mono">{{ agent.provider || '—' }}</dd>
             </div>
             <div class="profile-meta__item">
               <dt>Model</dt>
-              <dd class="mono">{{ profile.model || '—' }}</dd>
+              <dd class="mono">{{ agent.model || '—' }}</dd>
+            </div>
+            <div class="profile-meta__item">
+              <dt>定时</dt>
+              <dd class="mono">{{ agent.schedules.length }}</dd>
             </div>
           </dl>
 
           <div class="profile-section">
             <span class="profile-section__label">
               Tools
-              <span class="mono">{{ profile.tools.length }}</span>
+              <span class="mono">{{ agent.tools.length }}</span>
             </span>
-            <div v-if="profile.tools.length > 0" class="chip-row">
-              <span v-for="tool in profile.tools" :key="tool" class="chip">{{ tool }}</span>
+            <div v-if="agent.tools.length > 0" class="chip-row">
+              <span v-for="tool in agent.tools" :key="tool" class="chip">{{ tool }}</span>
             </div>
             <p v-else class="profile-empty-line">未挂载工具</p>
           </div>
 
-          <div class="profile-section">
-            <span class="profile-section__label">
-              Channels
-              <span class="mono">{{ profile.channels.length }}</span>
-            </span>
-            <div v-if="profile.channels.length > 0" class="chip-row">
-              <span v-for="channel in profile.channels" :key="channel" class="chip">
-                {{ channel }}
-              </span>
-            </div>
-            <p v-else class="profile-empty-line">未声明渠道</p>
-          </div>
-
           <footer class="profile-card__foot">
-            <span class="profile-foot-note">一次性调用 · 无会话 ID</span>
-            <button type="button" class="btn btn--accent-ghost btn--sm" @click="openInvoke(profile)">
-              <AppIcon name="play" size="12" />
-              试运行
+            <button type="button" class="btn btn--danger-ghost btn--sm" @click="openDelete(agent)">
+              <AppIcon name="close" size="12" />
+              删除
             </button>
+            <RouterLink
+              class="btn btn--accent-ghost btn--sm"
+              :to="`/agents/${encodeURIComponent(agent.name)}`"
+            >
+              <AppIcon name="play" size="12" />
+              打开
+            </RouterLink>
           </footer>
         </article>
       </div>
     </template>
 
     <dialog
-      ref="dialog"
-      class="dialog invoke-dialog"
-      aria-labelledby="invoke-dialog-title"
-      @cancel.prevent="closeInvoke"
-      @click="onDialogBackdrop"
+      ref="createDialog"
+      class="dialog"
+      aria-labelledby="create-dialog-title"
+      @cancel.prevent="closeCreate"
+      @click.self="closeCreate"
     >
       <div class="dialog__head">
         <div>
-          <div class="eyebrow">One-shot invoke</div>
-          <h2 id="invoke-dialog-title" class="dialog__title">
-            试运行 <span class="mono">{{ invokeTarget?.name }}</span>
-          </h2>
+          <div class="eyebrow">New agent</div>
+          <h2 id="create-dialog-title" class="dialog__title">新建 Agent</h2>
         </div>
-        <button
-          ref="closeButton"
-          type="button"
-          class="icon-button"
-          aria-label="关闭试运行对话框"
-          :disabled="invokePending"
-          @click="closeInvoke"
-        >
+        <button type="button" class="icon-button" aria-label="关闭" :disabled="createPending" @click="closeCreate">
           <AppIcon name="close" size="16" />
         </button>
       </div>
 
-      <div class="dialog__body invoke-body">
+      <div class="dialog__body">
         <p class="invoke-note">
           <AppIcon name="info" size="14" />
-          一次性调用，不保留会话，不返回会话 ID。
+          只需名字与描述；系统按模板生成 AGENT.md、REFERENCE.md 与示例脚本，立即注册、不用重启。
         </p>
 
-        <dl v-if="invokeTarget" class="invoke-context">
-          <div>
-            <dt>Agent</dt>
-            <dd class="mono">{{ invokeTarget.name }}</dd>
-          </div>
-          <div>
-            <dt>Model</dt>
-            <dd class="mono">{{ invokeTarget.model || invokeTarget.provider || '—' }}</dd>
-          </div>
-        </dl>
+        <div class="form-field">
+          <label class="form-label" for="create-name">名字</label>
+          <input
+            id="create-name"
+            ref="nameField"
+            v-model="createName"
+            class="input mono"
+            placeholder="例如 weather-daily"
+            :disabled="createPending"
+            :aria-invalid="Boolean(createFieldError)"
+            @input="createFieldError = ''"
+          />
+          <p class="field-hint">字母、数字、_ . -；首字符须为字母或数字，最多 64 字符。</p>
+        </div>
 
         <div class="form-field">
-          <label class="form-label" for="invoke-message">
-            消息
-            <span class="char-count mono" :class="{ 'char-count--over': overLimit }">
-              {{ charCount.toLocaleString('zh-CN') }} / {{ MAX_MESSAGE_CHARS.toLocaleString('zh-CN') }}
+          <label class="form-label" for="create-description">
+            描述
+            <span class="char-count mono">
+              {{ createDescription.length.toLocaleString('zh-CN') }} /
+              {{ MAX_DESCRIPTION_CHARS.toLocaleString('zh-CN') }}
             </span>
           </label>
           <textarea
-            id="invoke-message"
-            ref="messageField"
-            v-model="invokeMessage"
-            class="textarea invoke-input"
-            placeholder="例如：用一句话介绍你自己"
-            :disabled="invokePending"
-            :aria-invalid="overLimit || Boolean(invokeFieldError)"
-            @input="invokeFieldError = ''"
-            @keydown="handleMessageKeydown"
+            id="create-description"
+            v-model="createDescription"
+            class="textarea"
+            placeholder="例如：每天早上九点查北京天气，把穿搭建议发到团队群"
+            :disabled="createPending"
           />
         </div>
 
-        <p v-if="invokeFieldError" class="field-error">{{ invokeFieldError }}</p>
+        <p v-if="createFieldError" class="field-error">{{ createFieldError }}</p>
 
-        <div v-if="invokePending" class="invoke-progress" aria-live="polite">
-          <div class="loading-rule" />
-          <span>Agent 处理中，最长等待约 60 秒。</span>
-        </div>
-
-        <div v-if="invokeError" class="inline-alert inline-alert--danger">
+        <div v-if="createError" class="inline-alert inline-alert--danger">
           <AppIcon name="alert" size="15" />
-          <span class="invoke-error__text">
-            {{ invokeError.message }}
-            <span class="inline-alert__trace">traceId: {{ invokeError.traceId || '—' }}</span>
-          </span>
-          <button type="button" class="inline-alert__action" @click="openDiagnostics(invokeError)">诊断</button>
+          <span>{{ createError.message }}</span>
         </div>
-
-        <section v-if="invokeReply" class="invoke-reply" aria-live="polite">
-          <div class="invoke-reply__head">
-            <span class="eyebrow">Reply</span>
-            <span class="invoke-reply__hint">本次调用不产生会话</span>
-          </div>
-          <p class="invoke-reply__text">{{ invokeReply }}</p>
-        </section>
       </div>
 
       <div class="dialog__footer">
-        <span class="invoke-footer-note">Ctrl / ⌘ + Enter 发送</span>
-        <button type="button" class="btn btn--secondary" :disabled="invokePending" @click="closeInvoke">
-          关闭
+        <button type="button" class="btn btn--secondary" :disabled="createPending" @click="closeCreate">取消</button>
+        <button type="button" class="btn btn--primary" :disabled="!canCreate" @click="submitCreate">
+          {{ createPending ? '创建中…' : '创建' }}
         </button>
-        <button type="button" class="btn btn--primary" :disabled="!canInvoke" @click="submitInvoke">
-          <AppIcon name="play" size="12" />
-          {{ invokePending ? '调用中…' : '发送调用' }}
+      </div>
+    </dialog>
+
+    <dialog v-if="deleteTarget" class="dialog" aria-labelledby="delete-dialog-title" open @cancel.prevent="closeDelete">
+      <div class="dialog__head">
+        <div>
+          <div class="eyebrow">Delete agent</div>
+          <h2 id="delete-dialog-title" class="dialog__title">
+            删除 <span class="mono">{{ deleteTarget.name }}</span>？
+          </h2>
+        </div>
+      </div>
+      <div class="dialog__body">
+        <p>删除会先停掉它的定时、再移出注册表，最后把整个目录移到 <code>archive/</code>（不物理删）。</p>
+      </div>
+      <div class="dialog__footer">
+        <button type="button" class="btn btn--secondary" :disabled="deletePending" @click="closeDelete">取消</button>
+        <button type="button" class="btn btn--danger" :disabled="deletePending" @click="confirmDelete">
+          {{ deletePending ? '删除中…' : '确认删除' }}
         </button>
       </div>
     </dialog>
@@ -743,3 +743,81 @@ onMounted(() => {
   }
 }
 </style>
+
+.profile-meta {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.profile-name a:hover {
+  text-decoration: underline;
+}
+
+.field-hint {
+  color: var(--text-faint);
+  font-size: var(--fs-11);
+  line-height: var(--lh-16);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--fs-11);
+  overflow-wrap: anywhere;
+}
+
+.profile-empty-line {
+  color: var(--text-faint);
+  font-size: var(--fs-12);
+}
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.profile-section__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  color: var(--text-faint);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.profile-card__foot a.btn {
+  text-decoration: none;
+}
+
+.invoke-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: var(--fs-12);
+  line-height: var(--lh-18);
+}
