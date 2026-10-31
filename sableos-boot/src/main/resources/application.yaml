@@ -121,6 +121,18 @@ sableos:
     connect-timeout: 10s
     read-timeout: 30s
 
+  # --- 一句话生成 Agent（第 30 节）---
+  # 生成走既有 ProviderService.chat（落 llm_calls 审计），因此需要一个真实的 provider + model。
+  # provider 缺省取 sableos.providers 清单的首项（按名大小写无关排序）；显式配置则以此为准。
+  # model 系统无从推断（它只写在各 AGENT.md 的 provider 段里），**留空时生成端点返回 503**，
+  # 不会向模型端点发送空模型名。示例：
+  #   author:
+  #     provider: deepseek
+  #     model: deepseek-chat
+  author:
+    provider: ${SABLEOS_AUTHOR_PROVIDER:}
+    model: ${SABLEOS_AUTHOR_MODEL:}
+
   # --- 沙箱白名单管理接口（008-sandbox-whitelist-admin）---
   # 等价 root 权限：可以加任意目录、任意解释器。默认开启（产品决策），必须只绑回环
   # 或置于认证反向代理之后；不需要时设为 false，该路径即不存在（404）。

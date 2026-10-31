@@ -1,6 +1,7 @@
 package com.sableos.web;
 
 import com.sableos.core.provider.ProviderFailureException;
+import com.sableos.core.provider.ProviderNotConfiguredException;
 import com.sableos.core.sandbox.WhitelistDuplicateException;
 import com.sableos.core.sandbox.WhitelistEntryNotFoundException;
 import com.sableos.core.sandbox.WhitelistValidationException;
@@ -115,6 +116,14 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleProviderFailure(ProviderFailureException ex) {
     LOG.error("Provider call failed", ex);
     return error(HttpStatus.SERVICE_UNAVAILABLE, "模型提供方调用失败");
+  }
+
+  /** 503 — 能力未配置（第 30 节：生成 Agent 用的 model 未设置）。message 由系统构造、可安全回显。 */
+  @ExceptionHandler(ProviderNotConfiguredException.class)
+  public ResponseEntity<ApiResponse<Void>> handleProviderNotConfigured(
+      ProviderNotConfiguredException ex) {
+    LOG.warn("Provider not configured: {}", sanitize(ex.getMessage()));
+    return error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
   }
 
   /** 504 — Agent 调用超过 60 秒上限。 */
