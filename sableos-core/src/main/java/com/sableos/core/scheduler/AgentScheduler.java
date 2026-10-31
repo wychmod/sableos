@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -142,6 +143,51 @@ public final class AgentScheduler {
    */
   public boolean hasScheduledTask(long scheduleId) {
     return scheduledTasks.containsKey(scheduleId);
+  }
+
+  /**
+   * 注销某个 Agent 名下的全部定时（第 30 节：更新 / 删除 / 目录被移除时调用）。
+   *
+   * <p><b>为什么按 Agent 名筛而非按 {@code profile.schedules()} 反查</b>：旧配置里存在、新配置里已被删掉的那条任务，在 {@code
+   * profile.schedules()} 里已经查不到了；只有按名字筛句柄表，才能把它一并停掉并退役。
+   *
+   * <p>对每条命中：取消句柄（{@code cancel(false)}，不中断正在执行的那一次，只阻止后续触发）、移出句柄表与内存索引、把任务标记退役。 <b>不动</b> {@code
+   * taskLocks} / {@code sessionLocks}——重注册会复用同一把锁，删了反而制造竞态。
+   *
+   * <p>未命中任何句柄时静默返回（幂等）。
+   *
+   * @param profile 要注销的 Agent；null 或名为空时直接返回
+   */
+  public void unregisterProfile(Profile profile) {
+    if (profile == null || isBlank(profile.name())) {
+      return;
+    }
+    String target = profile.name();
+    for (RegisteredTask task : List.copyOf(registeredTasks.values())) {
+      if (!target.equals(task.profile().name())) {
+        continue;
+      }
+      long scheduleId = task.scheduleId();
+      scheduledTasks.remove(scheduleId);
+      if (task.future() != null) {
+        task.future().cancel(false);
+      }
+      registeredTasks.remove(scheduleId);
+      try {
+        scheduledTaskStore.retire(scheduleId);
+      } catch (RuntimeException e) {
+        LOG.error(
+            "定时任务退役失败，已跳过其余清理：profile={} scheduleId={} reason={}",
+            safe(target),
+            scheduleId,
+            safe(e.getMessage()));
+      }
+      LOG.info(
+          "定时任务已注销（Agent 变更或删除）：profile={} id={} scheduleId={}",
+          safe(target),
+          safe(task.schedule().id()),
+          scheduleId);
+    }
   }
 
   private void registerOne(

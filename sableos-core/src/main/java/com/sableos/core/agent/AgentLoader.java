@@ -134,6 +134,21 @@ public class AgentLoader {
     return (fileName == null) ? String.valueOf(dir) : fileName.toString();
   }
 
+  /**
+   * 纯内存校验：一段 {@code AGENT.md} 能否派生成名为 {@code expectedName} 的合法定义。
+   *
+   * <p>写盘前的预校验（第 30 节「生成草稿」与「保存文件」）必须与落盘后的派生走同一套规则，否则会出现「草稿能过、写盘被拒」。故本方法直接委派 {@link
+   * #deriveProfile(String, String)}，不另写一份检查。不读文件、不注册。
+   *
+   * @param agentMarkdown 整份 AGENT.md 文本
+   * @param expectedName 期望的 Agent 名（通常等于目录名）
+   * @return 派生出的运行配置
+   * @throws IllegalArgumentException 结构或引用违规（消息点名原因）
+   */
+  public Profile parse(String agentMarkdown, String expectedName) {
+    return deriveProfile(expectedName, agentMarkdown);
+  }
+
   /** 把 AGENT.md 的 frontmatter 派生成 Profile；任何结构/引用违规都抛 IllegalArgumentException（点名原因）。 */
   Profile deriveProfile(String directoryName, String agentMarkdown) {
     Map<String, Object> frontmatter = parseFrontmatter(agentMarkdown);
