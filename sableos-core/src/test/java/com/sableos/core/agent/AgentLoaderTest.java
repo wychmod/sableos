@@ -3,16 +3,22 @@ package com.sableos.core.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.sableos.core.profile.Profile;
 import com.sableos.core.profile.ProfileRegistry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.LoggerFactory;
 
 /**
  * Agent 加载验收（课件 ProfileLoaderTest 按 AgentLoader 口径改名）：全字段解析、多 Agent 并存、 坏文件/未登记 provider
@@ -174,6 +180,39 @@ class AgentLoaderTest {
   }
 
   @Test
+  @DisplayName("加载_四类非法各自留下点名日志，合法 Agent 全部保留")
+  void loadAll_eachIllegalDirLeavesNamedError() throws IOException {
+    writeAgent("good-a", agentMarkdown("good-a", "deepseek", "deepseek-chat"));
+    writeAgent("good-b", agentMarkdown("good-b", "deepseek", "deepseek-chat"));
+    Files.createDirectories(agentsDir.resolve("missing-file"));
+    writeAgent(
+        "broken-yaml",
+        """
+        ---
+        name: [未闭合
+        provider: {
+        ---
+
+        正文
+        """);
+    writeAgent("dir-mismatch", agentMarkdown("other-name", "deepseek", "deepseek-chat"));
+    writeAgent("unregistered-provider", agentMarkdown("unregistered-provider", "kimi", "kimi-k2"));
+
+    ProfileRegistry[] loaded = new ProfileRegistry[1];
+    List<String> errors = captureByLevel(Level.ERROR, () -> loaded[0] = loader().loadAll());
+
+    assertThat(loaded[0].all()).hasSize(2);
+    assertThat(loaded[0].exists("good-a")).isTrue();
+    assertThat(loaded[0].exists("good-b")).isTrue();
+    assertThat(errors).anyMatch(line -> line.contains("missing-file") && line.contains("AGENT.md"));
+    assertThat(errors).anyMatch(line -> line.contains("broken-yaml") && line.contains("YAML"));
+    assertThat(errors)
+        .anyMatch(line -> line.contains("dir-mismatch") && line.contains("other-name"));
+    assertThat(errors)
+        .anyMatch(line -> line.contains("unregistered-provider") && line.contains("kimi"));
+  }
+
+  @Test
   @DisplayName("解析_未登记provider报错点名provider与Agent")
   void deriveProfile_unknownProvider_reportsProviderAndAgent() {
     String markdown = agentMarkdown("ops-agent", "kimi", "kimi-k2");
@@ -203,5 +242,75 @@ class AgentLoaderTest {
     ProfileRegistry registry = loader.loadAll();
 
     assertThat(registry.all()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("加载_tools 含未注册能力时告警但该 Agent 仍完成登记")
+  void loadAll_unknownTool_warnsButStillRegisters() throws IOException {
+    writeAgent(
+        "ops-agent",
+        """
+        ---
+        name: ops-agent
+        provider:
+          name: deepseek
+          model: deepseek-chat
+        tools: [read_file, ghost_tool]
+        ---
+
+        正文
+        """);
+    AgentLoader loader = new AgentLoader(agentsDir, KNOWN_PROVIDERS, Set.of("read_file", "shell"));
+
+    ProfileRegistry[] loaded = new ProfileRegistry[1];
+    List<String> warnings = captureWarnings(() -> loaded[0] = loader.loadAll());
+
+    assertThat(loaded[0].exists("ops-agent")).as("未注册工具不得导致 Agent 被丢弃").isTrue();
+    assertThat(warnings)
+        .anyMatch(line -> line.contains("ghost_tool") && line.contains("ops-agent"));
+  }
+
+  @Test
+  @DisplayName("加载_tools 全部已注册时不留告警")
+  void loadAll_allToolsKnown_noWarning() throws IOException {
+    writeAgent(
+        "clean-agent",
+        """
+        ---
+        name: clean-agent
+        provider:
+          name: deepseek
+          model: deepseek-chat
+        tools: [read_file, shell]
+        ---
+
+        正文
+        """);
+    AgentLoader loader = new AgentLoader(agentsDir, KNOWN_PROVIDERS, Set.of("read_file", "shell"));
+
+    List<String> warnings = captureWarnings(loader::loadAll);
+
+    assertThat(warnings).noneMatch(line -> line.contains("未注册的能力"));
+  }
+
+  /** 捕获一次调用期间 AgentLoader 的 WARN 文案；与 AgentSchedulerTest 用同一套 ListAppender 手法。 */
+  private static List<String> captureWarnings(Runnable action) {
+    return captureByLevel(Level.WARN, action);
+  }
+
+  private static List<String> captureByLevel(Level level, Runnable action) {
+    Logger logger = (Logger) LoggerFactory.getLogger(AgentLoader.class);
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+    logger.addAppender(appender);
+    try {
+      action.run();
+    } finally {
+      logger.detachAppender(appender);
+    }
+    return appender.list.stream()
+        .filter(event -> event.getLevel() == level)
+        .map(ILoggingEvent::getFormattedMessage)
+        .toList();
   }
 }

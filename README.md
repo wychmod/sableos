@@ -54,6 +54,26 @@ SableOS 一次拆掉这四道门槛：自然语言定义、私有部署、全链
 - **跨对话记忆**：会话加长期两层记忆，长期记忆后端可插拔（Markdown / SQLite / Mem0），让 Agent 记得住偏好与关键事实
 - **无状态可扩展**：运行实例无状态、状态外置，从架构起为分布式演进留好路
 
+## Agent 与 Skill：差一个层级
+
+Agent 目录借了 Anthropic Agent Skills 的形态，但**Agent 与 Skill 不是同一个东西的两种叫法，而是差了一个层级：Claude 的 Skill 是"库"，SableOS 的 Agent 是"服务"。**
+
+- **库**：被调用才活，活在调用者的进程里，共享调用者的内存、权限、生命周期。换掉一个库，宿主还是宿主。
+- **服务**：自己启动，自带配置、自带日志、自带定时器、自带崩溃边界。停掉一个服务，别的照跑。
+
+![Claude 的多个 Skill 嵌套在唯一执行者之内；SableOS 的多个 Agent 并列于共享底座之上](docs/images/docs-agent-vs-skill.svg)
+
+Claude 生态里真正的对标物不是 Skill 而是 Subagent。**SableOS Agent ≈ Claude Subagent + 自己的定时器 + 自己的通知对象 + 自己的审计账 + 多厂商模型。**
+
+| 差异 | Claude Skill | SableOS Agent |
+| --- | --- | --- |
+| 谁让它跑 | 模型判断"相关"才加载，没有独立的一次运行 | cron / HTTP / CLI 硬触发，一次触发就是一次可追踪的 run |
+| 上下文 | 与宿主同一份上下文，叠几个就互相挤占 | 独立 session 与 memory，一个崩了不传染别的 |
+| 复用 | 天生为跨项目复用与分发设计 | 每个 Agent 独立自足，本版明确不做跨 Agent 能力复用 |
+| frontmatter | `name` + `description`，给"路由"用 | 另加 `schedules`、`tools`、`provider`，给"运维"用（通知渠道走全局注册表，正文按名引用，不进 frontmatter） |
+
+一句话：**Skill 回答"我能做什么"，Agent 回答"我是谁、什么时候该干活、干完通知谁、出了事找谁"。** 前者是能力问题，后者是责任问题——这也是它叫 Agent OS 而不是叫 Skill 的原因。
+
 ## 架构
 
 技术栈一句话：**JDK 21 + Spring Boot 3.x + Spring AI Alibaba + 自实现 ReAct loop + SQLite + Picocli**。一次消息的处理链路分四层：

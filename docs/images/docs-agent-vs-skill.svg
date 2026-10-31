@@ -1,0 +1,32 @@
+<svg viewBox="0 0 820 376" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <rect width="820" height="376" fill="#ffffff"/>
+  <text x="60" y="46" fill="#1d4ed8" font-size="15" font-weight="bold">Claude：一个执行者，多个 Skill</text>
+  <text x="420" y="46" fill="#15803d" font-size="15" font-weight="bold">SableOS：多个 Agent 并列于底座</text>
+
+  <rect x="60" y="66" width="340" height="238" rx="14" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.6"/>
+  <rect x="76" y="86" width="308" height="44" rx="8" fill="#bfdbfe" stroke="#3b82f6" stroke-width="1.6"/>
+  <text x="230" y="114" fill="#1e3a8a" font-size="14" font-weight="bold" text-anchor="middle">Claude（唯一执行者）</text>
+  <rect x="76" y="144" width="308" height="40" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.4"/>
+  <text x="92" y="170" fill="#1d4ed8" font-size="13">Skill A · 一项能力</text>
+  <rect x="76" y="190" width="308" height="40" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.4"/>
+  <text x="92" y="216" fill="#1d4ed8" font-size="13">Skill B · 一项能力</text>
+  <rect x="76" y="236" width="308" height="40" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.4"/>
+  <text x="92" y="262" fill="#1d4ed8" font-size="13">Skill C · 一项能力</text>
+
+  <rect x="420" y="66" width="340" height="238" rx="14" fill="#f0fdf4" stroke="#86efac" stroke-width="1.6"/>
+  <rect x="436" y="86" width="308" height="40" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.4"/>
+  <text x="452" y="112" fill="#166534" font-size="13">Agent A</text>
+  <text x="728" y="112" fill="#15803d" font-size="12" text-anchor="end">cron 09:00</text>
+  <rect x="436" y="134" width="308" height="40" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.4"/>
+  <text x="452" y="160" fill="#166534" font-size="13">Agent B</text>
+  <text x="728" y="160" fill="#15803d" font-size="12" text-anchor="end">手动触发</text>
+  <rect x="436" y="182" width="308" height="40" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.4"/>
+  <text x="452" y="208" fill="#166534" font-size="13">Agent C</text>
+  <text x="728" y="208" fill="#15803d" font-size="12" text-anchor="end">每小时</text>
+  <rect x="436" y="242" width="308" height="40" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.6"/>
+  <text x="590" y="268" fill="#14532d" font-size="12" font-weight="bold" text-anchor="middle">共享底座 · Tool / Memory / Sandbox / ReAct</text>
+
+  <text x="60" y="334" fill="#64748b" font-size="13">加载即进同一份上下文，共享模型与权限</text>
+  <text x="420" y="334" fill="#64748b" font-size="13">各自会话与模型，卸掉一个不影响别的</text>
+  <text x="410" y="362" fill="#3f3f46" font-size="13" text-anchor="middle">库被调用才活；服务自己启动，自带配置、日志、定时器与崩溃边界。</text>
+</svg>

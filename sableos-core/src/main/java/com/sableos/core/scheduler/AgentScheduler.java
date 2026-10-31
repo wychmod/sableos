@@ -62,6 +62,7 @@ public final class AgentScheduler {
   private final ConcurrentMap<TaskKey, Lock> taskLocks = new ConcurrentHashMap<>();
   private final ConcurrentMap<String, Lock> sessionLocks = new ConcurrentHashMap<>();
   private final ConcurrentMap<Long, RegisteredTask> registeredTasks = new ConcurrentHashMap<>();
+  private final ConcurrentMap<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
 
   /**
    * @param taskScheduler 触发调度器（装配层提供 {@code ThreadPoolTaskScheduler}）
@@ -106,11 +107,41 @@ public final class AgentScheduler {
     Set<TaskKey> configured = new HashSet<>();
     Instant now = Instant.now();
     for (Profile profile : profileRegistry.all()) {
-      for (Profile.ScheduleConfig schedule : profile.schedules()) {
-        registerOne(profile, schedule, now, configured);
-      }
+      registerProfile(profile, now, configured);
     }
     retireMissing(configured);
+  }
+
+  /**
+   * 登记单个 Agent 的全部定时（第 29 节：启动扫描与运行时新增共用同一入口）。
+   *
+   * <p>单条配置非法只跳过该条、不向调用方抛异常。重复登记同一任务时，{@code reconcile} 复用同一 {@code scheduleId}，
+   * 旧句柄在此被取消，不会出现同一任务两路同时触发（FR-009）。
+   *
+   * <p>注意本方法不执行退役对账——退役依赖「本次配置的完整集合」，那是 {@link #registerAll()} 的职责。
+   *
+   * @param profile 要登记的 Agent
+   */
+  public void registerProfile(Profile profile) {
+    registerProfile(profile, Instant.now(), new HashSet<>());
+  }
+
+  private void registerProfile(Profile profile, Instant now, Set<TaskKey> configured) {
+    for (Profile.ScheduleConfig schedule : profile.schedules()) {
+      registerOne(profile, schedule, now, configured);
+    }
+  }
+
+  /**
+   * 某定时当前是否持有调度句柄。
+   *
+   * <p>供第 30 节的注销前确认与 harness 断言使用；只读，不触发任何调度动作。
+   *
+   * @param scheduleId 任务标识
+   * @return 存在句柄返回 true
+   */
+  public boolean hasScheduledTask(long scheduleId) {
+    return scheduledTasks.containsKey(scheduleId);
   }
 
   private void registerOne(
@@ -143,6 +174,14 @@ public final class AgentScheduler {
               trigger);
       registeredTasks.put(
           stored.scheduleId(), new RegisteredTask(profile, schedule, stored.scheduleId(), future));
+      // 重复登记同一任务：reconcile 复用同一 scheduleId，旧句柄必须取消，否则同一时点会双跑。
+      // cancel(false) 不中断正在执行的那一次，只阻止后续触发。
+      if (future != null) {
+        ScheduledFuture<?> previous = scheduledTasks.put(stored.scheduleId(), future);
+        if (previous != null && previous != future) {
+          previous.cancel(false);
+        }
+      }
       configured.add(new TaskKey(profile.name(), taskId));
       LOG.info(
           "定时任务已注册：profile={} id={} scheduleId={} cron={} zone={}",
@@ -171,6 +210,7 @@ public final class AgentScheduler {
           if (removed != null && removed.future() != null) {
             removed.future().cancel(false);
           }
+          scheduledTasks.remove(task.scheduleId());
           LOG.info(
               "定时任务已退役（配置中不再出现）：profile={} id={} scheduleId={}",
               safe(task.profileName()),

@@ -7,6 +7,7 @@ import com.sableos.core.react.ReActLoop;
 import com.sableos.core.session.Session;
 import com.sableos.core.session.SessionStore;
 import com.sableos.core.trace.TraceContext;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * 统一处理入口（FR-011）：三种触发源（CLI / Web / 定时）复用同一入口。
@@ -23,6 +24,19 @@ public final class AgentService {
   private final ReActLoop reActLoop;
   private final SessionStore sessionStore;
 
+  /**
+   * 第 29 节起 {@code ProfileRegistry} 支持运行期 {@code remove}，SpotBugs 据此把它判为可变类型， 于是「构造器持有它」被报
+   * EI_EXPOSE_REP2。
+   *
+   * <p>确认误报：注册表是依赖注入的协作者，本类无任何返回它的 getter、也不对外暴露其内部集合；
+   * 共享同一份注册表正是本节的设计目标（启动扫描与运行期新增走同一索引）。撤销条件：一旦本类新增 暴露该字段的 getter 或 public 字段，须重新评估。
+   */
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP2",
+      justification =
+          "确认误报：ProfileRegistry 是注入的协作者引用，本类不暴露它也不返回其内部集合；"
+              + "共享同一份注册表是第 29 节「启动扫描与运行期新增走同一索引」的设计要求。"
+              + "撤销条件：新增暴露该字段的 getter 或 public 字段。")
   public AgentService(
       ProfileRegistry profileRegistry, ReActLoop reActLoop, SessionStore sessionStore) {
     this.profileRegistry = profileRegistry;
