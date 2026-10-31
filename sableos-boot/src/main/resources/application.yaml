@@ -38,9 +38,11 @@ spring:
 server:
   port: 8080
 
-# 工作区根（默认工作目录下 .sableos/；环境变量 WORKSPACE_ROOT 可覆盖）
+# 工作区根（默认工作目录下 .sableos/）
+# 27 节：支持系统属性 sableos.root 覆盖（java -Dsableos.root=/tmp/ws ...），
+# 供整机测试与多工作区演示把 SQLite / agents / memory 一起指向临时目录。
 workspace:
-  root: .sableos
+  root: ${sableos.root:.sableos}
 
 # --- Sandbox 白名单（契约 §3）---
 # 三个核心键各自独立；**空列表 = 该类全部拒绝（deny-all）**，不是"不校验"。
@@ -124,9 +126,16 @@ sableos:
   providers: []
   # 声明示例（按需启用）：
   #  - name: deepseek            # Profile 按此名引用
-  #    type: openai              # openai | dashscope，缺省 openai
+  #    type: openai              # openai | dashscope | mock，缺省 openai
   #    api-key: ${DEEPSEEK_API_KEY:}
   #    base-url: https://api.deepseek.com
+  #
+  # 27 节：无 key 全链路自测 provider（不连模型、不耗 token）。
+  # 配一个 provider.name=mock 的 Agent（如 .sableos/agents/mock-agent/AGENT.md）即可走通
+  # ReAct → save_memory → MEMORY.md → sessions / llm_calls / tool_invocations 全链路。
+  #  - name: mock
+  #    type: mock
+  #    model: mock-model          # model 在 Agent 的 provider 段里声明，此处无 key/base-url
 
 # --- OpenAPI / Swagger UI（springdoc）---
 # swagger-ui webjar 由父 POM 覆盖到修补版；此处必须显式声明同一版本：

@@ -6,6 +6,7 @@ import com.sableos.provider.ProvidersProperties;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,12 +15,14 @@ import org.springframework.context.annotation.Configuration;
 public class AgentConfiguration {
 
   @Bean
-  public AgentLoader agentLoader(ProvidersProperties providersProperties) {
+  public AgentLoader agentLoader(
+      ProvidersProperties providersProperties,
+      @Value("${workspace.root:.sableos}") String workspaceRoot) {
     Set<String> knownProviders =
         providersProperties.providers().stream()
             .map(ProvidersProperties.Provider::name)
             .collect(Collectors.toSet());
-    return new AgentLoader(Path.of(".sableos", "agents"), knownProviders);
+    return new AgentLoader(Path.of(workspaceRoot, "agents"), knownProviders);
   }
 
   @Bean
