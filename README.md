@@ -88,7 +88,7 @@ Claude 生态里真正的对标物不是 Skill 而是 Subagent。**SableOS Agent
 | ReAct 循环 | 自实现的推理引擎：LLM 决定调不调工具、调哪个，执行后回填结果继续推理，直到给出最终响应或达到最大迭代次数（默认 10） |
 | Memory 记忆 | 统一门面提供会话记忆与长期记忆；长期记忆默认落 `.sableos/memory/MEMORY.md`，后端可插拔（Markdown / SQLite / 自托管 Mem0） |
 | Tool 体系 | 九个内置 Tool（文件、Shell、HTTP、记忆、通知五组）加 Plugin Tool 三档接入；MCP Client 对接外部工具；文件、Shell、HTTP 与通知类调用经 `Sandbox` 白名单校验，全部调用落 `tool_invocations` 审计 |
-| Web Service | 所有能力经 REST API 对外暴露，核心阶段 11 个端点；业务系统用任何语言经 HTTP 接入，`/admin` 管理台与接口同进程托管 |
+| Web Service | 所有能力经 REST API 对外暴露，核心阶段 11 个端点 + 第 30 节 14 个 Agent 管理端点；业务系统用任何语言经 HTTP 接入，`/admin` 管理台与接口同进程托管 |
 
 > 引擎与能力之间、能力与外部之间都通过抽象接口解耦：扩展阶段加新 Channel、新 Provider、新 Tool 只需在边缘扩展，不动核心引擎。
 
@@ -179,7 +179,7 @@ Skill 绑定通过 Agent 目录下 `skills/` 的相对软连接表达，不写�
 
 ## REST API
 
-`sableos serve` 默认在 `8080` 暴露 `/api/v1`，核心阶段 11 个端点：
+`sableos serve` 默认在 `8080` 暴露 `/api/v1`，核心阶段 11 个端点
 
 | 资源 | 端点 | 说明 |
 | --- | --- | --- |
@@ -189,10 +189,23 @@ Skill 绑定通过 Agent 目录下 `skills/` 的相对软连接表达，不写�
 | 会话管理 | `GET /api/v1/sessions/{id}` | 查历史 |
 | 会话管理 | `DELETE /api/v1/sessions/{id}` | 归档会话 |
 | Agent 调用 | `POST /api/v1/agents/{name}/invoke` | 无状态调用 |
-| 信息查询 | `GET /api/v1/profiles`、`GET /api/v1/memory`、`GET /api/v1/tools` | Profile / 长期记忆 / 工具清单 |
+| 信息查询 | `GET /api/v1/profiles`、`GET /api/v1/tools` | Profile / 工具清单 |
+| 记忆查询 | `GET /api/v1/agents/{name}/memory` | 该 Agent 的专属记忆（第 30 节；原全局 `GET /api/v1/memory` 已移除） |
 | 系统状态 | `GET /api/v1/health`、`GET /api/v1/info` | 健康检查 / 运行信息 |
 
-除上述 11 个核心端点外，第 28 节另有两组管理面（不计入 11 的计数）：
+第 30 节补齐 Agent 管理面（14 个端点，含创建/查询/更新/删除、一句话生成、固定会话、记忆查询与工作区文件读写）：
+
+| 资源 | 端点 | 说明 |
+| --- | --- | --- |
+| Agent 管理 | `POST /api/v1/agents` | 创建（name + description，按模板脚手架出完整目录，失败回滚） |
+| Agent 管理 | `GET /api/v1/agents`、`GET /api/v1/agents/{name}` | 列表 / 详情（含该目录文件树） |
+| Agent 管理 | `PUT /api/v1/agents/{name}`、`DELETE /api/v1/agents/{name}` | 覆写 AGENT.md / 删除（注销定时 → 移出索引 → 归档） |
+| Agent 生成 | `POST /api/v1/agents/{name}/generate-files` | 一句话生成文件草稿（不落盘；需 `sableos.author.model`，未配置返回 503） |
+| Agent 文件 | `POST /api/v1/agents/{name}/files` | 保存一组文件、写入即生效 |
+| 固定会话 | `GET /api/v1/agents/{name}/session`、`POST /api/v1/agents/{name}/session/messages` | 管理台与该 Agent 的固定会话 |
+| 工作区 | `GET /api/v1/workspace/tree`、`GET/POST /api/v1/workspace/file` | 目录树 / 读 / 写（只放行 `agents/` 与 `archive/`，越界 400） |
+
+除上述核心端点外，第 28 节另有两组管理面（不计入核心端点计数）：
 
 | 资源 | 端点 | 说明 |
 | --- | --- | --- |
