@@ -34,6 +34,12 @@ public class AgentApiController {
   private final ProfileRegistry profileRegistry;
   private final AgentCallExecutor agentCallExecutor;
 
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP2",
+      justification =
+          "确认误报：ProfileRegistry 自第 29 节起支持运行期 remove，SpotBugs 因而把它判为可变类型；"
+              + "本类只把它当依赖注入的协作者查询使用，无返回它的 getter，也不暴露其内部集合。"
+              + "撤销条件：一旦新增暴露该字段的 getter 或 public 字段，须重新评估。")
   public AgentApiController(
       SessionManager sessionManager,
       ProfileRegistry profileRegistry,

@@ -35,14 +35,25 @@ public class AgentLoader {
 
   private final Path agentsDir;
   private final Set<String> knownProviders;
+  private final Set<String> knownTools;
 
   /**
    * @param agentsDir Agent 目录根（其下每个子目录一个 Agent）
    * @param knownProviders 实例清单中已登记的 provider 名集合（来自 sableos.providers）
    */
   public AgentLoader(Path agentsDir, Set<String> knownProviders) {
+    this(agentsDir, knownProviders, Set.of());
+  }
+
+  /**
+   * @param agentsDir Agent 目录根（其下每个子目录一个 Agent）
+   * @param knownProviders 实例清单中已登记的 provider 名集合（来自 sableos.providers）
+   * @param knownTools 已注册的工具名集合（来自 {@code ToolRegistry}）；仅用于告警，未命中不拒绝该 Agent
+   */
+  public AgentLoader(Path agentsDir, Set<String> knownProviders, Set<String> knownTools) {
     this.agentsDir = agentsDir;
     this.knownProviders = Set.copyOf(knownProviders);
+    this.knownTools = Set.copyOf(knownTools);
   }
 
   /**
@@ -82,12 +93,40 @@ public class AgentLoader {
   }
 
   private Profile loadAgent(Path agentDir) throws IOException {
+    return deriveProfile(agentDir);
+  }
+
+  /**
+   * 按目录派生 Profile：读 {@code <agentDir>/AGENT.md}，以目录名参与 name 一致性校验。
+   *
+   * <p>运行时登记（第 30 节 API / 文件监听）必须走本入口，才能与启动扫描抛出同一异常与同一消息。
+   *
+   * @param agentDir Agent 目录（其名即 Agent 名）
+   * @return 派生出的运行配置
+   * @throws IOException 主定义文件缺失或不可读
+   * @throws IllegalArgumentException 结构或引用违规（消息点名原因）
+   */
+  public Profile deriveProfile(Path agentDir) throws IOException {
     Path agentFile = agentDir.resolve(AGENT_FILE_NAME);
     if (!Files.isRegularFile(agentFile)) {
       throw new IllegalArgumentException("目录下缺少 " + AGENT_FILE_NAME);
     }
     String markdown = Files.readString(agentFile, StandardCharsets.UTF_8);
-    return deriveProfile(dirName(agentDir), markdown);
+    Profile profile = deriveProfile(dirName(agentDir), markdown);
+    warnUnknownTools(profile);
+    return profile;
+  }
+
+  /** 未注册工具只告警、不拒绝该 Agent：工具可能由 MCP 在 Agent 加载之后才注册， 丢弃整个 Agent 会造成「工具到齐了但 Agent 没了」的误伤（FR-005）。 */
+  private void warnUnknownTools(Profile profile) {
+    if (knownTools.isEmpty()) {
+      return;
+    }
+    for (String tool : profile.tools()) {
+      if (!knownTools.contains(tool)) {
+        LOG.warn("Agent 引用了未注册的能力，仍完成登记：name={} tool={}", safe(profile.name()), safe(tool));
+      }
+    }
   }
 
   private static String dirName(Path dir) {
