@@ -186,6 +186,12 @@ public class AgentLifecycleService {
     }
   }
 
+  @SuppressFBWarnings(
+      value = "CRLF_INJECTION_LOGS",
+      justification =
+          "确认误报：进入日志模板的动态值只有 safe(String.valueOf(agentDir)) 与 safe(cleanup.getMessage())，"
+              + "都经 replaceAll(\"[\\r\\n]\", \"_\") 移除了 CR/LF；末尾的 Throwable 只用于渲染堆栈、不参与 {} 插值。"
+              + "撤销条件：改为把异常对象以外的未净化字符串拼进日志。")
   private void rollbackCreated(Path agentDir) {
     try {
       agentStore.delete(agentDir);
