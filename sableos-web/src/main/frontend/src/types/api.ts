@@ -83,3 +83,32 @@ export interface MemoryView {
   profile: string
   content: string
 }
+
+export type ScheduleLastStatus = 'success' | 'failed' | null
+
+export interface ScheduleView {
+  scheduleId: number
+  profileName: string
+  scheduleKey: string
+  displayName: string
+  cron: string
+  zone: string
+  message: string
+  enabled: boolean
+  retired: boolean
+  nextRunAt: string | null
+  lastRunAt: string | null
+  lastStatus: ScheduleLastStatus
+  runCount: number
+  updatedAt: string
+}
+
+export interface ScheduleExecution {
+  id: number
+  scheduleId: number | null
+  sessionId: string
+  startedAt: string
+  success: boolean
+  errorMessage: string | null
+  durationMs: number
+}

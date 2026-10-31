@@ -1,10 +1,12 @@
-import { request } from './client'
+import { API_BASE_V2, request } from './client'
 import type {
   CreateSessionPayload,
   HealthView,
   MemoryView,
   ProfileView,
   ReplyView,
+  ScheduleExecution,
+  ScheduleView,
   SessionSummary,
   SessionView,
   SystemInfo,
@@ -84,5 +86,38 @@ export function getHealth(): Promise<HealthView> {
 export function getInfo(): Promise<SystemInfo> {
   return request<SystemInfo>('/info', {
     timeoutMs: 20_000,
+  })
+}
+
+const schedulePath = (id: number) => `/schedules/${id}`
+
+export function listSchedules(): Promise<ScheduleView[]> {
+  return request<ScheduleView[]>('/schedules', {
+    base: API_BASE_V2,
+    timeoutMs: 15_000,
+  })
+}
+
+export function listScheduleExecutions(id: number): Promise<ScheduleExecution[]> {
+  return request<ScheduleExecution[]>(`${schedulePath(id)}/executions`, {
+    base: API_BASE_V2,
+    timeoutMs: 15_000,
+  })
+}
+
+export function runSchedule(id: number): Promise<ScheduleExecution> {
+  return request<ScheduleExecution>(`${schedulePath(id)}/run`, {
+    method: 'POST',
+    base: API_BASE_V2,
+    timeoutMs: 120_000,
+  })
+}
+
+export function setScheduleEnabled(id: number, enabled: boolean): Promise<ScheduleView> {
+  return request<ScheduleView>(schedulePath(id), {
+    method: 'PUT',
+    body: { enabled },
+    base: API_BASE_V2,
+    timeoutMs: 15_000,
   })
 }

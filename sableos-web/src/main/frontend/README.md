@@ -1,9 +1,9 @@
 # SableOS 管理台（Admin Console）
 
-SableOS 的控制面前端：只读为主 + 会话轻交互的管理台。所有业务数据都来自后端 11 个 REST 端点，前端不内置 mock 数据，也不提供后端尚未实现的能力入口。
+SableOS 的控制面前端：只读为主 + 会话 / 定时任务轻交互的管理台。所有业务数据都来自后端 REST 端点（核心 11 个 v1 端点 + 第 28 节的 v2 定时任务管理面），前端不内置 mock 数据，也不提供后端尚未实现的能力入口。
 
 - 技术栈：Vue 3 + Vite + TypeScript（`strict`）+ vue-router
-- 页面：总览、会话、Agents、工具、记忆
+- 页面：总览、会话、Agents、定时任务、工具、记忆
 - 构建基址：`/admin/`
 - 产物目录：`sableos-web/src/main/resources/static/admin/`
 
@@ -46,11 +46,11 @@ npm run build
 
 ```text
 src/
-  api/          client.ts（统一信封解析 / 超时 / ApiError）、endpoints.ts（11 个端点）
+  api/          client.ts（统一信封解析 / 超时 / ApiError / v2 base）、endpoints.ts（核心 v1 + 定时任务 v2）
   components/   布局、图标、状态徽标、骨架屏、对话框、诊断抽屉等共享组件
   composables/  Agent 清单、系统状态、全局刷新、Toast / 诊断状态
-  pages/        5 个路由页面
-  router/       vue-router 5 条路由
+  pages/        6 个路由页面
+  router/       vue-router 6 条路由
   styles/       设计 token 与全局样式（颜色、字号、间距、动效、表单、状态）
   types/        后端契约的 TypeScript 类型
   utils/        时间格式化、剪贴板
@@ -74,6 +74,17 @@ src/
 | GET | `/health` | 存活检查 | 全局 / 总览 |
 | GET | `/info` | 系统信息与 Provider 连通状态 | 全局 / 总览 |
 
+第 28 节的定时任务管理走 v2 前缀（`API_BASE_V2`，默认 `/api/v2`），管理台只调用 v2：
+
+| 方法 | 路径 | 用途 | 页面 |
+| --- | --- | --- | --- |
+| GET | `/schedules` | 列出活动定时任务 | 定时任务 |
+| GET | `/schedules/{scheduleId}/executions` | 某任务的执行历史 | 定时任务 |
+| POST | `/schedules/{scheduleId}/run` | 立即执行一次 | 定时任务 |
+| PUT | `/schedules/{scheduleId}` | 启用 / 停用 | 定时任务 |
+
+通知渠道由 `/api/v1/notify-channels` REST 管理，管理台暂不提供单独页面。
+
 约定与实现细节：
 
 - 会话 id 形如 `web:alice:default`，进入路径参数前统一 `encodeURIComponent`。
@@ -90,7 +101,8 @@ src/
 - 会话分页 / 服务端搜索（列表走 `GET /sessions` 最近 100 条摘要，本地仍保留 localStorage 最近 8 条用于「是否复用」判断）
 - 长期记忆的写入、编辑、清空、检索
 - Agent 的新增、修改、删除、文件上传
-- 定时任务 / schedules
+- 通过 API 增删改定时任务的 cron 定义（定义仍写在 `AGENT.md`；页面只管理运行状态与执行）
+- 通知渠道管理台页面（先以 `/api/v1/notify-channels` REST 管理）
 - 登录、注册、API Key、JWT、RBAC、多租户
 - SSE / WebSocket / 流式输出
 - Prometheus 指标、审计查询、Token 统计
