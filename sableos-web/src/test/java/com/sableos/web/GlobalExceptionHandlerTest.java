@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sableos.core.provider.ProviderFailureException;
 import com.sableos.core.sandbox.WhitelistDuplicateException;
 import com.sableos.core.sandbox.WhitelistEntryNotFoundException;
 import com.sableos.core.sandbox.WhitelistType;
@@ -99,6 +100,16 @@ class GlobalExceptionHandlerTest {
         .andExpect(status().isServiceUnavailable())
         .andExpect(jsonPath("$.code").value(503))
         .andExpect(jsonPath("$.message").value("provider deepseek 连接失败"));
+  }
+
+  @Test
+  @DisplayName("提供方调用失败_映射503且不回显原始异常细节")
+  void providerFailureMaps503WithoutLeakingDetails() throws Exception {
+    mvc.perform(get("/throw/provider-failure"))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(jsonPath("$.code").value(503))
+        .andExpect(jsonPath("$.message").value("模型提供方调用失败"))
+        .andExpect(content().string(not(containsString("jdbc:sqlite"))));
   }
 
   @Test
@@ -223,6 +234,12 @@ class GlobalExceptionHandlerTest {
     @GetMapping("/throw/provider")
     void provider() {
       throw new ProviderUnavailableException("provider deepseek 连接失败");
+    }
+
+    @GetMapping("/throw/provider-failure")
+    void providerFailure() {
+      throw new ProviderFailureException(
+          "模型提供方调用失败: jdbc:sqlite:/data/sableos.db connect failed", null);
     }
 
     @GetMapping("/throw/timeout")

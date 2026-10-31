@@ -1,5 +1,6 @@
 package com.sableos.web;
 
+import com.sableos.core.provider.ProviderFailureException;
 import com.sableos.core.sandbox.WhitelistDuplicateException;
 import com.sableos.core.sandbox.WhitelistEntryNotFoundException;
 import com.sableos.core.sandbox.WhitelistValidationException;
@@ -102,6 +103,18 @@ public class GlobalExceptionHandler {
       ProviderUnavailableException ex) {
     LOG.error("Provider unavailable: {}", sanitize(ex.getMessage()));
     return error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+  }
+
+  /**
+   * 503 — 真实的提供方调用失败（26 节 {@link ProviderFailureException}）。
+   *
+   * <p>与上面的 {@link ProviderUnavailableException} 分开：那个类型的 message 由 Web 层自己构造、可安全回显；这个类型来自 provider
+   * 实现，message 可能含连接串 / 上游响应体，只进日志，对外固定通用话术。
+   */
+  @ExceptionHandler(ProviderFailureException.class)
+  public ResponseEntity<ApiResponse<Void>> handleProviderFailure(ProviderFailureException ex) {
+    LOG.error("Provider call failed", ex);
+    return error(HttpStatus.SERVICE_UNAVAILABLE, "模型提供方调用失败");
   }
 
   /** 504 — Agent 调用超过 60 秒上限。 */

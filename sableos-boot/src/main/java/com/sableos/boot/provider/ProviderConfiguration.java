@@ -1,7 +1,9 @@
 package com.sableos.boot.provider;
 
 import com.sableos.core.provider.LlmCallAuditor;
+import com.sableos.core.provider.ProviderHealthProbe;
 import com.sableos.core.provider.ProviderService;
+import com.sableos.provider.HttpProviderHealthProbe;
 import com.sableos.provider.ProviderChatModelFactory;
 import com.sableos.provider.ProvidersProperties;
 import com.sableos.provider.SpringAiProviderServiceImpl;
@@ -31,6 +33,12 @@ public class ProviderConfiguration {
   @Bean
   public LlmCallAuditor llmCallAuditor(LlmCallRepository llmCallRepository) {
     return new JpaLlmCallAuditor(llmCallRepository);
+  }
+
+  /** 26 节 /info 的实时连通探测：只做 HTTP 可达性判断，不调模型、不耗 token。 */
+  @Bean
+  public ProviderHealthProbe providerHealthProbe(ProvidersProperties providersProperties) {
+    return new HttpProviderHealthProbe(providersProperties);
   }
 
   @Bean

@@ -1,0 +1,85 @@
+:root {
+  color-scheme: dark;
+
+  --font-ui: Inter, "SF Pro Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+  --fs-28: 28px;
+  --fs-36: 36px;
+
+  --lh-16: 16px;
+  --lh-18: 18px;
+  --lh-20: 20px;
+  --lh-22: 22px;
+  --lh-24: 24px;
+  --lh-28: 28px;
+  --lh-32: 32px;
+  --lh-40: 40px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-pill: 999px;
+
+  --bg: #000000;
+  --bg-sidebar: #070707;
+  --bg-topbar: #050505;
+  --panel: #0d0d0d;
+  --panel-raised: #111111;
+  --panel-soft: #151515;
+  --hover: #1a1a1a;
+  --border: #222222;
+  --border-strong: #333333;
+  --border-subtle: #171717;
+
+  --text: #f5f5f5;
+  --text-secondary: #a3a3a3;
+  --text-muted: #8a8a8a;
+  --text-faint: #7c7c7c;
+
+  --accent: #f97316;
+  --accent-hover: #ea6a00;
+  --accent-pressed: #c2550a;
+  --accent-soft: rgba(249, 115, 22, 0.12);
+  --accent-border: rgba(249, 115, 22, 0.45);
+
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.11);
+  --failure: #ef4444;
+  --failure-soft: rgba(239, 68, 68, 0.11);
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.11);
+  --info: #93c5fd;
+  --info-soft: rgba(147, 197, 253, 0.1);
+
+  --nav-width: 232px;
+  --nav-width-compact: 72px;
+  --topbar-height: 64px;
+  --content-max: 1440px;
+
+  --duration-fast: 120ms;
+  --duration-base: 160ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+
+  --focus-ring: 0 0 0 1px var(--accent), 0 0 0 4px rgba(249, 115, 22, 0.2);
+  --shadow-overlay: 0 24px 80px rgba(0, 0, 0, 0.48);
+}

@@ -19,6 +19,12 @@
       <groupId>com.sableos</groupId>
       <artifactId>sableos-core</artifactId>
     </dependency>
+    <!-- 26 节：GET /api/v1/tools 需要列全部已注册工具（ToolRegistry.all()）。
+         tool 只依赖 core，web→tool→core 不成环；其余查询能力走 core 契约，不扩大依赖面。 -->
+    <dependency>
+      <groupId>com.sableos</groupId>
+      <artifactId>sableos-tool</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>

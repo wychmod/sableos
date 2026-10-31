@@ -3,6 +3,7 @@ package com.sableos.provider;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.sableos.core.profile.Profile;
 import com.sableos.core.provider.LlmCallAuditor;
+import com.sableos.core.provider.ProviderFailureException;
 import com.sableos.core.provider.ProviderRequest;
 import com.sableos.core.provider.ProviderResponse;
 import com.sableos.core.provider.ProviderService;
@@ -24,8 +25,11 @@ import org.springframework.ai.tool.ToolCallback;
 /**
  * ProviderService 的 Spring AI 实现：显式路由 → 工具翻译（只翻译不执行）→ 单次调用 → 审计（成败两态）→ 原样返回。
  *
- * <p>审计编排：失败路径先落 {@code success=false} 再抛原异常（审计写失败不遮蔽原异常，addSuppressed）； 成功路径
+ * <p>审计编排：失败路径先落 {@code success=false} 再抛异常（审计写失败不遮蔽原异常，addSuppressed）； 成功路径
  * fail-open（审计写失败仅记日志，不改变业务结果）。
+ *
+ * <p>26 节起，模型调用失败统一包装为 core 的 {@link ProviderFailureException}：Web 层据此映射 503，同时保留原异常作为 {@code
+ * cause} 供日志排查；对外的通用话术由 Web 层决定，本层不假定。
  */
 public class SpringAiProviderServiceImpl implements ProviderService {
 
@@ -72,7 +76,8 @@ public class SpringAiProviderServiceImpl implements ProviderService {
             "失败路径审计写入失败：sessionId={} error={}", safe(sessionId), safe(auditError.getMessage()));
         callError.addSuppressed(auditError);
       }
-      throw callError;
+      // 包装而非原样上抛：Web 层不能依赖 provider 模块，core 异常是唯一可跨模块识别的 503 信号
+      throw new ProviderFailureException("模型提供方调用失败: " + callError.getMessage(), callError);
     }
 
     long durationMs = elapsedMs(startedAtNanos);
