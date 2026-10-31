@@ -3,9 +3,12 @@ package com.sableos.boot.scheduler;
 import com.sableos.core.agent.AgentService;
 import com.sableos.core.profile.ProfileRegistry;
 import com.sableos.core.scheduler.AgentScheduler;
+import com.sableos.core.scheduler.ScheduledTaskStore;
 import com.sableos.core.session.SessionManager;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 /**
@@ -36,13 +39,23 @@ public class SchedulerConfiguration {
 
   /**
    * @param agentTaskScheduler 本节专属调度器（显式具体类型，避免与 Boot 自动配置的 {@code taskScheduler} 按类型争用）
+   * @param agentCallExecutor 与 Web 入口共用的 Agent 调用执行器（虚拟线程）；定时执行同样受 60 秒上限约束
    */
   @Bean
   public AgentScheduler agentScheduler(
       ThreadPoolTaskScheduler agentTaskScheduler,
       ProfileRegistry profileRegistry,
       AgentService agentService,
-      SessionManager sessionManager) {
-    return new AgentScheduler(agentTaskScheduler, profileRegistry, agentService, sessionManager);
+      SessionManager sessionManager,
+      ScheduledTaskStore scheduledTaskStore,
+      @Qualifier("agentCallTaskExecutor") AsyncTaskExecutor agentCallExecutor) {
+    return new AgentScheduler(
+        agentTaskScheduler,
+        profileRegistry,
+        agentService,
+        sessionManager,
+        scheduledTaskStore,
+        agentCallExecutor,
+        AgentScheduler.CALL_TIMEOUT);
   }
 }
