@@ -12,6 +12,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.sableos.core.notify.NotifyChannelStore;
+import com.sableos.core.notify.NotifyChannelView;
 import com.sableos.core.profile.Profile;
 import com.sableos.core.profile.ProfileContext;
 import com.sableos.core.tool.ToolResult;
@@ -24,9 +26,12 @@ import com.sableos.tool.sandbox.Sandbox;
 import com.sableos.tool.sandbox.SandboxViolationException;
 import com.sableos.tool.sandbox.ShellSandboxProperties;
 import com.sableos.tool.sandbox.WhitelistSandbox;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -155,5 +160,104 @@ class NotifyToolsTest {
 
     assertThrows(SandboxViolationException.class, () -> guarded.execute(input("hello", "team")));
     verifyNoInteractions(adapter);
+  }
+
+  @Test
+  @DisplayName("28节_注册表缺省渠道取第一条")
+  void storeBacked_defaultChannel_usesFirstRegistered() {
+    InMemoryNotifyChannelStore store = new InMemoryNotifyChannelStore();
+    store.save(channel("first", "https://first.example.com/hook", 1));
+    store.save(channel("second", "https://second.example.com/hook", 2));
+    NotifyTools toolsFromStore = new NotifyTools(sandbox, adapter, store);
+    enterAgentContext();
+
+    ToolResult result = toolsFromStore.execute(input("hello", null));
+
+    assertTrue(result.success(), result.errorMessage());
+    verify(adapter)
+        .send(
+            eq(new NotifyTarget("webhook", Map.of("url", "https://first.example.com/hook"))),
+            eq("hello"));
+  }
+
+  @Test
+  @DisplayName("28节_注册表按名命中")
+  void storeBacked_namedChannel_resolvesByName() {
+    InMemoryNotifyChannelStore store = new InMemoryNotifyChannelStore();
+    store.save(channel("first", "https://first.example.com/hook", 1));
+    store.save(channel("second", "https://second.example.com/hook", 2));
+    NotifyTools toolsFromStore = new NotifyTools(sandbox, adapter, store);
+    enterAgentContext();
+
+    ToolResult result = toolsFromStore.execute(input("hello", "second"));
+
+    assertTrue(result.success(), result.errorMessage());
+    verify(adapter)
+        .send(
+            eq(new NotifyTarget("webhook", Map.of("url", "https://second.example.com/hook"))),
+            eq("hello"));
+  }
+
+  @Test
+  @DisplayName("28节_注册表为空_明确报错且零发送")
+  void storeBacked_emptyStore_failsWithoutSending() {
+    NotifyTools toolsFromStore =
+        new NotifyTools(sandbox, adapter, new InMemoryNotifyChannelStore());
+    enterAgentContext();
+
+    ToolResult result = toolsFromStore.execute(input("hello", null));
+
+    assertFalse(result.success());
+    assertTrue(result.errorMessage().contains("无已注册的通知渠道"), result.errorMessage());
+    verifyNoInteractions(sandbox, adapter);
+  }
+
+  @Test
+  @DisplayName("28节_渠道名未命中_明确报错且零发送")
+  void storeBacked_missingChannel_failsWithoutSending() {
+    InMemoryNotifyChannelStore store = new InMemoryNotifyChannelStore();
+    store.save(channel("first", "https://first.example.com/hook", 1));
+    NotifyTools toolsFromStore = new NotifyTools(sandbox, adapter, store);
+    enterAgentContext();
+
+    ToolResult result = toolsFromStore.execute(input("hello", "ghost"));
+
+    assertFalse(result.success());
+    assertTrue(result.errorMessage().contains("未找到通知渠道"), result.errorMessage());
+    verifyNoInteractions(sandbox, adapter);
+  }
+
+  private static NotifyChannelView channel(String name, String url, int order) {
+    Instant createdAt = Instant.parse("2026-10-31T00:00:00Z").plusSeconds(order);
+    return new NotifyChannelView(name, "webhook", url, null, Map.of(), createdAt, createdAt);
+  }
+
+  private static final class InMemoryNotifyChannelStore implements NotifyChannelStore {
+
+    private final List<NotifyChannelView> channels = new ArrayList<>();
+
+    @Override
+    public List<NotifyChannelView> list() {
+      return List.copyOf(channels);
+    }
+
+    @Override
+    public Optional<NotifyChannelView> find(String name) {
+      return channels.stream().filter(channel -> channel.name().equals(name)).findFirst();
+    }
+
+    @Override
+    public void save(NotifyChannelView channel) {
+      channels.removeIf(existing -> existing.name().equals(channel.name()));
+      channels.add(channel);
+      channels.sort(
+          java.util.Comparator.comparing(NotifyChannelView::createdAt)
+              .thenComparing(NotifyChannelView::name));
+    }
+
+    @Override
+    public boolean delete(String name) {
+      return channels.removeIf(channel -> channel.name().equals(name));
+    }
   }
 }
