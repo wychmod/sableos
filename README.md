@@ -68,7 +68,7 @@ SableOS 一次拆掉这四道门槛：自然语言定义、私有部署、全链
 | ReAct 循环 | 自实现的推理引擎：LLM 决定调不调工具、调哪个，执行后回填结果继续推理，直到给出最终响应或达到最大迭代次数（默认 10） |
 | Memory 记忆 | 统一门面提供会话记忆与长期记忆；长期记忆默认落 `.sableos/memory/MEMORY.md`，后端可插拔（Markdown / SQLite / 自托管 Mem0） |
 | Tool 体系 | 九个内置 Tool（文件、Shell、HTTP、记忆、通知五组）加 Plugin Tool 三档接入；MCP Client 对接外部工具；文件、Shell、HTTP 与通知类调用经 `Sandbox` 白名单校验，全部调用落 `tool_invocations` 审计 |
-| Web Service | 所有能力经 REST API 对外暴露，核心阶段 10 个端点；业务系统用任何语言经 HTTP 接入 |
+| Web Service | 所有能力经 REST API 对外暴露，核心阶段 11 个端点；业务系统用任何语言经 HTTP 接入，`/admin` 管理台与接口同进程托管 |
 
 > 引擎与能力之间、能力与外部之间都通过抽象接口解耦：扩展阶段加新 Channel、新 Provider、新 Tool 只需在边缘扩展，不动核心引擎。
 
@@ -156,6 +156,70 @@ Skill 绑定通过 Agent 目录下 `skills/` 的相对软连接表达，不写�
 | `sableos chat` | 交互对话 | 本地 CLI 交互 |
 | `sableos serve` | Web Service | 启动 REST API 服务，定时任务随之常驻调度 |
 | `sableos gateway` | 守护进程 | 同时挂载多个渠道 |
+
+## REST API
+
+`sableos serve` 默认在 `8080` 暴露 `/api/v1`，核心阶段 11 个端点：
+
+| 资源 | 端点 | 说明 |
+| --- | --- | --- |
+| 会话管理 | `POST /api/v1/sessions` | 创建会话 |
+| 会话管理 | `POST /api/v1/sessions/{id}/messages` | 发消息 |
+| 会话管理 | `GET /api/v1/sessions` | 列出会话（最近 100 条摘要，可选 `?status=active`） |
+| 会话管理 | `GET /api/v1/sessions/{id}` | 查历史 |
+| 会话管理 | `DELETE /api/v1/sessions/{id}` | 归档会话 |
+| Agent 调用 | `POST /api/v1/agents/{name}/invoke` | 无状态调用 |
+| 信息查询 | `GET /api/v1/profiles`、`GET /api/v1/memory`、`GET /api/v1/tools` | Profile / 长期记忆 / 工具清单 |
+| 系统状态 | `GET /api/v1/health`、`GET /api/v1/info` | 健康检查 / 运行信息 |
+
+管理台由同一个进程托管在 `/admin`，Swagger UI 在 `/swagger-ui`。端口取 `server.port`（默认 `8080`），环境变量 `SERVER_PORT` 可覆盖。
+
+### 构建管理台与启动
+
+管理台（Vue 3 + Vite）与 REST 接口是**同一个进程的两张脸**：`sableos serve` 起的那个 Spring 同时对外提供 `/api/v1/**` 和 `/admin/**`，不用起第二个进程。前端构建产物落在 `sableos-web/src/main/resources/static/admin/`，随 fat JAR 发布。
+
+```bash
+# 1. 构建管理台前端（产物写入 sableos-web/src/main/resources/static/admin/）
+cd sableos-web/src/main/frontend && npm ci && npm run build && cd -
+
+# 2. 打整包（fat JAR 里已含管理台静态资源）
+mvn clean package -DskipTests
+
+# 3. 启动：REST + 管理台 + Swagger UI 同一个 jar
+java -jar sableos-boot/target/sableos-boot-*.jar serve
+
+# 4. 验收三面
+curl localhost:8080/api/v1/health   # REST 通
+# 浏览器打开 http://localhost:8080/admin   管理台
+# 浏览器打开 http://localhost:8080/swagger-ui   接口文档
+```
+
+两条必须知道的约束：
+
+- **构建产物入库，构建链不在 Maven 里**：`static/admin/**` 是提交进仓库的构建结果，`sableos-web/pom.xml` 没有绑定 frontend 插件，`mvn package` 不会重新构建前端。**改完前端源码必须重跑第 1 步**，否则 jar 里仍是旧页面。
+- 开发调试可用 `cd sableos-web/src/main/frontend && npm run dev`（Vite 代理 `/api` 到 8080），但**发布形态是"一个 jar 托管一切"**，以第 1~3 步为准。`/admin/**` 未命中路径回落到 `index.html`，前端路由刷新子页面不会 404，`/api/v1/**` 不受影响。
+
+### 无 key 全链路自测（mock provider）
+
+不想消耗 API key 也能验证「想 → 查 → 答 → 记账」完整链路：
+
+1. 在 `sableos-boot/src/main/resources/application.yaml` 的 `sableos.providers` 下启用 `- name: mock` / `type: mock`；
+2. 新建 `.sableos/agents/mock-agent/AGENT.md`，声明 `provider.name: mock`、`tools: [save_memory]`；
+3. `mvn clean package -DskipTests` 后运行 `java -jar sableos-boot/target/sableos-boot-*.jar serve`；
+4. 用下面的命令走一遍（PowerShell / Git Bash 均可；含中文的 JSON 建议写成 UTF-8 文件后 `--data-binary @file`，避免终端编码把请求体打歪）：
+
+```bash
+B=http://localhost:8080/api/v1
+curl -s -X POST $B/sessions -H 'Content-Type: application/json' -d '{"profile":"mock-agent"}'
+curl -s -X POST $B/sessions/web:anonymous:mock-agent/messages \
+  -H 'Content-Type: application/json' -d '{"content":"记住：我喜欢美式咖啡"}'
+curl -s $B/sessions                          # 列表里出现这条会话，messageCount=4
+curl -s "$B/memory?profile=mock-agent"       # 查得到「美式咖啡」
+```
+
+再从管理台 `/admin` 的「会话」页核对同一条会话。
+
+mock 只替换「模型」这一环；ReAct、工具执行、长期记忆、会话与审计全部走真实实现。
 
 ## 文档
 

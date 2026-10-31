@@ -400,14 +400,15 @@ Web Service 是 SableOS 的对外完整门面，业务系统通过 REST API 接�
 
 **OpenAPI 文档模块。** 通过 `springdoc-openapi` 自动生成 OpenAPI 3.0 文档，暴露在 `/swagger-ui`。
 
-### 7.2 核心阶段 10 个端点
+### 7.2 核心阶段 11 个端点
 
-**会话管理（4 个）：**
+**会话管理（5 个）：**
 
 1. `POST /api/v1/sessions`（创建）
 2. `POST /api/v1/sessions/{id}/messages`（发消息）
-3. `GET /api/v1/sessions/{id}`（查历史）
-4. `DELETE /api/v1/sessions/{id}`（归档）
+3. `GET /api/v1/sessions`（列出会话，27 节补；按最后活跃时间倒序，默认最近 100 条摘要，可选 `?status=`）
+4. `GET /api/v1/sessions/{id}`（查历史）
+5. `DELETE /api/v1/sessions/{id}`（归档）
 
 **Agent 调用（1 个）：**
 

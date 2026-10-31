@@ -392,6 +392,7 @@ Web Service 是 SableOS 的对外完整门面，业务系统通过 REST API 接�
 | ------ | ------ | ------ |
 | 会话管理 | `POST /api/v1/sessions` | 创建会话 |
 | 会话管理 | `POST /api/v1/sessions/{id}/messages` | 发消息 |
+| 会话管理 | `GET /api/v1/sessions` | 列出会话（27 节补） |
 | 会话管理 | `GET /api/v1/sessions/{id}` | 查历史 |
 | 会话管理 | `DELETE /api/v1/sessions/{id}` | 归档会话 |
 | Agent 调用 | `POST /api/v1/agents/{name}/invoke` | 无状态调用 |
