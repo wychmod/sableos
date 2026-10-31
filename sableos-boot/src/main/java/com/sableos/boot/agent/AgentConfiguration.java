@@ -14,7 +14,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -100,10 +102,20 @@ public class AgentConfiguration {
    * 常驻靠主线程保活。
    *
    * <p>不用虚拟线程执行器：监听循环是「一次 run 永不返回」的长驻任务，与每请求一虚拟线程的模型不同类。
+   *
+   * <p>不用 {@code Executors.newSingleThreadExecutor}：P3C 的 {@code ThreadPoolCreationRule} 禁工厂方法（无界队列
+   * OOM 风险）。这里显式给参数——单线程 + {@link SynchronousQueue} 直接交接，队列容量恒为 0，不与「无界积压」同类；
+   * 全生命周期只提交一个任务（监听循环），此时队列有无容量无意义，用直接交接反而把「意外重复提交」变成 {@link
+   * java.util.concurrent.RejectedExecutionException} 立即失败，而不是静静排队永不执行。
    */
   @Bean(destroyMethod = "shutdown")
   public ExecutorService workspaceWatcherExecutor() {
-    return Executors.newSingleThreadExecutor(
+    return new ThreadPoolExecutor(
+        1,
+        1,
+        0L,
+        TimeUnit.MILLISECONDS,
+        new SynchronousQueue<>(),
         runnable -> {
           Thread thread = new Thread(runnable, "sableos-workspace-watcher");
           thread.setDaemon(true);

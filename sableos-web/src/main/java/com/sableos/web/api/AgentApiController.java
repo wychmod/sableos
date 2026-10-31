@@ -233,9 +233,13 @@ public class AgentApiController {
     }
     List<FileNode> children = new ArrayList<>();
     try (Stream<Path> stream = Files.list(dir)) {
-      List<Path> entries = stream.sorted(Comparator.comparing(Path::getFileName)).toList();
+      List<Path> entries =
+          stream.sorted(Comparator.comparing(AgentApiController::fileNameOf)).toList();
       for (Path entry : entries) {
-        String fileName = entry.getFileName().toString();
+        String fileName = fileNameOf(entry);
+        if (fileName.isEmpty()) {
+          continue; // 根路径等无名字条目：跳过而不是解引用 null
+        }
         String path = relativePath + PATH_SEPARATOR + fileName;
         if (Files.isDirectory(entry)) {
           children.add(new FileNode(fileName, path, true, listChildren(entry, path)));
@@ -247,6 +251,16 @@ public class AgentApiController {
     } catch (IOException e) {
       throw new UncheckedIOException("列出 Agent 目录失败：" + relativePath, e);
     }
+  }
+
+  /**
+   * 文件名；{@link Path#getFileName()} 在根路径上返回 {@code null}，统一折成空串，避免下游直接解引用。
+   *
+   * <p>同时用作排序键：直接对 {@code Path} 排序会调用 {@code getFileName()} 并在 null 处抛 NPE。
+   */
+  private static String fileNameOf(Path path) {
+    Path fileName = path.getFileName();
+    return fileName == null ? "" : fileName.toString();
   }
 
   private static AgentView toView(Profile profile) {

@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,6 +46,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkspaceApiController {
 
   private static final String AGENT_FILE = "AGENT.md";
+
+  /** 大小写不敏感比较用的预小写形式，避免每次比较都做一次转换。 */
+  private static final String AGENT_FILE_LC = "agent.md";
+
   private static final String AGENTS_DIR = "agents";
   private static final String PATH_SEPARATOR = "/";
   private static final String BACKSLASH = "\\";
@@ -152,28 +157,53 @@ public class WorkspaceApiController {
 
   /** 若目标是 {@code agents/<name>/AGENT.md} 返回该 Agent 名；否则 null。 */
   private String agentNameOfAgentDefinition(Path target) {
-    if (!AGENT_FILE.equalsIgnoreCase(String.valueOf(target.getFileName()))) {
+    if (!isAgentDefinition(fileNameOf(target))) {
       return null;
     }
     Path parent = target.getParent();
-    if (parent == null || !parent.getParent().equals(agentStore.agentsDir())) {
+    if (parent == null) {
       return null;
     }
-    String name = String.valueOf(parent.getFileName());
+    Path grandParent = parent.getParent();
+    if (grandParent == null || !grandParent.equals(agentStore.agentsDir())) {
+      return null;
+    }
+    String name = fileNameOf(parent);
+    if (name.isEmpty()) {
+      return null;
+    }
     return profileRegistry.exists(name) ? name : null;
   }
 
+  /**
+   * 文件名是否就是 {@code AGENT.md}（大小写不敏感）。
+   *
+   * <p>用 {@link Locale#ROOT} 显式小写比较而非 {@code equalsIgnoreCase}：后者是 findsecbugs {@code
+   * IMPROPER_UNICODE} 的固定报点，而这里的语义恰恰是「大小写不敏感文件系统上的同一文件」，属该规则的误报；改成全小写比较既保留语义又不引入 locale 相关的隐式转换。
+   */
+  @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+      value = "IMPROPER_UNICODE",
+      justification =
+          "AGENT.md 是 ASCII 保留文件名；此处的产物就是「按大小写不敏感文件系统语义比较同一文件名」，"
+              + "不存在 Unicode 混淆风险。撤销条件：把该比较用于用户可控的自由文本。")
+  private static boolean isAgentDefinition(String fileName) {
+    return AGENT_FILE_LC.equals(fileName.toLowerCase(Locale.ROOT));
+  }
+
   private static FileNode treeOf(Path dir, String relativePath) {
-    String name = String.valueOf(dir.getFileName());
+    String name = fileNameOf(dir);
     if (!Files.isDirectory(dir)) {
       return new FileNode(name, relativePath, true, List.of());
     }
     List<FileNode> children = new ArrayList<>();
     try (Stream<Path> stream = Files.list(dir)) {
       List<Path> entries =
-          stream.sorted(Comparator.comparing(path -> path.getFileName().toString())).toList();
+          stream.sorted(Comparator.comparing(WorkspaceApiController::fileNameOf)).toList();
       for (Path entry : entries) {
-        String fileName = entry.getFileName().toString();
+        String fileName = fileNameOf(entry);
+        if (fileName.isEmpty()) {
+          continue; // 根路径等无名字条目：跳过而不是解引用 null
+        }
         String childPath = relativePath + PATH_SEPARATOR + fileName;
         if (Files.isDirectory(entry)) {
           children.add(treeOf(entry, childPath));
@@ -185,6 +215,16 @@ public class WorkspaceApiController {
       throw new UncheckedIOException("列出目录失败：" + relativePath, e);
     }
     return new FileNode(name, relativePath, true, children);
+  }
+
+  /**
+   * 文件名；{@link Path#getFileName()} 在根路径上返回 {@code null}，统一折成空串，避免下游直接解引用。
+   *
+   * <p>同时用作排序键：直接对 {@code Path} 排序会调用 {@code getFileName()} 并在 null 处抛 NPE。
+   */
+  private static String fileNameOf(Path path) {
+    Path fileName = path.getFileName();
+    return fileName == null ? "" : fileName.toString();
   }
 
   private static String archiveDirName() {

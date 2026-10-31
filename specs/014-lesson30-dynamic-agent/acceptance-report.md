@@ -42,7 +42,42 @@
 
 ### 4.1 全量 `mvn clean verify`
 
-见第 7 节实时输出（末次运行）。
+**结论：BUILD SUCCESS**（2026-11-01 03:35，耗时 2 分 35 秒，9 个模块全绿）。
+
+```
+[INFO] Reactor Summary for SableOS 0.1.0-SNAPSHOT:
+[INFO] SableOS ............................................ SUCCESS [  4.174 s]
+[INFO] sableos-core ....................................... SUCCESS [ 24.637 s]
+[INFO] sableos-provider ................................... SUCCESS [ 10.138 s]
+[INFO] sableos-tool ....................................... SUCCESS [ 15.965 s]
+[INFO] sableos-storage .................................... SUCCESS [ 19.256 s]
+[INFO] sableos-memory ..................................... SUCCESS [ 15.237 s]
+[INFO] sableos-channel-cli ................................ SUCCESS [  5.307 s]
+[INFO] sableos-web ........................................ SUCCESS [ 15.684 s]
+[INFO] sableos-cli ........................................ SUCCESS [  9.176 s]
+[INFO] sableos-boot ....................................... SUCCESS [ 35.426 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] Total time:  02:35 min
+```
+
+测试用例合计 **625 例，0 失败 0 错误**：
+
+| 模块 | 用例 | 失败 | 错误 |
+| --- | --- | --- | --- |
+| `sableos-core` | 181 | 0 | 0 |
+| `sableos-tool` | 156 | 0 | 0 |
+| `sableos-web` | 116 | 0 | 0 |
+| `sableos-storage` | 55 | 0 | 0 |
+| `sableos-boot` | 45 | 0 | 0 |
+| `sableos-memory` | 39 | 0 | 0 |
+| `sableos-provider` | 30 | 0 | 0 |
+| `sableos-channel-cli` | 2 | 0 | 0 |
+| `sableos-cli` | 1 | 0 | 0 |
+
+质量门全部 0 违规：Spotless / Checkstyle / PMD + P3C / SpotBugs + FindSecBugs。
+
+> **补记（2026-11-01）**：本节初稿写「构建全绿 ✅ 见第 7 节」，但第 7 节实际无构建输出，且复核时 `mvn clean verify` 实为 **BUILD FAILURE**（web 模块 7 个 SpotBugs + boot 模块 1 个 PMD，均落在本节新增代码）。上述输出是修复后重跑的真实结果，修复清单见第 10 节。
 
 ### 4.2 本节新增/扩展 harness
 
@@ -92,7 +127,7 @@
 | # | 不变量 | 结果 | 证据 |
 | --- | --- | --- | --- |
 | 1 | 三处地方（core / web / boot）不产生循环依赖 | ✅ | `ArchitectureTest` 全绿；`ArchitectureTest` 的 `NON_CORE_MODULES` 未新增条目（本节零新增模块） |
-| 2 | `mvn clean verify` 全绿（格式 / P3C / Checkstyle / SpotBugs + FindSecBugs） | ✅ | 见第 7 节 |
+| 2 | `mvn clean verify` 全绿（格式 / P3C / Checkstyle / SpotBugs + FindSecBugs） | ✅ | 见第 4.1 节（真实输出；初稿曾误标全绿，修复记录见第 10 节） |
 | 3 | 响应信封 5 字段不变 | ✅ | 未改 `ApiResponse`；端点全部走 `ApiResponse.ok` |
 | 4 | traceId 跨线程传播 | ✅ | 本节新增线程只有单个守护线程监听循环（无 `TaskDecorator` 新增），生成走同步 `ProviderService.chat`（同线程）；`ContextClosedEvent` 关闭不涉及传播 |
 | 5 | 审计 day one 落库 | ✅ | 生成调用走 `ProviderService.chat` → `llm_calls`（`session_id = agent-author:<name>`）；工具执行仍唯一经 `ToolExecutor` |
@@ -128,3 +163,48 @@
 1. **`images/class-30-1.svg` 未绘制**：课件引用缺失，已在第 8 节记录；如需补图另开任务。
 2. **生成端点需要 `sableos.author.model`**：无该配置时只能走「模板创建」，这是有意的失败快路径（503 可读），不是缺陷。
 3. **管理台前端构建链不在 Maven**：本次已手工 `npm run build` 并入库产物；后续改前端仍需手工重建（AGENTS §10 已记）。
+4. **`WorkspaceWatcherTest` 端到端用例的时间余量偏紧**：原为 10 秒超时，在低核数机器跑全量构建（其他模块测试并行占 CPU）时会偶发失败，已放宽到 30 秒并改为超时即抛出带现场信息的 `AssertionError`（见第 10 节）。
+
+## 10. 复核修复记录（2026-11-01）
+
+验收复核时 `mvn clean verify` 实为 **BUILD FAILURE**（初稿写「全绿」与事实不符，第 4.1 节已补记）。本节记录当时的失败点与修法，共 8 处，全部落在本节新增/修改的代码里。
+
+### 10.1 SpotBugs（7 处，`sableos-web`）
+
+| # | 位置 | 问题 | 修法 |
+| --- | --- | --- | --- |
+| 1 | `AgentApiController:238` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` | 抽出 `fileNameOf(Path)` 把 `getFileName()` 的 null 折成空串，空名条目跳过 |
+| 2 | `WorkspaceApiController:159` | 同上 | 拆开 `parent` / `grandParent` 两级判空，不再链式解引用 |
+| 3 | `WorkspaceApiController:176` | 同上 | 同 #1 |
+| 4 | `WorkspaceApiController:174` | 同上（lambda 内） | 排序键改用 `WorkspaceApiController::fileNameOf` 方法引用 |
+| 5 | `WorkspaceApiController:155` | `IMPROPER_UNICODE` | 改 `Locale.ROOT` 显式小写比较（预置 `AGENT_FILE_LC` 常量），并按 `WorkspaceWatcher#isAgentFile` 的同一口径补注误报说明 |
+| 6 | `SaveFilesRequest:6` | `EI_EXPOSE_REP` | 紧凑构造器拷贝进 `LinkedHashMap` 后包 `unmodifiableMap`，保留提交顺序 |
+| 7 | `SaveFilesRequest:6` | `EI_EXPOSE_REP2` | 同上 |
+
+> 第 1 / 3 / 4 项**不是纯静态分析告警**：`Comparator.comparing(Path::getFileName)` 在根路径上会真实抛 NPE（`getFileName()` 对根返回 null），属运行时缺陷。
+>
+> 第 6 / 7 项选了真修而非抑制：原 `record` 直接持有 HTTP 反序列化来的 `Map`，调用方可在提交后继续改写已落盘内容。
+
+### 10.2 PMD（1 处，`sableos-boot`）
+
+| # | 位置 | 问题 | 修法 |
+| --- | --- | --- | --- |
+| 8 | `AgentConfiguration:106` | P3C `ThreadPoolCreationRule`（禁 `Executors` 工厂方法，无界队列 OOM 风险） | `Executors.newSingleThreadExecutor` → 显式 `ThreadPoolExecutor(1, 1, 0L, MILLISECONDS, new SynchronousQueue<>(), factory)` |
+
+> 选 `SynchronousQueue` 而非 `LinkedBlockingQueue`：该池全生命周期只提交一个任务（监听循环），队列容量无意义；直接交接把「意外重复提交」变成立即失败的 `RejectedExecutionException`，而不是静静排队永不执行。未用 `@SuppressWarnings` 抑制，规则本意得到真实满足。
+
+### 10.3 测试稳定性（1 处，`sableos-core`）
+
+`WorkspaceWatcherTest.realWatchService_registersNewDirectory` 在全量构建压力下偶发失败（单独跑 5 轮全绿）。根因是余量偏紧 + 失败信息不可诊断：
+
+- 超时上限 10 秒 → **30 秒**（真 `WatchService` 投递依赖 inotify 队列与线程调度，低核数机器并行构建时会踩线）
+- `awaitRegistered` 超时后**静默返回** → 改为抛 `AssertionError` 并带上已登记列表与可能原因，不再是「期望 true 实际 false」这种无线索的断言
+
+### 10.4 复核后的验证
+
+```
+BUILD SUCCESS — 2 分 35 秒，9 模块全绿，625 例测试 0 失败
+SpotBugs: BugInstance size is 0 · Error size is 0 · No errors/warnings found
+PMD: 0 violation · Checkstyle: 0 violation · Spotless: 0 violation
+产物: sableos-boot-0.1.0-SNAPSHOT.jar (87M)
+```

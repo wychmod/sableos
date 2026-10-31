@@ -173,7 +173,7 @@ class WorkspaceWatcherTest {
       watcher.start();
       try {
         Path agentDir = writeAgent("live", "live");
-        awaitRegistered("live", Duration.ofSeconds(10));
+        awaitRegistered("live", Duration.ofSeconds(30));
         assertThat(registry.exists("live")).isTrue();
       } finally {
         watcher.stop();
@@ -217,6 +217,16 @@ class WorkspaceWatcherTest {
     assertThat(registry.exists("empty-dir")).isFalse();
   }
 
+  /**
+   * 轮询等登记，超时即失败。
+   *
+   * <p>超时上限 30 秒而非 10 秒：真实 {@link java.nio.file.WatchService} 的事件投递依赖 inotify 队列与监听线程的调度，
+   * 在低核数机器上跑全量构建（其他模块测试并行占 CPU）时，10 秒会踩线——本用例曾在 {@code mvn clean verify} 全量 构建时偶发失败、单独跑 5
+   * 轮全绿。放宽后仍保留 30 秒上限，真卡死不会变成无限等。
+   *
+   * <p>超时抛 {@link AssertionError} 而不是静默返回：原来的写法让调用方断言只说「期望 true 实际 false」，
+   * 看不出是「等超时了」还是「注册了但名字不对」，排查时得重跑才能定位。
+   */
   private void awaitRegistered(String name, Duration timeout) throws InterruptedException {
     Instant deadline = Instant.now().plus(timeout);
     while (Instant.now().isBefore(deadline)) {
@@ -225,6 +235,14 @@ class WorkspaceWatcherTest {
       }
       Thread.sleep(50);
     }
+    throw new AssertionError(
+        "等待 "
+            + timeout.toSeconds()
+            + " 秒后 Agent 仍未登记：name="
+            + name
+            + "，当前已登记="
+            + registry.all().stream().map(Profile::name).toList()
+            + "（可能原因：WatchService 事件未投递、inotify 实例耗尽、AGENT.md 解析失败）");
   }
 
   // ---------------------------------------------------------------- 辅助
