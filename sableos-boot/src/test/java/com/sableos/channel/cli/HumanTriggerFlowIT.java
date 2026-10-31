@@ -1,5 +1,6 @@
 package com.sableos.channel.cli;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sableos.cli.SableOsRuntime;
 import com.sableos.core.profile.Profile;
+import com.sableos.core.profile.ProfileRegistry;
 import com.sableos.core.provider.ProviderFailureException;
 import com.sableos.core.provider.ProviderRequest;
 import com.sableos.core.provider.ProviderService;
@@ -117,6 +119,7 @@ class HumanTriggerFlowIT {
   @Autowired private CliChannel cliChannel;
   @Autowired private ToolExecutor toolExecutor;
   @Autowired private ProviderService providerService;
+  @Autowired private ProfileRegistry profileRegistry;
   @Autowired private LlmCallRepository llmCallRepository;
   @Autowired private ToolInvocationRepository toolInvocationRepository;
 
@@ -137,9 +140,12 @@ class HumanTriggerFlowIT {
     JsonNode messages = get("/api/v1/sessions/" + sessionId).path("data").path("messages");
     assertThat(messages.size()).isEqualTo(4);
     assertThat(messages.get(0).path("role").asText()).isEqualTo("USER");
+    assertThat(messages.get(1).path("role").asText()).isEqualTo("ASSISTANT");
     assertThat(messages.get(2).path("role").asText()).isEqualTo("TOOL");
     assertThat(messages.get(2).path("toolName").asText()).isEqualTo("http_get");
     assertThat(messages.get(2).path("success").asBoolean()).isTrue();
+    assertThat(messages.get(3).path("role").asText()).isEqualTo("ASSISTANT");
+    assertThat(messages.get(3).path("content").asText()).isNotBlank();
 
     JsonNode list = get("/api/v1/sessions").path("data");
     assertThat(findById(list, sessionId)).isPresent();
@@ -181,6 +187,17 @@ class HumanTriggerFlowIT {
     JsonNode tools = get("/api/v1/tools").path("data");
     assertThat(tools.size()).isGreaterThan(0);
     assertThat(toolNames(tools)).contains("http_get", "save_memory", "recall_memory");
+  }
+
+  @Test
+  @DisplayName("支柱三_对外工具清单覆盖每个Profile声明的工具集")
+  void pillarThree_registryCoversEveryProfileToolset() throws Exception {
+    List<String> listed = toolNames(get("/api/v1/tools").path("data"));
+    for (String profileName : List.of("weather-agent", "memory-agent", "mock-agent")) {
+      assertThat(profileRegistry.exists(profileName)).as("Profile %s 应已加载", profileName).isTrue();
+      Profile profile = requireNonNull(profileRegistry.get(profileName));
+      assertThat(listed).as("Profile %s 声明的工具都应在对外清单里", profileName).containsAll(profile.tools());
+    }
   }
 
   @Test
