@@ -114,6 +114,13 @@ sableos:
       # 是否同时回写 W3C 的 traceparent / tracestate
       propagate-w3c: true
 
+  # --- 出站 HTTP 超时（28 节）---
+  # 共享 RestClient 供 http_get / http_post / notify / web search 使用；定时任务跑在 4 线程的
+  # 调度池上，无界等待会让一个挂死的对端占住槽位，故必须有界（课件 §2.4）。
+  http:
+    connect-timeout: 10s
+    read-timeout: 30s
+
   # --- 沙箱白名单管理接口（008-sandbox-whitelist-admin）---
   # 等价 root 权限：可以加任意目录、任意解释器。默认开启（产品决策），必须只绑回环
   # 或置于认证反向代理之后；不需要时设为 false，该路径即不存在（404）。

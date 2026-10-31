@@ -3,12 +3,19 @@ package com.sableos.cli;
 import com.sableos.channel.cli.CliChannel;
 import com.sableos.cli.runtime.SandboxWhitelistBootstrap;
 import com.sableos.core.agent.AgentService;
+import com.sableos.core.notify.NotifyChannelStore;
 import com.sableos.core.sandbox.SandboxWhitelistAdmin;
 import com.sableos.core.sandbox.SandboxWhitelistStore;
+import com.sableos.core.scheduler.ScheduledTaskStore;
 import com.sableos.core.session.SessionManager;
+import com.sableos.storage.notify.JpaNotifyChannelStore;
+import com.sableos.storage.notify.NotifyChannelRepository;
 import com.sableos.storage.sandbox.JpaSandboxWhitelistStore;
 import com.sableos.storage.sandbox.SandboxWhitelistEntryRepository;
 import com.sableos.storage.sandbox.SandboxWhitelistSeedRepository;
+import com.sableos.storage.scheduler.JpaScheduledTaskStore;
+import com.sableos.storage.scheduler.ScheduledTaskRepository;
+import com.sableos.storage.scheduler.TaskExecutionRepository;
 import com.sableos.tool.sandbox.FileSandboxProperties;
 import com.sableos.tool.sandbox.HttpSandboxProperties;
 import com.sableos.tool.sandbox.Sandbox;
@@ -79,5 +86,18 @@ public class SableOsRuntime {
   public SandboxWhitelistAdmin sandboxWhitelistAdmin(
       SandboxWhitelistStore store, WhitelistSandbox whitelistSandbox) {
     return SandboxWhitelistBootstrap.buildAdmin(store, whitelistSandbox);
+  }
+
+  /** 定时任务运行态与执行历史（28 节）：契约在 core、JPA 实现在 storage，装配根显式接线。 */
+  @Bean
+  public ScheduledTaskStore scheduledTaskStore(
+      ScheduledTaskRepository taskRepository, TaskExecutionRepository executionRepository) {
+    return new JpaScheduledTaskStore(taskRepository, executionRepository);
+  }
+
+  /** 全局通知渠道注册表（28 节补齐 19 节后置项）：契约在 core、JPA 实现在 storage。 */
+  @Bean
+  public NotifyChannelStore notifyChannelStore(NotifyChannelRepository repository) {
+    return new JpaNotifyChannelStore(repository);
   }
 }

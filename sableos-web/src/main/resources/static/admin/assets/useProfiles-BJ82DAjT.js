@@ -1,1 +1,0 @@
-import{N as f,a0 as t,P as i,l as a}from"./index-DkhIFXp9.js";const u=a([]),e=a(!1),r=f(null),s=a(!1);let l=null;async function p(o=!1){if(l)return l;if(!(s.value&&!o))return l=(async()=>{e.value=!0,r.value=null;try{u.value=await t(),s.value=!0}catch(n){r.value=i(n)}finally{e.value=!1,l=null}})(),l}export{e as a,u as b,p as l,r as p};

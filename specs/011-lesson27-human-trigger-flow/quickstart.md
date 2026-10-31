@@ -79,7 +79,8 @@ curl -s "$B/memory?profile=mock-agent"
 
 ```bash
 DEEPSEEK_API_KEY=xxx mvn -pl sableos-boot -am test \
-  -DexcludedGroups= -Dgroups=integration -Dtest=HumanTriggerFlowIT
+  -DexcludedGroups= -Dgroups=integration -Dtest=HumanTriggerFlowIT \
+  -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
 无 key 时用例以 `assumeTrue` 跳过，不会失败。

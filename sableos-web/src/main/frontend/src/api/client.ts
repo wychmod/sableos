@@ -3,12 +3,18 @@ import type { ApiEnvelope } from '../types/api'
 const configuredBase = import.meta.env.VITE_API_BASE?.trim()
 export const API_BASE = (configuredBase || '/api/v1').replace(/\/+$/, '')
 
-type HttpMethod = 'GET' | 'POST' | 'DELETE'
+// 第 28 节：定时任务管理走 /api/v2。若 API_BASE 被显式配置成完整 URL，v2 沿用同一主机前缀。
+export const API_BASE_V2 = API_BASE.endsWith('/v1')
+  ? `${API_BASE.slice(0, -3)}v2`
+  : '/api/v2'
+
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 interface RequestOptions {
   method?: HttpMethod
   body?: unknown
   timeoutMs?: number
+  base?: string
 }
 
 interface ApiErrorOptions {
@@ -47,6 +53,7 @@ function isEnvelope(value: unknown): value is ApiEnvelope<unknown> {
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? 'GET'
+  const base = options.base ?? API_BASE
   const timeoutMs = options.timeoutMs ?? 15_000
   const controller = new AbortController()
   let timedOut = false
@@ -61,7 +68,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       headers['Content-Type'] = 'application/json'
     }
 
-    const response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(`${base}${path}`, {
       method,
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),

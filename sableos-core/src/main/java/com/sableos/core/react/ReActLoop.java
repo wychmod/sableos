@@ -9,6 +9,8 @@ import com.sableos.core.provider.ToolCallRequest;
 import com.sableos.core.session.Session;
 import com.sableos.core.tool.ToolExecutor;
 import com.sableos.core.tool.ToolResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 自实现的 ReAct 循环引擎（宪法原则 II）：反复「组装上下文 → 调 Provider → 判断有无工具调用」，有则逐个执行并回填，无则以该轮
@@ -24,6 +26,8 @@ public final class ReActLoop {
 
   /** 转满最大轮数后的固定终止文案（FR-004；不拼接最后一条模型输出，research D-14）。 */
   static final String MAX_ITERATIONS_REPLY = "达到最大轮数，已停止";
+
+  private static final Logger LOG = LoggerFactory.getLogger(ReActLoop.class);
 
   private final ProviderService providerService;
   private final PromptBuilder promptBuilder;
@@ -52,13 +56,25 @@ public final class ReActLoop {
       ProviderResponse response = providerService.chat(session.id(), profile, request);
       session.appendAssistantMessage(response);
       if (response.toolCalls().isEmpty()) {
+        LOG.info("ReAct 收尾：profile={} 第 {} 轮无工具调用", safe(profile.name()), i + 1);
         return (response.content() == null) ? "" : response.content();
       }
+      LOG.info(
+          "ReAct 轮次：profile={} 第 {} 轮请求 {} 个工具",
+          safe(profile.name()),
+          i + 1,
+          response.toolCalls().size());
       for (ToolCallRequest call : response.toolCalls()) {
         ToolResult result = toolExecutor.execute(session.id(), call);
         session.appendToolResult(call.name(), result);
       }
     }
+    LOG.warn("ReAct 转满最大轮数强制收尾：profile={} 上限={}", safe(profile.name()), maxIterations);
     return MAX_ITERATIONS_REPLY;
+  }
+
+  /** CRLF 净化：Agent 名来自受信工作区文件，但仍按 AGENTS §5.3 的形态处理（Shape 固定，findsecbugs 只认 replaceAll 字面量）。 */
+  private static String safe(String value) {
+    return (value == null) ? null : value.replaceAll("[\r\n]", "_");
   }
 }

@@ -1,5 +1,10 @@
 package com.sableos.storage;
 
+import com.sableos.storage.notify.JpaNotifyChannelStore;
+import com.sableos.storage.notify.NotifyChannelRepository;
+import com.sableos.storage.scheduler.JpaScheduledTaskStore;
+import com.sableos.storage.scheduler.ScheduledTaskRepository;
+import com.sableos.storage.scheduler.TaskExecutionRepository;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
@@ -29,5 +34,16 @@ public class StorageTestApplication {
       com.sableos.storage.sandbox.SandboxWhitelistSeedRepository seedRepository) {
     return new com.sableos.storage.sandbox.JpaSandboxWhitelistStore(
         entryRepository, seedRepository);
+  }
+
+  @Bean
+  public JpaScheduledTaskStore scheduledTaskStore(
+      ScheduledTaskRepository taskRepository, TaskExecutionRepository executionRepository) {
+    return new JpaScheduledTaskStore(taskRepository, executionRepository);
+  }
+
+  @Bean
+  public JpaNotifyChannelStore notifyChannelStore(NotifyChannelRepository repository) {
+    return new JpaNotifyChannelStore(repository);
   }
 }

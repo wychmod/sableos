@@ -22,6 +22,12 @@ const router = createRouter({
       meta: { title: 'Agents' },
     },
     {
+      path: '/schedules',
+      name: 'schedules',
+      component: () => import('../pages/SchedulesPage.vue'),
+      meta: { title: '定时任务' },
+    },
+    {
       path: '/tools',
       name: 'tools',
       component: () => import('../pages/ToolsPage.vue'),

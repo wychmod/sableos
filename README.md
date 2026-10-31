@@ -172,6 +172,20 @@ Skill 绑定通过 Agent 目录下 `skills/` 的相对软连接表达，不写�
 | 信息查询 | `GET /api/v1/profiles`、`GET /api/v1/memory`、`GET /api/v1/tools` | Profile / 长期记忆 / 工具清单 |
 | 系统状态 | `GET /api/v1/health`、`GET /api/v1/info` | 健康检查 / 运行信息 |
 
+除上述 11 个核心端点外，第 28 节另有两组管理面（不计入 11 的计数）：
+
+| 资源 | 端点 | 说明 |
+| --- | --- | --- |
+| 定时任务（v2，管理台唯一调用） | `GET /api/v2/schedules` | 列出活动任务（下次触发 / 上次结果 / 次数 / 启停） |
+| 定时任务（v2） | `GET /api/v2/schedules/{scheduleId}/executions` | 某任务的执行历史 |
+| 定时任务（v2） | `POST /api/v2/schedules/{scheduleId}/run` | 立即执行一次（无视启用状态） |
+| 定时任务（v2） | `PUT /api/v2/schedules/{scheduleId}` | 启用 / 停用 |
+| 定时任务（v2） | `POST /api/v2/agents/{profileName}/schedules/{key}/run` | 按 Agent + 任务键精确定位后立即执行 |
+| 定时任务（v1 兼容） | `GET/POST/PUT /api/v1/schedules...` | 按任务键定位；多个 Agent 撞 key 时返回 409 |
+| 通知渠道 | `GET/POST /api/v1/notify-channels`、`PUT/DELETE /api/v1/notify-channels/{name}` | 全局渠道注册表 CRUD（核心阶段只支持 webhook） |
+
+定时任务的定义仍只写在 `AGENT.md` frontmatter 的 `schedules` 里；上述端点只管理运行状态、执行历史与启停，不管理 cron 定义。通知渠道在 `AGENT.md` 正文按名引用，不进入 frontmatter。
+
 管理台由同一个进程托管在 `/admin`，Swagger UI 在 `/swagger-ui`。端口取 `server.port`（默认 `8080`），环境变量 `SERVER_PORT` 可覆盖。
 
 ### 构建管理台与启动
@@ -220,6 +234,29 @@ curl -s "$B/memory?profile=mock-agent"       # 查得到「美式咖啡」
 再从管理台 `/admin` 的「会话」页核对同一条会话。
 
 mock 只替换「模型」这一环；ReAct、工具执行、长期记忆、会话与审计全部走真实实现。
+
+### 定时任务与通知渠道（第 28 节）
+
+定时任务在 `AGENT.md` frontmatter 里声明，`serve` / `gateway` 启动后登记进 SQLite；管理台「定时任务」页与 v2 端点只管理运行状态：
+
+```bash
+B=http://localhost:8080
+curl -s $B/api/v2/schedules | jq
+curl -s -X POST $B/api/v2/schedules/1/run | jq
+curl -s -X PUT $B/api/v2/schedules/1 \
+  -H 'Content-Type: application/json' -d '{"enabled":false}' | jq
+curl -s $B/api/v2/schedules/1/executions | jq
+```
+
+通知渠道先登记再使用（webhook 域名必须在 `http.allowed_domains` 内）：
+
+```bash
+curl -s -X POST $B/api/v1/notify-channels \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"team-webhook","type":"webhook","url":"https://example.com/hooks/team"}'
+```
+
+`notify` 工具每次执行现查注册表，改渠道地址不需要改 Agent、不需要重启进程。`kill` 进程后重新 `serve`，会话、记忆、任务状态与执行历史、审计记录都应原样恢复。
 
 ## 文档
 

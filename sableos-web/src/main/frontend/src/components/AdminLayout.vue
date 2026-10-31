@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   { label: '总览', path: '/', icon: 'overview' },
   { label: '会话', path: '/sessions', icon: 'sessions' },
   { label: 'Agents', path: '/agents', icon: 'agents' },
+  { label: '定时任务', path: '/schedules', icon: 'clock' },
   { label: '工具', path: '/tools', icon: 'tools' },
   { label: '记忆', path: '/memory', icon: 'memory' },
 ]
