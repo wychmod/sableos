@@ -87,12 +87,12 @@ class WebSmokeIT {
   }
 
   @Test
-  @DisplayName("长期记忆_未写入时返回空内容")
-  void memoryWithoutWritesReturnsEmptyContent() throws Exception {
-    mvc.perform(get("/api/v1/memory"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.profile").value("default"))
-        .andExpect(jsonPath("$.data.content").value(""));
+  @DisplayName("Agent 专属记忆_未注册 Agent 返回 404")
+  void memoryOfUnknownAgentReturnsNotFound() throws Exception {
+    mvc.perform(get("/api/v1/agents/ghost/memory"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value(404))
+        .andExpect(jsonPath("$.data").doesNotExist());
   }
 
   @Test

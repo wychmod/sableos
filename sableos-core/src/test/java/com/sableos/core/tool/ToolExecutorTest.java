@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sableos.core.profile.Profile;
+import com.sableos.core.profile.ProfileContext;
 import com.sableos.core.provider.ToolCallRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,60 @@ class ToolExecutorTest {
 
   private ToolExecutor executor() {
     return new ToolExecutor(toolCatalog, auditor);
+  }
+
+  @Test
+  @DisplayName("执行期间置入当前 Agent 上下文，执行后清除（per-agent 记忆的前提）")
+  void execute_exposesAgentContextDuringCall() {
+    java.util.concurrent.atomic.AtomicReference<String> seen =
+        new java.util.concurrent.atomic.AtomicReference<>();
+    SableTool probe =
+        new SableTool() {
+          @Override
+          public String getName() {
+            return "probe";
+          }
+
+          @Override
+          public String getDescription() {
+            return "读取当前 Agent 上下文";
+          }
+
+          @Override
+          public String getInputSchema() {
+            return "{\"type\":\"object\"}";
+          }
+
+          @Override
+          public ToolResult execute(com.fasterxml.jackson.databind.JsonNode input) {
+            seen.set(com.sableos.core.agent.ToolExecutionContext.agentName());
+            return ToolResult.success("ok");
+          }
+        };
+    when(toolCatalog.find("probe")).thenReturn(probe);
+
+    Profile profile =
+        new Profile(
+            "weather-daily",
+            null,
+            null,
+            new Profile.ProviderRef("mock", "mock-model", null),
+            java.util.List.of(),
+            java.util.List.of(),
+            java.util.List.of(),
+            java.util.List.of(),
+            java.util.List.of(),
+            new Profile.Settings(null, null));
+    ProfileContext.set(profile);
+    try {
+      executor().execute(SESSION_ID, new ToolCallRequest("c-1", "probe", "{}"));
+    } finally {
+      ProfileContext.clear();
+    }
+
+    assertThat(seen.get()).isEqualTo("weather-daily");
+    // 执行完毕即清除：线程复用时不会串到下一个 Agent
+    assertThat(com.sableos.core.agent.ToolExecutionContext.agentName()).isNull();
   }
 
   @Test

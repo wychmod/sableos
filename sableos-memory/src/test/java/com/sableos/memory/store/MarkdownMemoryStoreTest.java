@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.sableos.core.agent.ToolExecutionContext;
 import com.sableos.memory.MemoryScope;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,5 +79,73 @@ class MarkdownMemoryStoreTest {
   @DisplayName("空归档 recall 返回空列表")
   void recallOnEmptyArchiveReturnsEmpty() {
     assertEquals(0, store.recallByKeyword("anything", "empty").size());
+  }
+
+  // ---------------------------------------------------------------- 第 30 节：per-agent 记忆
+
+  @Test
+  @DisplayName("有 Agent 上下文时落 agents/<name>/MEMORY.md")
+  void agentContext_writesToAgentDirectory() throws Exception {
+    ToolExecutionContext.setAgentName("weather-daily");
+    try {
+      store.append("天气偏好：怕冷", MemoryScope.CORE, "weather-daily");
+    } finally {
+      ToolExecutionContext.clear();
+    }
+
+    Path agentFile = tempDir.resolve("agents").resolve("weather-daily").resolve("MEMORY.md");
+    assertTrue(java.nio.file.Files.isRegularFile(agentFile));
+    assertTrue(java.nio.file.Files.readString(agentFile).contains("天气偏好：怕冷"));
+    // 全局路径不应出现同名内容
+    assertFalse(
+        java.nio.file.Files.exists(
+            tempDir.resolve("memory").resolve("weather-daily").resolve("MEMORY.md")));
+  }
+
+  @Test
+  @DisplayName("无 Agent 上下文时回退全局路径，行为与改动前一致")
+  void noAgentContext_fallsBackToGlobalPath() {
+    store.append("全局记忆", MemoryScope.ARCHIVAL, "p1");
+
+    assertTrue(store.load("p1").contains("全局记忆"));
+    assertTrue(
+        java.nio.file.Files.isRegularFile(
+            tempDir.resolve("memory").resolve("p1").resolve("MEMORY.md")));
+    assertFalse(
+        java.nio.file.Files.exists(tempDir.resolve("agents").resolve("p1").resolve("MEMORY.md")));
+  }
+
+  @Test
+  @DisplayName("两个 Agent 的记忆互不可见")
+  void twoAgents_areIsolated() {
+    ToolExecutionContext.setAgentName("agent-a");
+    try {
+      store.append("A 的偏好", MemoryScope.CORE, "agent-a");
+    } finally {
+      ToolExecutionContext.clear();
+    }
+    ToolExecutionContext.setAgentName("agent-b");
+    try {
+      store.append("B 的偏好", MemoryScope.CORE, "agent-b");
+      assertTrue(store.load("agent-b").contains("B 的偏好"));
+      assertFalse(store.load("agent-b").contains("A 的偏好"));
+    } finally {
+      ToolExecutionContext.clear();
+    }
+  }
+
+  @Test
+  @DisplayName("非法 Agent 名（含路径穿越）回退全局，防目录穿越")
+  void illegalAgentName_fallsBackToGlobal() {
+    ToolExecutionContext.setAgentName("../evil");
+    try {
+      store.append("穿越尝试", MemoryScope.ARCHIVAL, "p1");
+    } finally {
+      ToolExecutionContext.clear();
+    }
+
+    assertTrue(store.load("p1").contains("穿越尝试"));
+    assertFalse(
+        java.nio.file.Files.exists(tempDir.resolve("agents").resolve("..").resolve("evil")));
   }
 }

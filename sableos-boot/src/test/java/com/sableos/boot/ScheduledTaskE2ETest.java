@@ -89,7 +89,7 @@ class ScheduledTaskE2ETest {
     assertThat(executions).hasSize(1);
     assertThat(executions.get(0).path("success").asBoolean()).isTrue();
 
-    JsonNode memory = get("/api/v1/memory?profile=" + PROFILE).path("data");
+    JsonNode memory = get("/api/v1/agents/" + PROFILE + "/memory").path("data");
     assertThat(memory.path("content").asText()).contains(FACT);
 
     JsonNode disabled =
