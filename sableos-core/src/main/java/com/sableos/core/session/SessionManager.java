@@ -69,7 +69,20 @@ public interface SessionManager extends SessionStore {
    * @param limit 最多返回条数
    * @return 按最后活跃时间倒序的会话；存储为空时返回空列表
    */
-  List<Session> listRecent(int limit);
+  default List<Session> listRecent(int limit) {
+    return listRecent(limit, null);
+  }
+
+  /**
+   * 列出最近活跃的会话，可按状态过滤（27 节）。
+   *
+   * <p>过滤必须与排序、截断一起在存储侧完成：若先取前 N 条再在内存里筛状态，归档一多， {@code status=archived} 只因未命中行占掉名额而返回不足 N 条。
+   *
+   * @param limit 最多返回条数
+   * @param status 只要该状态的会话；{@code null} 或空白表示不过滤
+   * @return 按最后活跃时间倒序、符合该状态的会话
+   */
+  List<Session> listRecent(int limit, String status);
 
   // void save(Session) 继承自 SessionStore：序列化历史后 upsert 到 sessions 表（处理完成后调用）。
 }

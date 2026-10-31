@@ -121,13 +121,36 @@ class SessionManagerTest {
     assertThat(sessionManager.listRecent(-1)).isEmpty();
   }
 
+  @Test
+  @DisplayName("会话列表_状态过滤在存储侧完成_不被未命中行吃掉名额")
+  void listRecent_filtersByStatusBeforeLimiting() {
+    Instant base = Instant.parse("2026-01-01T00:00:00Z");
+    // 三条更新的 active 排在前面；若先截断再过滤，archived 那条会被挤掉而返回空。
+    repository.save(entity("a1", base, base.plusSeconds(30)));
+    repository.save(entity("a2", base, base.plusSeconds(20)));
+    repository.save(entity("a3", base, base.plusSeconds(10)));
+    repository.save(entity("old-archived", "archived", base, base));
+
+    List<Session> archived = sessionManager.listRecent(2, "archived");
+
+    assertThat(archived).extracting(Session::id).containsExactly("old-archived");
+    assertThat(sessionManager.listRecent(2, "active"))
+        .extracting(Session::id)
+        .containsExactly("a1", "a2");
+  }
+
   private static SessionEntity entity(String id, Instant createdAt, Instant lastActiveAt) {
+    return entity(id, "active", createdAt, lastActiveAt);
+  }
+
+  private static SessionEntity entity(
+      String id, String status, Instant createdAt, Instant lastActiveAt) {
     SessionEntity entity = new SessionEntity();
     entity.setSessionId(id);
     entity.setProfileName("default");
     entity.setChannel("cli");
     entity.setUserId("wang");
-    entity.setStatus("active");
+    entity.setStatus(status);
     entity.setMessagesJson("[]");
     entity.setCreatedAt(createdAt);
     entity.setLastActiveAt(lastActiveAt);

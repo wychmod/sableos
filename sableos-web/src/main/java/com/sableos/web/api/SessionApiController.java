@@ -78,14 +78,13 @@ public class SessionApiController {
     return ApiResponse.ok(new ReplyView(agentCallExecutor.process(session, content)));
   }
 
-  /** 列出会话（27 节）：按最后活跃时间倒序，默认最近 100 条摘要；{@code ?status=active} 可选过滤。 */
+  /** 列出会话（27 节）：按最后活跃时间倒序，默认最近 100 条摘要；{@code ?status=active} 可选过滤（过滤在存储侧完成）。 */
   @GetMapping
   public ApiResponse<List<SessionSummaryView>> list(
       @RequestParam(name = "status", required = false) String status) {
     String wanted = (status == null || status.isBlank()) ? null : status.trim();
     return ApiResponse.ok(
-        sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST).stream()
-            .filter(session -> wanted == null || wanted.equals(session.status()))
+        sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST, wanted).stream()
             .map(SessionApiController::toSummary)
             .toList());
   }

@@ -217,11 +217,12 @@ class MockProviderFlowTest {
     }
 
     @Override
-    public List<Session> listRecent(int limit) {
+    public List<Session> listRecent(int limit, String status) {
       if (limit <= 0) {
         return List.of();
       }
       return sessions.values().stream()
+          .filter(session -> status == null || status.isBlank() || status.equals(session.status()))
           .sorted(Comparator.comparing(Session::lastActiveAt).reversed())
           .limit(limit)
           .toList();

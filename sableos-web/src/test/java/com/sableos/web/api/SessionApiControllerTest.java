@@ -166,7 +166,8 @@ class SessionApiControllerTest {
   void listReturnsSummariesWithoutMessages() throws Exception {
     Session session = newSession();
     session.appendUserMessage("你好");
-    when(sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST)).thenReturn(List.of(session));
+    when(sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST, null))
+        .thenReturn(List.of(session));
 
     mvc.perform(get("/api/v1/sessions"))
         .andExpect(status().isOk())
@@ -178,9 +179,8 @@ class SessionApiControllerTest {
   }
 
   @Test
-  @DisplayName("会话列表_按status过滤")
-  void listFiltersByStatus() throws Exception {
-    Session active = newSession();
+  @DisplayName("会话列表_status参数下推给存储层而不是在内存里过滤")
+  void listPassesStatusDownToStore() throws Exception {
     Session archived =
         Session.rehydrate(
             "web:bob:default",
@@ -191,13 +191,28 @@ class SessionApiControllerTest {
             Instant.now(),
             Instant.now(),
             null);
-    when(sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST))
-        .thenReturn(List.of(active, archived));
+    when(sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST, "archived"))
+        .thenReturn(List.of(archived));
 
     mvc.perform(get("/api/v1/sessions").param("status", "archived"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data", hasSize(1)))
         .andExpect(jsonPath("$.data[0].id").value("web:bob:default"));
+
+    verify(sessionManager).listRecent(ApiConstraints.MAX_SESSION_LIST, "archived");
+  }
+
+  @Test
+  @DisplayName("会话列表_status为空白时按不过滤处理")
+  void listBlankStatusMeansNoFilter() throws Exception {
+    when(sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST, null))
+        .thenReturn(List.of(newSession()));
+
+    mvc.perform(get("/api/v1/sessions").param("status", "  "))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data", hasSize(1)));
+
+    verify(sessionManager).listRecent(ApiConstraints.MAX_SESSION_LIST, null);
   }
 
   @Test
