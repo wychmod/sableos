@@ -1,5 +1,6 @@
 package com.sableos.core.session;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -59,6 +60,16 @@ public interface SessionManager extends SessionStore {
    * @return 命中并（或已）归档返回 {@code true}；会话不存在返回 {@code false}
    */
   boolean archive(String sessionId);
+
+  /**
+   * 列出最近活跃的会话（27 节）：按 {@code lastActiveAt} 倒序取前 {@code limit} 条。
+   *
+   * <p>只服务列表视图；调用方据此渲染摘要（不读完整对话正文）。{@code limit <= 0} 返回空列表，不把"取 0 条"解释成"取全部"。
+   *
+   * @param limit 最多返回条数
+   * @return 按最后活跃时间倒序的会话；存储为空时返回空列表
+   */
+  List<Session> listRecent(int limit);
 
   // void save(Session) 继承自 SessionStore：序列化历史后 upsert 到 sessions 表（处理完成后调用）。
 }

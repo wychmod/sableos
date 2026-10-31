@@ -20,6 +20,9 @@ final class ApiConstraints {
   /** 查历史时最多返回的最近条数。 */
   static final int MAX_HISTORY_MESSAGES = 100;
 
+  /** 会话列表最多返回的最近条数（27 节）。 */
+  static final int MAX_SESSION_LIST = 100;
+
   private ApiConstraints() {}
 
   /** 校验必填文本，返回原值；空白与超长统一抛 400 可定位原因。 */

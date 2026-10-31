@@ -8,6 +8,7 @@ import com.sableos.web.api.dto.CreateSessionRequest;
 import com.sableos.web.api.dto.MessageView;
 import com.sableos.web.api.dto.ReplyView;
 import com.sableos.web.api.dto.SendMessageRequest;
+import com.sableos.web.api.dto.SessionSummaryView;
 import com.sableos.web.api.dto.SessionView;
 import com.sableos.web.common.ApiResponse;
 import com.sableos.web.error.ResourceNotFoundException;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -76,6 +78,18 @@ public class SessionApiController {
     return ApiResponse.ok(new ReplyView(agentCallExecutor.process(session, content)));
   }
 
+  /** 列出会话（27 节）：按最后活跃时间倒序，默认最近 100 条摘要；{@code ?status=active} 可选过滤。 */
+  @GetMapping
+  public ApiResponse<List<SessionSummaryView>> list(
+      @RequestParam(name = "status", required = false) String status) {
+    String wanted = (status == null || status.isBlank()) ? null : status.trim();
+    return ApiResponse.ok(
+        sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST).stream()
+            .filter(session -> wanted == null || wanted.equals(session.status()))
+            .map(SessionApiController::toSummary)
+            .toList());
+  }
+
   /** 查历史：最近最多 100 条，时间正序；归档会话同样可查。 */
   @GetMapping("/{id}")
   public ApiResponse<SessionView> get(@PathVariable String id) {
@@ -107,6 +121,18 @@ public class SessionApiController {
         session.createdAt().toString(),
         session.lastActiveAt().toString(),
         views);
+  }
+
+  private static SessionSummaryView toSummary(Session session) {
+    return new SessionSummaryView(
+        session.id(),
+        session.profileName(),
+        session.channel(),
+        session.userId(),
+        session.status(),
+        session.createdAt().toString(),
+        session.lastActiveAt().toString(),
+        session.messages().size());
   }
 
   private static MessageView toView(SessionMessage message) {

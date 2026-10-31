@@ -8,6 +8,7 @@ import com.sableos.core.session.Session;
 import com.sableos.core.session.SessionManager;
 import com.sableos.core.session.SessionMessage;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -72,6 +73,19 @@ public class JpaSessionManager implements SessionManager {
     }
     repository.save(entity);
     return true;
+  }
+
+  @Override
+  public List<Session> listRecent(int limit) {
+    if (limit <= 0) {
+      return List.of();
+    }
+    // 核心阶段会话量小，findAll + 内存排序足够（课件 2.5 口径）；数据量上来后再换分页查询。
+    return repository.findAll().stream()
+        .sorted(Comparator.comparing(SessionEntity::getLastActiveAt).reversed())
+        .limit(limit)
+        .map(this::restore)
+        .toList();
   }
 
   @Override
