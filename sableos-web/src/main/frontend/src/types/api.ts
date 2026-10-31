@@ -26,6 +26,17 @@ export interface SessionView {
   messages: SessionMessage[]
 }
 
+export interface SessionSummary {
+  id: string
+  profileName: string
+  channel: string
+  userId: string
+  status: 'active' | 'archived'
+  createdAt: string
+  lastActiveAt: string
+  messageCount: number
+}
+
 export interface CreateSessionPayload {
   profile: string
   userId?: string

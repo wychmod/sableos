@@ -10,11 +10,17 @@ import PageHeader from '../components/PageHeader.vue'
 import SkeletonBlock from '../components/SkeletonBlock.vue'
 import StatusChip from '../components/StatusChip.vue'
 import { ApiError, normalizeError } from '../api/client'
-import { archiveSession, createSession, getSession, sendSessionMessage } from '../api/endpoints'
+import {
+  archiveSession,
+  createSession,
+  getSession,
+  listSessions,
+  sendSessionMessage,
+} from '../api/endpoints'
 import { loadProfiles, profiles, profilesError, profilesLoading } from '../composables/useProfiles'
 import { refreshTick } from '../composables/useRefreshSignal'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
-import type { SessionMessage, SessionView } from '../types/api'
+import type { SessionMessage, SessionSummary, SessionView } from '../types/api'
 import { formatDateTime } from '../utils/format'
 
 const MAX_HISTORY = 100
@@ -27,6 +33,9 @@ const router = useRouter()
 const sessionInput = ref('')
 const sessionInputError = ref('')
 const recentIds = ref<string[]>([])
+const serverSessions = ref<SessionSummary[]>([])
+const sessionsLoading = ref(false)
+const sessionsError = shallowRef<ApiError | null>(null)
 const currentSession = shallowRef<SessionView | null>(null)
 const sessionLoading = ref(false)
 const sessionError = shallowRef<ApiError | null>(null)
@@ -95,6 +104,18 @@ function rememberSession(id: string): void {
   knownSessionIds.add(id)
   recentIds.value = [id, ...recentIds.value.filter((value) => value !== id)].slice(0, 8)
   persistRecentIds()
+}
+
+async function loadServerSessions(silent = false): Promise<void> {
+  if (!silent) sessionsLoading.value = true
+  sessionsError.value = null
+  try {
+    serverSessions.value = await listSessions()
+  } catch (error) {
+    sessionsError.value = normalizeError(error)
+  } finally {
+    sessionsLoading.value = false
+  }
 }
 
 async function scrollTimelineToBottom(): Promise<void> {
@@ -183,6 +204,7 @@ async function createSessionAndOpen(): Promise<void> {
     void router.replace({ name: 'sessions', query: { id: session.id } })
     pushToast(reused ? '已复用既有会话' : '会话已创建', 'success')
     await scrollTimelineToBottom()
+    await loadServerSessions(true)
     await nextTick()
     messageField.value?.focus()
   } catch (error) {
@@ -205,6 +227,7 @@ async function sendMessage(): Promise<void> {
     await sendSessionMessage(sessionId, content)
     messageDraft.value = ''
     const refreshed = await refreshCurrentSession(true)
+    await loadServerSessions(true)
     if (refreshed) {
       pushToast('消息已发送，会话历史已更新', 'success')
     } else {
@@ -230,6 +253,7 @@ async function confirmArchive(): Promise<void> {
     archiveOpen.value = false
     pushToast('会话已归档', 'success')
     await refreshCurrentSession(true)
+    await loadServerSessions(true)
   } catch (error) {
     const apiError = normalizeError(error)
     archiveError.value = apiError
@@ -303,6 +327,7 @@ watch(
 
 watch(refreshTick, async () => {
   await loadProfiles(true)
+  await loadServerSessions(true)
   if (currentSession.value && !sending.value) {
     await refreshCurrentSession(true)
   }
@@ -311,6 +336,7 @@ watch(refreshTick, async () => {
 onMounted(async () => {
   loadRecentIds()
   await loadProfiles()
+  await loadServerSessions()
 
   const queryId = typeof route.query.id === 'string' ? route.query.id : ''
   if (queryId) {
@@ -373,22 +399,56 @@ onMounted(async () => {
             {{ sessionInputError }}
           </p>
 
-          <div v-if="recentIds.length > 0" class="recent-block">
+          <div class="recent-block">
             <div class="recent-block__head">
-              <span class="eyebrow">Recent</span>
-              <span class="recent-block__count">{{ recentIds.length }} / 8</span>
-            </div>
-            <div class="recent-list">
+              <div>
+                <span class="eyebrow">Recent sessions</span>
+                <span class="recent-block__count">最近 {{ serverSessions.length }} 条</span>
+              </div>
               <button
-                v-for="id in recentIds"
-                :key="id"
+                type="button"
+                class="icon-button"
+                aria-label="刷新会话列表"
+                title="刷新会话列表"
+                :disabled="sessionsLoading"
+                @click="loadServerSessions()"
+              >
+                <AppIcon name="refresh" size="14" />
+              </button>
+            </div>
+
+            <div v-if="sessionsLoading" class="recent-loading" aria-label="会话列表加载中">
+              <SkeletonBlock v-for="index in 3" :key="index" width="100%" height="38px" />
+            </div>
+            <div v-else-if="sessionsError" class="inline-alert inline-alert--danger rail-alert">
+              <AppIcon name="alert" size="15" />
+              <span>
+                {{ sessionsError.message }}
+                <button type="button" class="inline-alert__action" @click="loadServerSessions()">
+                  重试
+                </button>
+              </span>
+            </div>
+            <p v-else-if="serverSessions.length === 0" class="field-help">
+              还没有会话，创建一条后这里会出现。
+            </p>
+            <div v-else class="recent-list">
+              <button
+                v-for="session in serverSessions"
+                :key="session.id"
                 type="button"
                 class="recent-item"
-                :class="{ 'recent-item--active': currentSession?.id === id }"
-                :title="id"
-                @click="openById(id)"
+                :class="{ 'recent-item--active': currentSession?.id === session.id }"
+                :title="session.id"
+                @click="openById(session.id)"
               >
-                <span class="recent-item__id mono">{{ id }}</span>
+                <span class="recent-item__body">
+                  <span class="recent-item__id mono">{{ session.id }}</span>
+                  <span class="recent-item__meta">
+                    {{ session.profileName }} · {{ session.messageCount }} 条 ·
+                    {{ formatDateTime(session.lastActiveAt) }}
+                  </span>
+                </span>
                 <AppIcon name="chevron-right" size="13" />
               </button>
             </div>
@@ -504,7 +564,7 @@ onMounted(async () => {
         <EmptyState
           v-else-if="!currentSession"
           title="没有打开的会话"
-          description="输入完整会话 ID，或通过左侧新建会话加载运行时上下文。后端不提供会话列表。"
+          description="从左侧最近的会话里选一条，或输入完整会话 ID / 新建会话加载运行时上下文。"
           action-label="输入会话 ID"
           icon="sessions"
           @action="focusSessionInput"
@@ -877,12 +937,35 @@ onMounted(async () => {
   content: '';
 }
 
+.recent-item__body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+}
+
 .recent-item__id {
   min-width: 0;
   overflow: hidden;
   font-size: var(--fs-11);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.recent-item__meta {
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 10px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .session-workspace {
