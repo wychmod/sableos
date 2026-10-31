@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sableos.core.provider.ToolCallRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 工具执行与审计的唯一收敛处（FR-002 / FR-010）：按名解析 → 白名单校验位 → 解析入参 → 执行 → 成败两态写审计。
@@ -22,6 +24,8 @@ public final class ToolExecutor {
 
   /** 线程安全只读实例，全类共用一个（research 附录 A）。 */
   private static final ObjectMapper MAPPER = new ObjectMapper();
+
+  private static final Logger LOG = LoggerFactory.getLogger(ToolExecutor.class);
 
   private final ToolCatalog toolCatalog;
   private final ToolInvocationAuditor auditor;
@@ -63,12 +67,36 @@ public final class ToolExecutor {
     try {
       ToolResult result = tool.execute(input);
       audit(sessionId, call, result, call.argumentsJson(), start);
+      logOutcome(call.name(), result, start);
       return result;
     } catch (RuntimeException e) {
       ToolResult result = ToolResult.failure(EXECUTION_FAILURE_PREFIX + e.getMessage(), true);
       audit(sessionId, call, result, call.argumentsJson(), start);
+      logOutcome(call.name(), result, start);
       return result;
     }
+  }
+
+  /**
+   * 每次工具调用留一行主线日志：会话 id 走 MDC（由 {@code AgentService} 投影），这里只补工具名、成败与耗时， 使「一次触发」能在众多行里被串起来（课件 28 节
+   * §2.4）。
+   */
+  private static void logOutcome(String toolName, ToolResult result, long start) {
+    long elapsedMs = System.currentTimeMillis() - start;
+    if (result.success()) {
+      LOG.info("工具调用成功：tool={} 耗时={}ms", safe(toolName), elapsedMs);
+    } else {
+      LOG.warn(
+          "工具调用失败：tool={} 耗时={}ms reason={}",
+          safe(toolName),
+          elapsedMs,
+          safe(result.errorMessage()));
+    }
+  }
+
+  /** CRLF 净化（保持 replaceAll 字面形态，findsecbugs 只认这种写法；勿改成 Pattern/Matcher）。 */
+  private static String safe(String value) {
+    return (value == null) ? null : value.replaceAll("[\r\n]", "_");
   }
 
   /** 入参为空/空白视为空对象（工具自行处理空入参），不算解析失败。 */
