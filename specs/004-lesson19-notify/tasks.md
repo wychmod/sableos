@@ -110,8 +110,10 @@ Maven 多模块，模块内标准布局：`sableos-<module>/src/main/java/com/sa
 
 **Independent Test**（24 节后）: `NotifyToolsTest` 三断言（未配置报错 / 缺省取第一个 / `InOrder` enforce 先于 send）
 
-- [ ] T009 [US3] 【顺延·24 节后】实现 `NotifyTools`（`SableTool` 形态、`com.sableos.tool.builtin` 包；渠道解析按契约：缺省/空白/`default` → 注册表第一个、未注册不回退、上下文缺失报错零请求；`sandbox.enforce(...)` 先于 `adapter.send(...)`；成败走 `ToolExecutor` 既有审计路径；`@Tool` 注册归 20 节 ToolRegistry 收编）于 `sableos-tool/src/main/java/com/sableos/tool/builtin/NotifyTools.java`
-- [ ] T010 [US3] 【顺延·24 节后】写 `NotifyToolsTest`（第二批 harness：`missingChannelConfigFailsLoud`／`channelDefaultsToFirstRegistered`／`enforceIsCalledBeforeSend`（`InOrder`，课件示例 `notify("hello", "default")`）；mock `Sandbox` + `NotifyChannelAdapter`）于 `sableos-tool/src/test/java/com/sableos/tool/builtin/NotifyToolsTest.java`
+- [x] T009 [US3] 【顺延·24 节后】实现 `NotifyTools`（`SableTool` 形态、`com.sableos.tool.builtin` 包；渠道解析按契约：缺省/空白/`default` → 注册表第一个、未注册不回退、上下文缺失报错零请求；`sandbox.enforce(...)` 先于 `adapter.send(...)`；成败走 `ToolExecutor` 既有审计路径；`@Tool` 注册归 20 节 ToolRegistry 收编）于 `sableos-tool/src/main/java/com/sableos/tool/builtin/NotifyTools.java`
+  - **回收记录（2026-11-01 复核）**：已由 [005 T027](../005-lesson20-tool/tasks.md) 落地；`sandbox.enforce(...)` 在 `NotifyTools.java:100`、`adapter.send(...)` 在 `:101`，顺序符合契约；28 节又接入 `NotifyChannelStore`（每次执行现查注册表）。
+- [x] T010 [US3] 【顺延·24 节后】写 `NotifyToolsTest`（第二批 harness：`missingChannelConfigFailsLoud`／`channelDefaultsToFirstRegistered`／`enforceIsCalledBeforeSend`（`InOrder`，课件示例 `notify("hello", "default")`）；mock `Sandbox` + `NotifyChannelAdapter`）于 `sableos-tool/src/test/java/com/sableos/tool/builtin/NotifyToolsTest.java`
+  - **回收记录（2026-11-01 复核）**：`NotifyToolsTest` 共 10 例，`mvn -pl sableos-tool -am test -Dtest=NotifyToolsTest` 实测 `tests="10" errors="0" failures="0"`。三条契约行为均有用例覆盖：`missingContent_failsWithoutEnforceOrSend` / 无渠道用例 → 对应 `missingChannelConfigFailsLoud`；`defaultChannel_usesFirstRegistered` → 对应 `channelDefaultsToFirstRegistered`；`enforcePrecedesSend` → 对应 `enforceIsCalledBeforeSend`（`InOrder` 断言与契约逐字一致，含 `ActionType.HTTP_REQUEST` 与 target 判据）。**偏差**：实际方法名用 snake_case 而非契约表的 camelCase，行为与断言内容一致，仅命名风格不同。
 
 **Checkpoint**: 契约已定死；实现与二批 harness 在 24 节后回收、27/28 节串联全量验证
 
