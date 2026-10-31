@@ -17,6 +17,7 @@ import com.sableos.storage.JpaToolInvocationAuditor;
 import com.sableos.storage.SessionRepository;
 import com.sableos.storage.ToolInvocationRepository;
 import java.nio.file.Path;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -35,10 +36,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ReactConfiguration {
 
-  private static final Path AGENTS_DIR = Path.of(".sableos", "agents");
-  private static final Path BOOTSTRAP_DIR = Path.of(".sableos");
-  private static final Path SKILLS_ROOT = Path.of(".sableos", "skills");
-
   @Bean
   public ToolInvocationAuditor toolInvocationAuditor(
       ToolInvocationRepository toolInvocationRepository) {
@@ -51,8 +48,10 @@ public class ReactConfiguration {
   }
 
   @Bean
-  public ContextLoader contextLoader() {
-    return new ContextLoader(AGENTS_DIR, BOOTSTRAP_DIR, SKILLS_ROOT);
+  public ContextLoader contextLoader(@Value("${workspace.root:.sableos}") String workspaceRoot) {
+    // 27 节：工作区根可被 sableos.root 系统属性整体改写（默认 .sableos），agents / bootstrap / skills 一起跟随。
+    Path root = Path.of(workspaceRoot);
+    return new ContextLoader(root.resolve("agents"), root, root.resolve("skills"));
   }
 
   @Bean

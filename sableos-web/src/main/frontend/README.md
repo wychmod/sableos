@@ -1,6 +1,6 @@
 # SableOS 管理台（Admin Console）
 
-SableOS 的控制面前端：只读为主 + 会话轻交互的管理台。所有业务数据都来自后端 10 个 REST 端点，前端不内置 mock 数据，也不提供后端尚未实现的能力入口。
+SableOS 的控制面前端：只读为主 + 会话轻交互的管理台。所有业务数据都来自后端 11 个 REST 端点，前端不内置 mock 数据，也不提供后端尚未实现的能力入口。
 
 - 技术栈：Vue 3 + Vite + TypeScript（`strict`）+ vue-router
 - 页面：总览、会话、Agents、工具、记忆
@@ -44,9 +44,9 @@ npm run build
 
 ## 目录结构
 
-```
+```text
 src/
-  api/          client.ts（统一信封解析 / 超时 / ApiError）、endpoints.ts（10 个端点）
+  api/          client.ts（统一信封解析 / 超时 / ApiError）、endpoints.ts（11 个端点）
   components/   布局、图标、状态徽标、骨架屏、对话框、诊断抽屉等共享组件
   composables/  Agent 清单、系统状态、全局刷新、Toast / 诊断状态
   pages/        5 个路由页面
@@ -64,6 +64,7 @@ src/
 | --- | --- | --- | --- |
 | POST | `/sessions` | 建会话（幂等，同 profile + userId 复用） | 会话 |
 | POST | `/sessions/{id}/messages` | 发送消息（非流式） | 会话 |
+| GET | `/sessions` | 列出会话（最近 100 条摘要，可选 `?status=`） | 会话 |
 | GET | `/sessions/{id}` | 查询会话与最近历史 | 会话 |
 | DELETE | `/sessions/{id}` | 软归档会话 | 会话 |
 | POST | `/agents/{name}/invoke` | 无状态调用 Agent | Agents |
@@ -86,7 +87,7 @@ src/
 
 以下能力后端当前不存在，前端不做实现，也不放置“敬请期待”的假入口：
 
-- 会话列表 / 分页 / 服务端搜索（只支持按 ID 打开与 localStorage 最近 8 条）
+- 会话分页 / 服务端搜索（列表走 `GET /sessions` 最近 100 条摘要，本地仍保留 localStorage 最近 8 条用于「是否复用」判断）
 - 长期记忆的写入、编辑、清空、检索
 - Agent 的新增、修改、删除、文件上传
 - 定时任务 / schedules

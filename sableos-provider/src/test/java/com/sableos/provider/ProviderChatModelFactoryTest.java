@@ -34,4 +34,17 @@ class ProviderChatModelFactoryTest {
     assertThat(models.get("deepseek")).isInstanceOf(OpenAiChatModel.class);
     assertThat(models.get("qwen")).isInstanceOf(DashScopeChatModel.class);
   }
+
+  @Test
+  @DisplayName("工厂_mock型_构造确定性MockChatModel")
+  void build_constructsMockModel() {
+    ProvidersProperties properties =
+        new ProvidersProperties(
+            List.of(new ProvidersProperties.Provider("mock", "mock", null, null)));
+
+    Map<String, ChatModel> models = new ProviderChatModelFactory().build(properties);
+
+    assertThat(models).containsOnlyKeys("mock");
+    assertThat(models.get("mock")).isInstanceOf(MockChatModel.class);
+  }
 }

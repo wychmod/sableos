@@ -22,6 +22,7 @@ import com.sableos.tool.web.DuckDuckGoSearchProvider;
 import com.sableos.tool.web.SearchProvider;
 import java.nio.file.Path;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -48,8 +49,6 @@ import org.springframework.web.context.WebApplicationContext;
   HttpSandboxProperties.class
 })
 public class ToolConfiguration {
-
-  private static final Path MCP_CONFIG = Path.of(".sableos", "mcp_servers.yaml");
 
   @Bean
   public RestClient restClient() {
@@ -79,8 +78,10 @@ public class ToolConfiguration {
   }
 
   @Bean
-  public McpClientService mcpClientService() {
-    return new McpClientService(new McpConfigLoader(MCP_CONFIG));
+  public McpClientService mcpClientService(
+      @Value("${workspace.root:.sableos}") String workspaceRoot) {
+    // 27 节：MCP 配置跟随工作区根（默认 .sableos），供 sableos.root 覆盖整机工作区。
+    return new McpClientService(new McpConfigLoader(Path.of(workspaceRoot, "mcp_servers.yaml")));
   }
 
   @Bean

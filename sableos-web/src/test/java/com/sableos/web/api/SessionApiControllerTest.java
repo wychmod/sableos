@@ -20,6 +20,7 @@ import com.sableos.core.session.SessionManager;
 import com.sableos.web.GlobalExceptionHandler;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -158,6 +159,60 @@ class SessionApiControllerTest {
         .andExpect(jsonPath("$.data.messages", hasSize(100)))
         .andExpect(jsonPath("$.data.messages[0].content").value("m50"))
         .andExpect(jsonPath("$.data.messages[99].content").value("m149"));
+  }
+
+  @Test
+  @DisplayName("会话列表_返回摘要且不带完整对话正文")
+  void listReturnsSummariesWithoutMessages() throws Exception {
+    Session session = newSession();
+    session.appendUserMessage("你好");
+    when(sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST, null))
+        .thenReturn(List.of(session));
+
+    mvc.perform(get("/api/v1/sessions"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data", hasSize(1)))
+        .andExpect(jsonPath("$.data[0].id").value(SESSION_ID))
+        .andExpect(jsonPath("$.data[0].profileName").value("default"))
+        .andExpect(jsonPath("$.data[0].messageCount").value(1))
+        .andExpect(jsonPath("$.data[0].messages").doesNotExist());
+  }
+
+  @Test
+  @DisplayName("会话列表_status参数下推给存储层而不是在内存里过滤")
+  void listPassesStatusDownToStore() throws Exception {
+    Session archived =
+        Session.rehydrate(
+            "web:bob:default",
+            "default",
+            "web",
+            "bob",
+            "archived",
+            Instant.now(),
+            Instant.now(),
+            null);
+    when(sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST, "archived"))
+        .thenReturn(List.of(archived));
+
+    mvc.perform(get("/api/v1/sessions").param("status", "archived"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data", hasSize(1)))
+        .andExpect(jsonPath("$.data[0].id").value("web:bob:default"));
+
+    verify(sessionManager).listRecent(ApiConstraints.MAX_SESSION_LIST, "archived");
+  }
+
+  @Test
+  @DisplayName("会话列表_status为空白时按不过滤处理")
+  void listBlankStatusMeansNoFilter() throws Exception {
+    when(sessionManager.listRecent(ApiConstraints.MAX_SESSION_LIST, null))
+        .thenReturn(List.of(newSession()));
+
+    mvc.perform(get("/api/v1/sessions").param("status", "  "))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data", hasSize(1)));
+
+    verify(sessionManager).listRecent(ApiConstraints.MAX_SESSION_LIST, null);
   }
 
   @Test

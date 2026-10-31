@@ -96,6 +96,10 @@
     <!-- 本地快速构建默认跳过 OWASP（首跑需拉 NVD 缓存）；CI 与发版用 -Dowasp.skip=false 开启 -->
     <owasp.skip>true</owasp.skip>
 
+    <!-- @Tag("integration") 默认排除；手动跑集成测试用 -DexcludedGroups= -Dgroups=integration 覆盖。
+         经 project property 中转，命令行才能覆盖 POM 里的固定值（27 节实测）。 -->
+    <excludedGroups>integration</excludedGroups>
+
     <!-- 依赖收敛钉版（与 dependencyManagement 中的覆盖配套，勿单独改一处） -->
     <antlr4-runtime.version>4.13.2</antlr4-runtime.version>
     <swagger-annotations.version>2.2.47</swagger-annotations.version>
@@ -501,7 +505,7 @@
             <include>**/*Tests.java</include>
             <include>**/*IT.java</include>
           </includes>
-          <excludedGroups>integration</excludedGroups>
+          <excludedGroups>${excludedGroups}</excludedGroups>
           <!-- Mockito 5 的 inline mock maker 在测试期动态挂载 byte-buddy agent，JDK 21 默认
                打印 4 行「dynamic agent loading」警告（未来 JDK 将直接禁止）。显式开启后只保留
                Mockito 自己打印的 self-attaching 提示（那是 Mockito 的行为，不受此开关影响）。 -->

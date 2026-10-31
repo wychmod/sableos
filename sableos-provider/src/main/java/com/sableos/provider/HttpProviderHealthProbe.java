@@ -50,6 +50,10 @@ public class HttpProviderHealthProbe implements ProviderHealthProbe {
   }
 
   private ProviderStatus probeOne(ProvidersProperties.Provider provider) {
+    if (ProvidersProperties.TYPE_MOCK.equals(provider.effectiveType())) {
+      // 27 节：mock provider 没有网络端点，天然"可达"，不要退回去探测 DashScope 默认地址。
+      return new ProviderStatus(provider.name(), provider.effectiveType(), true, 0L, null);
+    }
     String baseUrl = resolveBaseUrl(provider);
     long startedAtNanos = System.nanoTime();
     try {

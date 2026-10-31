@@ -5,6 +5,7 @@ import type {
   MemoryView,
   ProfileView,
   ReplyView,
+  SessionSummary,
   SessionView,
   SystemInfo,
   ToolView,
@@ -30,6 +31,13 @@ export function sendSessionMessage(id: string, content: string): Promise<ReplyVi
 
 export function getSession(id: string): Promise<SessionView> {
   return request<SessionView>(sessionPath(id), {
+    timeoutMs: 15_000,
+  })
+}
+
+export function listSessions(status?: 'active' | 'archived'): Promise<SessionSummary[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request<SessionSummary[]>(`/sessions${query}`, {
     timeoutMs: 15_000,
   })
 }

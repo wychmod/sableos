@@ -10,6 +10,9 @@ import com.sableos.core.session.SessionMessage;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 /**
  * {@link SessionManager} 的 JPA 实现（18 节）：会话身份与跨重启持久化的落地。
@@ -72,6 +75,21 @@ public class JpaSessionManager implements SessionManager {
     }
     repository.save(entity);
     return true;
+  }
+
+  @Override
+  public List<Session> listRecent(int limit, String status) {
+    if (limit <= 0) {
+      return List.of();
+    }
+    // 过滤与截断都下推到 SQL：先按状态筛、再按活跃时间倒序取前 N。
+    // 若改成「取前 N 条再在内存里过滤」，归档一多，?status=archived 就会返回不足 N 条（数量被未命中过滤的行吃掉）。
+    Pageable page = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "lastActiveAt"));
+    List<SessionEntity> rows =
+        (status == null || status.isBlank())
+            ? repository.findAll(page).getContent()
+            : repository.findByStatus(status, page);
+    return rows.stream().map(this::restore).toList();
   }
 
   @Override

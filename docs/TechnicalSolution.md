@@ -400,14 +400,15 @@ Web Service 是 SableOS 的对外完整门面，业务系统通过 REST API 接�
 
 **OpenAPI 文档模块。** 通过 `springdoc-openapi` 自动生成 OpenAPI 3.0 文档，暴露在 `/swagger-ui`。
 
-### 7.2 核心阶段 10 个端点
+### 7.2 核心阶段 11 个端点
 
-**会话管理（4 个）：**
+**会话管理（5 个）：**
 
 1. `POST /api/v1/sessions`（创建）
 2. `POST /api/v1/sessions/{id}/messages`（发消息）
-3. `GET /api/v1/sessions/{id}`（查历史）
-4. `DELETE /api/v1/sessions/{id}`（归档）
+3. `GET /api/v1/sessions`（列出会话，27 节补；按最后活跃时间倒序，默认最近 100 条摘要，可选 `?status=`）
+4. `GET /api/v1/sessions/{id}`（查历史）
+5. `DELETE /api/v1/sessions/{id}`（归档）
 
 **Agent 调用（1 个）：**
 
@@ -803,10 +804,10 @@ mvn clean package
 
 ### 第三周（3 小时）：核心能力五 Web Service
 
-- `WebServer`（Spring MVC + virtual thread）、六个 `ApiController` 的核心 10 个端点
+- `WebServer`（Spring MVC + virtual thread）、六个 `ApiController` 的核心 11 个端点
 - `GlobalExceptionHandler`、`ConfigLoader`（配置与密钥加载）
 
-**可演示：** 外部系统通过 10 个 REST 端点完整调用 SableOS。
+**可演示：** 外部系统通过 11 个 REST 端点完整调用 SableOS。
 
 ### 第四周（3 小时）：多 Agent 演示 + 工程化收尾
 
@@ -842,7 +843,7 @@ SableOS 技术方案核心：**JDK 21 + Spring Boot 3.x** 单体应用，自实�
 2. **能力二** ReAct 循环（Agent 的大脑，引擎约数十行 Java）
 3. **能力三** Memory 三层记忆（统一门面，核心阶段 `MEMORY.md` 加两个内置 Tool，向量检索放扩展，接口预留升级空间）
 4. **能力四** Tool 体系（内置 9 个 Tool 加 Plugin Tool 三档接入，主推 `AGENT.md` 目录 加 MCP 零代码，`NotifyTools` 对称补上出站通知能力，核心阶段 Tool 相关三合一为一个模块）
-5. **能力五** Web Service（REST API 六类操作核心 10 个端点，业务系统集成的唯一通道）
+5. **能力五** Web Service（REST API 六类操作核心 11 个端点，业务系统集成的唯一通道）
 
 五大能力加支撑模块是**底座**（第一部分），本身不是某个具体的业务 Agent。真正定义一个业务 Agent 靠的是 Skill（做什么）加 Profile（怎么跑），核心阶段手动改文件，扩展阶段统一到 `POST /api/v1/agents` 一个入口（第二部分，第 11 章）——这条边界线是这版技术方案跟早期版本最大的结构性调整。
 

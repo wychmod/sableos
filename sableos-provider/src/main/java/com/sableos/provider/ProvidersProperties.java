@@ -17,6 +17,9 @@ public record ProvidersProperties(List<Provider> providers) {
   static final String TYPE_OPENAI = "openai";
   static final String TYPE_DASHSCOPE = "dashscope";
 
+  /** 第 27 节的确定性 mock provider：不连模型、不需要 key，专供无 key 全链路自测与演示。 */
+  static final String TYPE_MOCK = "mock";
+
   public ProvidersProperties {
     providers = (providers == null) ? List.of() : List.copyOf(providers);
   }
@@ -35,9 +38,13 @@ public record ProvidersProperties(List<Provider> providers) {
       }
       String where = "provider '" + name + "'";
       String type = provider.effectiveType();
-      if (!TYPE_OPENAI.equals(type) && !TYPE_DASHSCOPE.equals(type)) {
+      if (!TYPE_OPENAI.equals(type) && !TYPE_DASHSCOPE.equals(type) && !TYPE_MOCK.equals(type)) {
         throw new IllegalArgumentException(
-            where + " 的 type 非法：" + provider.type() + "（仅支持 openai | dashscope）");
+            where + " 的 type 非法：" + provider.type() + "（仅支持 openai | dashscope | mock）");
+      }
+      if (TYPE_MOCK.equals(type)) {
+        // mock 是第 27 节的无 key 自测 provider：既不需要凭证，也没有网络端点可校验。
+        continue;
       }
       String apiKey = provider.apiKey();
       if (apiKey == null || apiKey.isBlank()) {
