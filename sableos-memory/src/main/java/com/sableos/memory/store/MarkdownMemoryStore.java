@@ -1,5 +1,6 @@
 package com.sableos.memory.store;
 
+import com.sableos.core.agent.ToolExecutionContext;
 import com.sableos.memory.LongTermMemoryStore;
 import com.sableos.memory.MemoryScope;
 import java.io.IOException;
@@ -11,9 +12,13 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * 默认长期记忆后端：按 Profile 分目录的 {@code MEMORY.md}，按 "## 核心记忆" / "## 归档记忆" 分区。
+ *
+ * <p>第 30 节起，有 Agent 执行上下文时记忆落到 {@code agents/<name>/MEMORY.md}（这个 Agent 自己的成长记录，跟它的 {@code
+ * AGENT.md} / {@code skills/} 同目录）；无上下文时回退按 Profile 分目录的全局路径，保持既有行为。
  *
  * <p>每次重新读文件（契约一）；截断只裁归档区字符串（契约二）；recall 只搜归档区（契约四）。
  */
@@ -22,6 +27,9 @@ public class MarkdownMemoryStore implements LongTermMemoryStore {
   private static final String CORE_HEADER = "## 核心记忆";
   private static final String ARCHIVE_HEADER = "## 归档记忆";
   private static final int MAX_ARCHIVE_CHARS = 4000;
+
+  /** Agent 名必须是安全目录段；「../」「a/b」等一律回退全局路径。 */
+  private static final Pattern SAFE_AGENT = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_.-]{0,63}");
 
   private final Path workspaceRoot;
 
@@ -74,7 +82,17 @@ public class MarkdownMemoryStore implements LongTermMemoryStore {
     return doc.archive.stream().filter(line -> line.contains(keyword)).toList();
   }
 
+  /**
+   * 该读写哪个 {@code MEMORY.md}（第 30 节）：有合法 Agent 上下文 → 该 Agent 目录下的专属记忆； 否则回退到按 Profile 分目录的全局路径（非
+   * Agent 触发的直接调用、单测，行为与改动前一致）。
+   *
+   * <p>Agent 名做安全校验：非法段一律回退全局，防目录穿越。
+   */
   private Path memoryFile(String profileName) {
+    String agent = ToolExecutionContext.agentName();
+    if (agent != null && SAFE_AGENT.matcher(agent).matches()) {
+      return workspaceRoot.resolve("agents").resolve(agent).resolve("MEMORY.md");
+    }
     return workspaceRoot.resolve("memory").resolve(profileName).resolve("MEMORY.md");
   }
 

@@ -3,7 +3,11 @@ package com.sableos.core.tool;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sableos.core.agent.ToolExecutionContext;
+import com.sableos.core.profile.Profile;
+import com.sableos.core.profile.ProfileContext;
 import com.sableos.core.provider.ToolCallRequest;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +69,7 @@ public final class ToolExecutor {
     }
 
     try {
-      ToolResult result = tool.execute(input);
+      ToolResult result = withAgentContext(() -> tool.execute(input));
       audit(sessionId, call, result, call.argumentsJson(), start);
       logOutcome(call.name(), result, start);
       return result;
@@ -74,6 +78,22 @@ public final class ToolExecutor {
       audit(sessionId, call, result, call.argumentsJson(), start);
       logOutcome(call.name(), result, start);
       return result;
+    }
+  }
+
+  /**
+   * 在「当前 Agent」上下文里执行工具：{@code save_memory} / {@code recall_memory} 据此落到该 Agent 自己的记忆文件（第 30 节）。
+   *
+   * <p>取值来自 {@link ProfileContext#current()}——{@code AgentService}
+   * 在进入处理链时已置入。执行完（含异常）一律清除，避免线程复用串台。
+   */
+  private static ToolResult withAgentContext(Supplier<ToolResult> action) {
+    Profile profile = ProfileContext.current();
+    ToolExecutionContext.setAgentName(profile == null ? null : profile.name());
+    try {
+      return action.get();
+    } finally {
+      ToolExecutionContext.clear();
     }
   }
 
