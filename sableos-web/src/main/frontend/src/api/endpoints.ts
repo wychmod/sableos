@@ -68,12 +68,6 @@ export function listProfiles(): Promise<ProfileView[]> {
   })
 }
 
-export function getMemory(profile: string): Promise<MemoryView> {
-  return request<MemoryView>(`/memory?profile=${encodeURIComponent(profile)}`, {
-    timeoutMs: 15_000,
-  })
-}
-
 export function listTools(): Promise<ToolView[]> {
   return request<ToolView[]>('/tools', {
     timeoutMs: 15_000,
