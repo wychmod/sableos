@@ -315,6 +315,52 @@ class AgentSchedulerTest {
   }
 
   @Test
+  @DisplayName("注销 Agent 时回收它名下的空闲锁，不留下永久占位")
+  void unregisterProfile_retiresIdleLocks() {
+    Profile profile = profile(schedule(TASK_ID, "0 0 9 * * *", "Asia/Shanghai", MESSAGE));
+    profileRegistry.register(profile);
+    AgentScheduler scheduler = scheduler();
+    scheduler.registerAll();
+
+    // 先让锁表里真的生成该 Agent 的任务锁与会话锁
+    scheduler.lockFor(PROFILE_NAME, TASK_ID);
+    scheduler.sessionLockFor(PROFILE_NAME);
+    assertThat(scheduler.hasTaskLock(PROFILE_NAME, TASK_ID)).isTrue();
+    assertThat(scheduler.hasSessionLock(PROFILE_NAME)).isTrue();
+
+    scheduler.unregisterProfile(profile);
+
+    // 锁已回收：反复新增/删除 Agent 不再无限累积
+    assertThat(scheduler.hasTaskLock(PROFILE_NAME, TASK_ID)).isFalse();
+    assertThat(scheduler.hasSessionLock(PROFILE_NAME)).isFalse();
+    assertThat(scheduler.taskLockCount()).isZero();
+  }
+
+  @Test
+  @DisplayName("注销 Agent 时，仍被持有的锁不回收（否则同一任务会跑出两份并发）")
+  void unregisterProfile_keepsHeldLock() throws InterruptedException {
+    Profile profile = profile(schedule(TASK_ID, "0 0 9 * * *", "Asia/Shanghai", MESSAGE));
+    profileRegistry.register(profile);
+    AgentScheduler scheduler = scheduler();
+    scheduler.registerAll();
+
+    // 造出「上一次还没跑完」：锁被另一个线程持有
+    LockHolder holder = holdLockInOtherThread(scheduler.lockFor(PROFILE_NAME, TASK_ID));
+    try {
+      scheduler.unregisterProfile(profile);
+
+      // 被持有的锁必须留着，否则新来的触发会新建一把锁并成功拿到 → 同一任务并发两份
+      assertThat(scheduler.hasTaskLock(PROFILE_NAME, TASK_ID)).isTrue();
+    } finally {
+      holder.releaseAndJoin();
+    }
+
+    // 释放之后再注销一次（幂等），此时锁已空闲，应被回收
+    scheduler.unregisterProfile(profile);
+    assertThat(scheduler.hasTaskLock(PROFILE_NAME, TASK_ID)).isFalse();
+  }
+
+  @Test
   @DisplayName("非法配置只跳过该条，不影响其余任务")
   void registerAll_skipsOnlyInvalidSchedule() {
     profileRegistry.register(

@@ -105,6 +105,13 @@ management:
 # MDC 共 5 个键：traceId / spanId / sessionId / profileName / channel；
 # prod 档的 JSON 输出走 logback-spring.xml 里 LogstashEncoder 的 includeMdcKeyName 白名单，新增键必须同步两处。
 sableos:
+  # --- 提示词时区 ---
+  # 提示词里「当前时间」所用时区（IANA 名，如 Asia/Shanghai）。
+  # 留空 = 回落 JVM 默认时区；容器常为 UTC，与定时任务用的 profile.zone 错位时
+  # 会导致模型看到的「今天/明天」整体偏移（差 8 小时），部署到非本地时区机器时应显式填。
+  # 非法 IANA 名直接启动失败（不静默回落 GMT）。
+  timezone: ${SABLEOS_TIMEZONE:}
+
   observability:
     trace:
       # 是否回写链路响应头（MDC 与信封 traceId 字段不受此开关影响）

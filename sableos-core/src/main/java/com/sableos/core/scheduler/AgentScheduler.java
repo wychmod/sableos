@@ -151,10 +151,13 @@ public final class AgentScheduler {
    * <p><b>为什么按 Agent 名筛而非按 {@code profile.schedules()} 反查</b>：旧配置里存在、新配置里已被删掉的那条任务，在 {@code
    * profile.schedules()} 里已经查不到了；只有按名字筛句柄表，才能把它一并停掉并退役。
    *
-   * <p>对每条命中：取消句柄（{@code cancel(false)}，不中断正在执行的那一次，只阻止后续触发）、移出句柄表与内存索引、把任务标记退役。 <b>不动</b> {@code
-   * taskLocks} / {@code sessionLocks}——重注册会复用同一把锁，删了反而制造竞态。
+   * <p>对每条命中：取消句柄（{@code cancel(false)}，不中断正在执行的那一次，只阻止后续触发）、移出句柄表与内存索引、把任务标记退役。
    *
-   * <p>未命中任何句柄时静默返回（幂等）。
+   * <p><b>锁的处理</b>：{@code taskLocks} / {@code sessionLocks} 按 key 惰性创建且从不主动删，Agent
+   * 被删除后其锁会永久留占——长时间运行、 反复新建/删除 Agent 时是确定的内存增长点。故在本方法末尾回收该 Agent 名下**空闲**的锁（见 {@link
+   * #retireIdleLocks}）： 仍被占用的锁一律保留，因为删了会让同一任务跑出两份并发（{@code tryLock} 语义依赖锁实例稳定）。
+   *
+   * <p>未命中任何句柄时仍会尝试回收空闲锁（幂等）。
    *
    * @param profile 要注销的 Agent；null 或名为空时直接返回
    */
@@ -187,6 +190,41 @@ public final class AgentScheduler {
           safe(target),
           safe(task.schedule().id()),
           scheduleId);
+    }
+    retireIdleLocks(target);
+  }
+
+  /**
+   * 回收某个 Agent 名下**空闲**的锁（任务锁与会话锁）。
+   *
+   * <p><b>为什么只能回收空闲的</b>：{@code lockFor} 的语义是「同一个任务永远拿同一把锁，拿不到就跳过本次触发」。若把一把正被持有的锁从
+   * 表里删掉，调用方会新建一把新锁并成功拿到，于是同一任务跑出两份并发——正是退役时要避免的结果。所以只删 {@code isLocked() == false} 且没有排队等待者的锁。
+   *
+   * <p>删除窗口仍需「不会再有新触发进来」作为前提：任务已退役、句柄已取消，{@code runNow} 走 {@code reconstruct} 也查不到它， 故不会有人在窗口内重新通过
+   * {@code computeIfAbsent} 拿到待删的锁实例。
+   *
+   * <p>删除用两参 {@code remove(key, value)}：只有当表里仍是刚检查过的那个实例时才移除，避免误删别处新建的同名锁。
+   *
+   * @param profileName Agent 名（锁表按它筛选）
+   */
+  private void retireIdleLocks(String profileName) {
+    for (TaskKey key : List.copyOf(taskLocks.keySet())) {
+      if (key.profileName().equals(profileName)) {
+        removeIfIdle(taskLocks, key);
+      }
+    }
+    String sessionId =
+        SessionManager.sessionId(TraceContext.CHANNEL_SCHEDULER, SCHEDULER_USER_ID, profileName);
+    removeIfIdle(sessionLocks, sessionId);
+  }
+
+  /** 仅当锁空闲且表里仍是同一实例时移除（见 {@link #retireIdleLocks}）。 */
+  private static <K> void removeIfIdle(ConcurrentMap<K, Lock> locks, K key) {
+    Lock lock = locks.get(key);
+    if (lock instanceof ReentrantLock reentrant
+        && !reentrant.isLocked()
+        && !reentrant.hasQueuedThreads()) {
+      locks.remove(key, lock);
     }
   }
 
@@ -478,6 +516,39 @@ public final class AgentScheduler {
 
   /** 任务身份键：用 record 而非拼接字符串，避免 Agent 名 / 任务键含分隔符时两条任务撞成同一把锁。 */
   private record TaskKey(String profileName, String scheduleKey) {}
+
+  /**
+   * 锁表当前条目数（包级可见供同包测试验证回收）。
+   *
+   * <p>不直接暴露 {@code taskLocks} / {@code sessionLocks}：集合引用一旦交出去，测试以外也能改它，反而失去封装。
+   *
+   * @return 任务锁条目数
+   */
+  int taskLockCount() {
+    return taskLocks.size();
+  }
+
+  /**
+   * 某任务名下是否仍持有锁（包级可见供同包测试）。
+   *
+   * @param profileName Agent 名
+   * @param scheduleKey 任务键
+   * @return 锁表里存在该键返回 true
+   */
+  boolean hasTaskLock(String profileName, String scheduleKey) {
+    return taskLocks.containsKey(new TaskKey(profileName, scheduleKey));
+  }
+
+  /**
+   * 某 Agent 的定时会话锁是否仍在表里（包级可见供同包测试）。
+   *
+   * @param profileName Agent 名
+   * @return 锁表里存在该会话键返回 true
+   */
+  boolean hasSessionLock(String profileName) {
+    return sessionLocks.containsKey(
+        SessionManager.sessionId(TraceContext.CHANNEL_SCHEDULER, SCHEDULER_USER_ID, profileName));
+  }
 
   /** 已注册任务的内存索引：仅用于立即执行时快速找到配置；不作为运行态事实源。 */
   private record RegisteredTask(
