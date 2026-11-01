@@ -172,6 +172,16 @@ SableOS 是 Maven 多模块项目，**以《技术方案》第 10 章为准，�
 4. **每个 user story 完成后打 git commit**，方便随时回退到稳定状态。
 5. **不允许 AI agent 自己修改 constitution**；发现 AI 生成代码偏离宪章时，让它重读 constitution 纠正。
 6. 跨 task 上下文丢失时，回去读 `spec.md` + `plan.md` + 最近的代码，别凭印象接着写。
+7. **顺延项（`【顺延·XX 节后】`）在后续章节被回收时，必须回到原 section 的 `tasks.md` 补勾并写明回收落点**，例如：
+
+   ```markdown
+   - [x] T009 [US3] 【顺延·24 节后】实现 `NotifyTools`（…）
+     - **回收记录（2026-11-01 复核）**：已由 [005 T027](../005-lesson20-tool/tasks.md) 落地；`enforce` 在 `NotifyTools.java:100`、`send` 在 `:101`。
+   ```
+
+   并在原 spec 的 `acceptance-report.md` 里注明“第二批 harness 已回收”及其实跑结果。
+
+   > **为什么必须做**：`tasks.md` 的勾选状态是复查时判断“这节到底做完没有”的唯一依据。顺延项不补勾，后续复查会把已完成的工作误判为未完成（`004` 的 T009/T010、`011` 全节、`014` 全节都实际踩过这个坑）；补勾而不写回收落点，则下次复核又要重新追一遍来源。
 
 ## 9. 改 `docs/` 时的格式约定
 
