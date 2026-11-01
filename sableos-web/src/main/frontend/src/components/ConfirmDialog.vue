@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 import AppIcon from './AppIcon.vue'
+import { t } from '../i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -13,8 +14,10 @@ const props = withDefaults(
     danger?: boolean
   }>(),
   {
-    confirmLabel: '确认',
-    cancelLabel: '取消',
+    // 默认文案置空、在使用处回落 t()：withDefaults 里的字面量只在模块初始化算一次，
+    // 写死中文会让切语言后按钮不跟着变。
+    confirmLabel: '',
+    cancelLabel: '',
     pending: false,
     danger: false,
   },
@@ -73,7 +76,7 @@ function onBackdrop(event: MouseEvent): void {
       <button
         type="button"
         class="icon-button"
-        aria-label="关闭对话框"
+        :aria-label="t('关闭对话框')"
         :disabled="pending"
         @click="requestCancel"
       >
@@ -92,7 +95,7 @@ function onBackdrop(event: MouseEvent): void {
         :disabled="pending"
         @click="requestCancel"
       >
-        {{ cancelLabel }}
+        {{ cancelLabel || t('取消') }}
       </button>
       <button
         type="button"
@@ -101,7 +104,7 @@ function onBackdrop(event: MouseEvent): void {
         :disabled="pending"
         @click="emit('confirm')"
       >
-        {{ pending ? '处理中…' : confirmLabel }}
+        {{ pending ? t('处理中…') : confirmLabel || t('确认') }}
       </button>
     </div>
   </dialog>

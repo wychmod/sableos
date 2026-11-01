@@ -21,17 +21,19 @@ import {
   writeWorkspaceFile,
 } from '../api/endpoints'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
+import { t } from '../i18n'
 import type { AgentDetailView, FileNode, SessionView } from '../types/api'
 
 type TabKey = 'basic' | 'generate' | 'files' | 'session' | 'memory'
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'basic', label: '基本信息' },
-  { key: 'generate', label: '生成' },
-  { key: 'files', label: '文件' },
-  { key: 'session', label: '会话' },
-  { key: 'memory', label: '记忆' },
-]
+// 必须是 computed：普通数组只在模块加载时求值一次，切语言后页签不会跟着变。
+const TABS = computed<{ key: TabKey; label: string }[]>(() => [
+  { key: 'basic', label: t('基本信息') },
+  { key: 'generate', label: t('生成') },
+  { key: 'files', label: t('文件') },
+  { key: 'session', label: t('会话') },
+  { key: 'memory', label: t('记忆') },
+])
 
 const MAX_MESSAGE_CHARS = 32_768
 const MAX_DESCRIPTION_CHARS = 2000
@@ -137,7 +139,7 @@ function findNode(nodes: FileNode[], path: string): FileNode | null {
 
 async function openFile(node: FileNode): Promise<void> {
   if (node.directory) return
-  if (fileDirty.value && !window.confirm('当前文件有未保存修改，确定切换？')) return
+  if (fileDirty.value && !window.confirm(t('当前文件有未保存修改，确定切换？'))) return
   selectedPath.value = node.path
   fileLoading.value = true
   fileError.value = null
@@ -159,7 +161,7 @@ async function saveFile(): Promise<void> {
   try {
     await writeWorkspaceFile(selectedPath.value, fileContent.value)
     originalContent.value = fileContent.value
-    pushToast(`${selectedPath.value} 已保存并生效`, 'success')
+    pushToast(t('{path} 已保存并生效', { path: selectedPath.value }), 'success')
     await load(true)
   } catch (error) {
     const apiError = normalizeError(error)
@@ -194,7 +196,7 @@ async function sendSession(): Promise<void> {
   const content = sessionInput.value.trim()
   if (!content || sessionSending.value) return
   if (content.length > MAX_MESSAGE_CHARS) {
-    reportError(new Error('消息超过 32,768 字符上限'), { toast: true })
+    reportError(new Error(t('消息超过 32,768 字符上限')), { toast: true })
     return
   }
   sessionSending.value = true
@@ -241,7 +243,7 @@ const deletePending = ref(false)
 
 async function removeAgent(): Promise<void> {
   if (deletePending.value) return
-  if (!window.confirm(`删除 ${agentName.value}？目录会移动到 archive/，可追溯。`)) return
+  if (!window.confirm(t('删除 {name}？目录会移动到 archive/，可追溯。', { name: agentName.value }))) return
   deletePending.value = true
   try {
     await deleteAgent(agentName.value)
@@ -276,16 +278,16 @@ onMounted(() => {
     <PageHeader
       eyebrow="Agent detail / 03"
       :title="agent?.name ?? agentName"
-      :description="agent?.description || '该 Agent 未提供描述。'"
+      :description="agent?.description || t('该 Agent 未提供描述。')"
     >
       <template #actions>
         <RouterLink class="btn btn--secondary btn--sm" to="/agents">
           <AppIcon name="chevron-right" size="14" />
-          返回列表
+          {{ t('返回列表') }}
         </RouterLink>
         <button type="button" class="btn btn--danger-ghost btn--sm" :disabled="deletePending" @click="removeAgent">
           <AppIcon name="close" size="12" />
-          删除
+          {{ t('删除') }}
         </button>
       </template>
     </PageHeader>
@@ -297,7 +299,7 @@ onMounted(() => {
 
     <ErrorState
       v-else-if="loadError"
-      title="Agent 详情加载失败"
+      :title="t('Agent 详情加载失败')"
       :error="loadError"
       @retry="load(true)"
       @inspect="openDiagnostics(loadError)"
@@ -324,8 +326,8 @@ onMounted(() => {
         <dl class="detail-grid">
           <div><dt>Provider</dt><dd class="mono">{{ agent.provider || '—' }}</dd></div>
           <div><dt>Model</dt><dd class="mono">{{ agent.model || '—' }}</dd></div>
-          <div><dt>工具</dt><dd class="mono">{{ agent.tools.length }}</dd></div>
-          <div><dt>定时</dt><dd class="mono">{{ agent.schedules.length }}</dd></div>
+          <div><dt>{{ t('工具') }}</dt><dd class="mono">{{ agent.tools.length }}</dd></div>
+          <div><dt>{{ t('定时') }}</dt><dd class="mono">{{ agent.schedules.length }}</dd></div>
         </dl>
 
         <div v-if="agent.tools.length > 0" class="detail-block">
@@ -336,7 +338,7 @@ onMounted(() => {
         </div>
 
         <div v-if="agent.schedules.length > 0" class="detail-block">
-          <span class="detail-block__label">定时声明</span>
+          <span class="detail-block__label">{{ t('定时声明') }}</span>
           <table class="data-table">
             <thead>
               <tr><th>id</th><th>cron</th><th>zone</th><th>message</th></tr>
@@ -353,20 +355,20 @@ onMounted(() => {
         </div>
 
         <p class="detail-hint">
-          要改正文、provider 或定时，请到「文件」页签编辑 <code>AGENT.md</code>，保存后立即生效。
+          {{ t('要改正文、provider 或定时，请到「文件」页签编辑') }} <code>AGENT.md</code>{{ t('，保存后立即生效。') }}
         </p>
       </section>
 
       <!-- 生成 -->
       <section v-else-if="activeTab === 'generate'" class="panel">
         <p class="detail-hint">
-          用一段话描述你想要的 Agent；模型只产出草稿，核对后再保存。需要后端配置
-          <code>sableos.author.model</code>，未配置时返回 503。
+          {{ t('用一段话描述你想要的 Agent；模型只产出草稿，核对后再保存。需要后端配置') }}
+          <code>sableos.author.model</code>{{ t('，未配置时返回 503。') }}
         </p>
 
         <div class="form-field">
           <label class="form-label" for="generate-description">
-            需求
+            {{ t('需求') }}
             <span class="char-count mono">
               {{ generateDescription.length.toLocaleString('zh-CN') }} /
               {{ MAX_DESCRIPTION_CHARS.toLocaleString('zh-CN') }}
@@ -376,7 +378,7 @@ onMounted(() => {
             id="generate-description"
             v-model="generateDescription"
             class="textarea"
-            placeholder="例如：每天早上九点查北京天气，把穿搭建议发到团队群"
+            :placeholder="t('例如：每天早上九点查北京天气，把穿搭建议发到团队群')"
             :disabled="generatePending"
           />
         </div>
@@ -388,13 +390,13 @@ onMounted(() => {
 
         <div class="panel-actions">
           <button type="button" class="btn btn--primary" :disabled="!canGenerate" @click="runGenerate">
-            {{ generatePending ? '生成中…' : '生成草稿' }}
+            {{ generatePending ? t('生成中…') : t('生成草稿') }}
           </button>
         </div>
 
         <template v-if="generated">
           <div class="detail-block">
-            <span class="detail-block__label">草稿文件（{{ Object.keys(generated).length }}）</span>
+            <span class="detail-block__label">{{ t('草稿文件（{count}）', { count: Object.keys(generated).length }) }}</span>
             <div class="generated-list">
               <label v-for="path in Object.keys(generated)" :key="path" class="generated-item">
                 <span class="mono">{{ path }}</span>
@@ -402,7 +404,7 @@ onMounted(() => {
             </div>
           </div>
           <details class="generated-preview">
-            <summary>查看草稿内容</summary>
+            <summary>{{ t('查看草稿内容') }}</summary>
             <article v-for="(content, path) in generated" :key="path" class="generated-file">
               <h4 class="mono">{{ path }}</h4>
               <pre class="code-block">{{ content }}</pre>
@@ -410,9 +412,9 @@ onMounted(() => {
           </details>
           <div class="panel-actions">
             <button type="button" class="btn btn--primary" :disabled="savingGenerated" @click="saveGenerated">
-              {{ savingGenerated ? '保存中…' : '写入并生效' }}
+              {{ savingGenerated ? t('保存中…') : t('写入并生效') }}
             </button>
-            <button type="button" class="btn btn--secondary" @click="generated = null">丢弃草稿</button>
+            <button type="button" class="btn btn--secondary" @click="generated = null">{{ t('丢弃草稿') }}</button>
           </div>
         </template>
       </section>
@@ -423,7 +425,7 @@ onMounted(() => {
           <template v-for="node in agentFiles" :key="node.path">
             <FileTreeNode :node="node" :selected="selectedPath" @open="openFile" />
           </template>
-          <p v-if="!agentFiles.length" class="detail-hint">该目录下没有可浏览的文件。</p>
+          <p v-if="!agentFiles.length" class="detail-hint">{{ t('该目录下没有可浏览的文件。') }}</p>
         </aside>
 
         <div class="file-editor">
@@ -431,7 +433,7 @@ onMounted(() => {
             <div class="file-editor__head">
               <span class="mono">{{ selectedPath }}</span>
               <button type="button" class="btn btn--primary btn--sm" :disabled="!fileDirty || fileSaving" @click="saveFile">
-                {{ fileSaving ? '保存中…' : '保存' }}
+                {{ fileSaving ? t('保存中…') : t('保存') }}
               </button>
             </div>
             <div v-if="fileError" class="inline-alert inline-alert--danger">
@@ -448,8 +450,8 @@ onMounted(() => {
           </template>
           <EmptyState
             v-else
-            title="选择一个文件"
-            description="左侧点文件名查看与编辑。改 AGENT.md 保存后会立即重新注册。"
+            :title="t('选择一个文件')"
+            :description="t('左侧点文件名查看与编辑。改 AGENT.md 保存后会立即重新注册。')"
             icon="tools"
           />
         </div>
@@ -463,7 +465,7 @@ onMounted(() => {
         </div>
         <SkeletonBlock v-else-if="sessionLoading && !session" width="100%" height="240px" />
         <template v-else-if="session">
-          <p class="detail-hint">这是该 Agent 的固定管理台会话（<span class="mono">{{ session.id }}</span>），刷新后仍在。</p>
+          <p class="detail-hint">{{ t('这是该 Agent 的固定管理台会话（') }}<span class="mono">{{ session.id }}</span>{{ t('），刷新后仍在。') }}</p>
           <ol class="message-list">
             <li
               v-for="(message, index) in session.messages"
@@ -473,23 +475,23 @@ onMounted(() => {
             >
               <span class="message__role mono">{{ message.role }}</span>
               <span v-if="message.toolName" class="message__tool mono">{{ message.toolName }}</span>
-              <p class="message__content">{{ message.content || '（无内容）' }}</p>
+              <p class="message__content">{{ message.content || t('（无内容）') }}</p>
             </li>
-            <li v-if="!session.messages.length" class="message message--empty">还没有消息，发一句试试。</li>
+            <li v-if="!session.messages.length" class="message message--empty">{{ t('还没有消息，发一句试试。') }}</li>
           </ol>
           <div class="form-field">
-            <label class="form-label" for="session-input">发消息</label>
+            <label class="form-label" for="session-input">{{ t('发消息') }}</label>
             <textarea
               id="session-input"
               v-model="sessionInput"
               class="textarea"
-              placeholder="例如：介绍一下你自己"
+              :placeholder="t('例如：介绍一下你自己')"
               :disabled="sessionSending"
             />
           </div>
           <div class="panel-actions">
             <button type="button" class="btn btn--primary" :disabled="sessionSending || !sessionInput.trim()" @click="sendSession">
-              {{ sessionSending ? '处理中…（最长 60 秒）' : '发送' }}
+              {{ sessionSending ? t('处理中…（最长 60 秒）') : t('发送') }}
             </button>
           </div>
         </template>
@@ -503,16 +505,16 @@ onMounted(() => {
         </div>
         <SkeletonBlock v-else-if="memoryLoading" width="100%" height="200px" />
         <template v-else>
-          <p class="detail-hint">该 Agent 自己的长期记忆（<code>agents/{{ agent.name }}/MEMORY.md</code>），只读。</p>
+          <p class="detail-hint">{{ t('该 Agent 自己的长期记忆（') }}<code>agents/{{ agent.name }}/MEMORY.md</code>{{ t('），只读。') }}</p>
           <pre v-if="memoryText" class="code-block">{{ memoryText }}</pre>
           <EmptyState
             v-else
-            title="还没有记忆"
-            description="Agent 调用 save_memory 后，内容会出现在这里。"
+            :title="t('还没有记忆')"
+            :description="t('Agent 调用 save_memory 后，内容会出现在这里。')"
             icon="memory"
           />
           <div class="panel-actions">
-            <button type="button" class="btn btn--secondary btn--sm" @click="loadMemory">重新读取</button>
+            <button type="button" class="btn btn--secondary btn--sm" @click="loadMemory">{{ t('重新读取') }}</button>
           </div>
         </template>
       </section>

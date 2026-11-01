@@ -10,6 +10,7 @@ import { normalizeError, type ApiError } from '../api/client'
 import { listTools } from '../api/endpoints'
 import { refreshTick } from '../composables/useRefreshSignal'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
+import { t } from '../i18n'
 import type { ToolView } from '../types/api'
 
 interface SchemaView {
@@ -62,7 +63,7 @@ async function refresh(): Promise<void> {
   refreshing.value = true
   await load(true)
   if (!error.value) {
-    pushToast('工具清单已刷新', 'success')
+    pushToast(t('工具清单已刷新'), 'success')
   }
   refreshing.value = false
 }
@@ -89,7 +90,7 @@ function clearQuery(): void {
 function schemaFor(tool: ToolView): SchemaView {
   const raw = tool.inputSchema ?? ''
   if (raw.trim().length === 0) {
-    return { ok: true, text: '该工具未声明入参 Schema。', keys: 0 }
+    return { ok: true, text: t('该工具未声明入参 Schema。'), keys: 0 }
   }
   try {
     const parsed: unknown = JSON.parse(raw)
@@ -116,8 +117,8 @@ onMounted(() => {
   <div class="page-shell page-stack tools-page">
     <PageHeader
       eyebrow="Tool registry / 04"
-      title="工具"
-      description="工作区注册的工具能力与入参 Schema。筛选仅作用于当前已加载清单，不发起额外请求。"
+      :title="t('工具')"
+      :description="t('工作区注册的工具能力与入参 Schema。筛选仅作用于当前已加载清单，不发起额外请求。')"
     >
       <template #actions>
         <span class="tools-caption mono">{{ filtered.length }} / {{ tools.length }}</span>
@@ -128,7 +129,7 @@ onMounted(() => {
           @click="refresh"
         >
           <AppIcon name="refresh" size="14" :class="{ spinning: refreshing || loading }" />
-          {{ refreshing ? '刷新中' : '刷新' }}
+          {{ refreshing ? t('刷新中') : t('刷新') }}
         </button>
       </template>
     </PageHeader>
@@ -141,8 +142,8 @@ onMounted(() => {
           v-model="query"
           type="search"
           class="input tool-search__input"
-          placeholder="按名称或描述筛选工具"
-          aria-label="按名称或描述筛选工具"
+          :placeholder="t('按名称或描述筛选工具')"
+          :aria-label="t('按名称或描述筛选工具')"
           autocomplete="off"
         />
       </div>
@@ -154,15 +155,15 @@ onMounted(() => {
           :aria-pressed="allExpanded"
           @click="toggleAll"
         >
-          {{ allExpanded ? '全部收起' : '展开全部' }}
+          {{ allExpanded ? t('全部收起') : t('展开全部') }}
         </button>
         <button v-if="hasQuery" type="button" class="btn btn--ghost btn--sm" @click="clearQuery">
-          清除筛选
+          {{ t('清除筛选') }}
         </button>
       </div>
     </div>
 
-    <div v-if="loading && tools.length === 0" class="tool-list" aria-label="工具加载中">
+    <div v-if="loading && tools.length === 0" class="tool-list" :aria-label="t('工具加载中')">
       <div v-for="index in 3" :key="index" class="tool-skeleton">
         <div class="tool-skeleton__main">
           <SkeletonBlock width="160px" height="16px" />
@@ -174,7 +175,7 @@ onMounted(() => {
 
     <ErrorState
       v-else-if="error && tools.length === 0"
-      title="工具清单加载失败"
+      :title="t('工具清单加载失败')"
       :error="error"
       @retry="refresh"
       @inspect="openDiagnostics(error)"
@@ -182,9 +183,9 @@ onMounted(() => {
 
     <EmptyState
       v-else-if="tools.length === 0"
-      title="尚未注册任何工具"
-      description="工作区当前没有可用的工具。工具由后端注册表提供，控制台不提供新增入口。"
-      action-label="重新加载"
+      :title="t('尚未注册任何工具')"
+      :description="t('工作区当前没有可用的工具。工具由后端注册表提供，控制台不提供新增入口。')"
+      :action-label="t('重新加载')"
       icon="tools"
       @action="refresh"
     />
@@ -196,16 +197,16 @@ onMounted(() => {
           {{ error.message }}
           <span class="inline-alert__trace">traceId: {{ error.traceId || '—' }}</span>
         </span>
-        <button type="button" class="inline-alert__action" @click="openDiagnostics(error)">诊断</button>
+        <button type="button" class="inline-alert__action" @click="openDiagnostics(error)">{{ t('诊断') }}</button>
       </div>
 
       <div v-if="filtered.length === 0" class="panel tool-no-match">
         <span class="empty-state__mark"><AppIcon name="search" size="18" /></span>
-        <h2 class="empty-state__title">没有匹配的工具</h2>
+        <h2 class="empty-state__title">{{ t('没有匹配的工具') }}</h2>
         <p class="empty-state__description">
-          当前关键字“{{ query.trim() }}”没有命中任何工具名称或描述。
+          {{ t('当前关键字“{query}”没有命中任何工具名称或描述。', { query: query.trim() }) }}
         </p>
-        <button type="button" class="btn btn--secondary" @click="clearQuery">清除筛选</button>
+        <button type="button" class="btn btn--secondary" @click="clearQuery">{{ t('清除筛选') }}</button>
       </div>
 
       <div v-else class="tool-list" role="list">
@@ -226,7 +227,7 @@ onMounted(() => {
             <span class="tool-row__main">
               <span class="tool-row__name mono">{{ tool.name }}</span>
               <span class="tool-row__description">
-                {{ tool.description || '该工具未提供描述。' }}
+                {{ tool.description || t('该工具未提供描述。') }}
               </span>
             </span>
             <span class="tool-row__meta">
@@ -250,9 +251,9 @@ onMounted(() => {
               <div class="tool-schema__actions">
                 <span v-if="!schemaFor(tool).ok" class="schema-warning">
                   <AppIcon name="alert" size="13" />
-                  Schema 不是合法 JSON
+                  {{ t('Schema 不是合法 JSON') }}
                 </span>
-                <CopyButton :value="schemaFor(tool).text" label="复制 Schema" show-label />
+                <CopyButton :value="schemaFor(tool).text" :label="t('复制 Schema')" show-label />
               </div>
             </div>
             <pre class="tool-schema__code">{{ schemaFor(tool).text }}</pre>

@@ -16,6 +16,7 @@ import {
 import { refreshTick } from '../composables/useRefreshSignal'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
 import type { ScheduleExecution, ScheduleView } from '../types/api'
+import { t } from '../i18n'
 import { formatDateTime, formatLatency } from '../utils/format'
 
 type ChipTone = 'success' | 'failure' | 'warning' | 'neutral' | 'accent'
@@ -50,7 +51,7 @@ async function refresh(): Promise<void> {
   refreshing.value = true
   await load(true)
   if (!error.value) {
-    pushToast('定时任务已刷新', 'success')
+    pushToast(t('定时任务已刷新'), 'success')
   }
   refreshing.value = false
 }
@@ -67,7 +68,7 @@ async function toggleEnabled(task: ScheduleView): Promise<void> {
   try {
     const updated = await setScheduleEnabled(task.scheduleId, !task.enabled)
     replaceTask(updated)
-    pushToast(updated.enabled ? '任务已启用' : '任务已停用', 'success')
+    pushToast(updated.enabled ? t('任务已启用') : t('任务已停用'), 'success')
   } catch (caught) {
     reportError(normalizeError(caught), { toast: true })
   } finally {
@@ -81,7 +82,9 @@ async function runNow(task: ScheduleView): Promise<void> {
   try {
     const execution = await runSchedule(task.scheduleId)
     pushToast(
-      execution.success ? '立即执行完成' : `立即执行失败：${execution.errorMessage ?? '未知原因'}`,
+      execution.success
+        ? t('立即执行完成')
+        : t('立即执行失败：{reason}', { reason: execution.errorMessage ?? t('未知原因') }),
       execution.success ? 'success' : 'error',
     )
     await load(true)
@@ -119,8 +122,8 @@ async function loadExecutions(id: number): Promise<void> {
 }
 
 function statusLabel(task: ScheduleView): string {
-  if (task.retired) return '已退役'
-  return task.enabled ? '启用中' : '已停用'
+  if (task.retired) return t('已退役')
+  return task.enabled ? t('启用中') : t('已停用')
 }
 
 function statusTone(task: ScheduleView): ChipTone {
@@ -129,9 +132,9 @@ function statusTone(task: ScheduleView): ChipTone {
 }
 
 function lastStatusLabel(task: ScheduleView): string {
-  if (task.lastStatus === 'success') return '成功'
-  if (task.lastStatus === 'failed') return '失败'
-  return '未执行'
+  if (task.lastStatus === 'success') return t('成功')
+  if (task.lastStatus === 'failed') return t('失败')
+  return t('未执行')
 }
 
 function lastStatusTone(task: ScheduleView): ChipTone {
@@ -157,11 +160,11 @@ onMounted(() => {
   <div class="page-shell page-stack schedules-page">
     <PageHeader
       eyebrow="Scheduler / 28"
-      title="定时任务"
-      description="Agent 运行声明里登记的定时任务；这里只管理运行状态与执行，不改 cron 定义。"
+      :title="t('定时任务')"
+      :description="t('Agent 运行声明里登记的定时任务；这里只管理运行状态与执行，不改 cron 定义。')"
     >
       <template #actions>
-        <span class="schedules-caption mono">{{ schedules.length }} 个任务</span>
+        <span class="schedules-caption mono">{{ t('{count} 个任务', { count: schedules.length }) }}</span>
         <button
           type="button"
           class="btn btn--secondary btn--sm"
@@ -169,7 +172,7 @@ onMounted(() => {
           @click="refresh"
         >
           <AppIcon name="refresh" size="14" :class="{ spinning: refreshing || loading }" />
-          {{ refreshing ? '刷新中' : '刷新' }}
+          {{ refreshing ? t('刷新中') : t('刷新') }}
         </button>
       </template>
     </PageHeader>
@@ -184,7 +187,7 @@ onMounted(() => {
 
     <ErrorState
       v-else-if="error && schedules.length === 0"
-      title="定时任务加载失败"
+      :title="t('定时任务加载失败')"
       :error="error"
       @retry="refresh"
       @inspect="openDiagnostics(error)"
@@ -192,9 +195,9 @@ onMounted(() => {
 
     <EmptyState
       v-else-if="schedules.length === 0"
-      title="还没有定时任务"
-      description="在 Agent 的 AGENT.md frontmatter 里写 schedules，重启 serve 后任务会自动登记。"
-      action-label="重新加载"
+      :title="t('还没有定时任务')"
+      :description="t('在 Agent 的 AGENT.md frontmatter 里写 schedules，重启 serve 后任务会自动登记。')"
+      :action-label="t('重新加载')"
       icon="clock"
       @action="refresh"
     />
@@ -207,7 +210,7 @@ onMounted(() => {
           <span class="inline-alert__trace">traceId: {{ error.traceId || '—' }}</span>
         </span>
         <button type="button" class="inline-alert__action" @click="openDiagnostics(error)">
-          诊断
+          {{ t('诊断') }}
         </button>
       </div>
 
@@ -216,14 +219,14 @@ onMounted(() => {
           <table class="schedule-table">
             <thead>
               <tr>
-                <th scope="col">任务</th>
+                <th scope="col">{{ t('任务') }}</th>
                 <th scope="col">Profile</th>
                 <th scope="col">cron</th>
-                <th scope="col">下次触发</th>
-                <th scope="col">上次结果</th>
-                <th scope="col" class="is-numeric">次数</th>
-                <th scope="col">状态</th>
-                <th scope="col" class="is-actions">操作</th>
+                <th scope="col">{{ t('下次触发') }}</th>
+                <th scope="col">{{ t('上次结果') }}</th>
+                <th scope="col" class="is-numeric">{{ t('次数') }}</th>
+                <th scope="col">{{ t('状态') }}</th>
+                <th scope="col" class="is-actions">{{ t('操作') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -259,7 +262,7 @@ onMounted(() => {
                         @click="runNow(task)"
                       >
                         <AppIcon name="play" size="13" />
-                        立即执行
+                        {{ t('立即执行') }}
                       </button>
                       <button
                         type="button"
@@ -267,7 +270,7 @@ onMounted(() => {
                         :disabled="busyId !== null"
                         @click="toggleEnabled(task)"
                       >
-                        {{ task.enabled ? '停用' : '启用' }}
+                        {{ task.enabled ? t('停用') : t('启用') }}
                       </button>
                       <button
                         type="button"
@@ -275,7 +278,7 @@ onMounted(() => {
                         :aria-expanded="expandedId === task.scheduleId"
                         @click="toggleHistory(task)"
                       >
-                        历史
+                        {{ t('历史') }}
                         <AppIcon
                           name="chevron-down"
                           size="13"
@@ -291,7 +294,7 @@ onMounted(() => {
                       <div class="schedule-history__head">
                         <span class="eyebrow">Execution history</span>
                         <span class="schedule-history__hint mono">
-                          {{ executions[task.scheduleId]?.length ?? 0 }} 条
+                          {{ t('{count} 条', { count: executions[task.scheduleId]?.length ?? 0 }) }}
                         </span>
                       </div>
 
@@ -311,7 +314,7 @@ onMounted(() => {
                           class="inline-alert__action"
                           @click="loadExecutions(task.scheduleId)"
                         >
-                          重试
+                          {{ t('重试') }}
                         </button>
                       </div>
 
@@ -319,17 +322,17 @@ onMounted(() => {
                         v-else-if="(executions[task.scheduleId]?.length ?? 0) === 0"
                         class="schedule-history__empty"
                       >
-                        还没有执行记录。
+                        {{ t('还没有执行记录。') }}
                       </p>
 
                       <table v-else class="schedule-history-table">
                         <thead>
                           <tr>
                             <th scope="col">#</th>
-                            <th scope="col">开始时间</th>
-                            <th scope="col">结果</th>
-                            <th scope="col">耗时</th>
-                            <th scope="col">会话 / 原因</th>
+                            <th scope="col">{{ t('开始时间') }}</th>
+                            <th scope="col">{{ t('结果') }}</th>
+                            <th scope="col">{{ t('耗时') }}</th>
+                            <th scope="col">{{ t('会话 / 原因') }}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -341,7 +344,7 @@ onMounted(() => {
                             <td>{{ formatDateTime(execution.startedAt) }}</td>
                             <td>
                               <StatusChip
-                                :label="execution.success ? '成功' : '失败'"
+                                :label="execution.success ? t('成功') : t('失败')"
                                 :tone="executionTone(execution)"
                               />
                             </td>

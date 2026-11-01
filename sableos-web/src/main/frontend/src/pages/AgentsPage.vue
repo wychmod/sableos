@@ -11,6 +11,7 @@ import { createAgent, deleteAgent } from '../api/endpoints'
 import { loadProfiles, profiles, profilesError, profilesLoading } from '../composables/useProfiles'
 import { refreshTick } from '../composables/useRefreshSignal'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
+import { localeTag, t } from '../i18n'
 import type { AgentView } from '../types/api'
 
 const router = useRouter()
@@ -61,7 +62,7 @@ async function submitCreate(): Promise<void> {
   if (!canCreate.value) return
   const name = createName.value.trim()
   if (!NAME_PATTERN.test(name)) {
-    createFieldError.value = '名字只允许字母、数字、_ . -；首字符须为字母或数字，最多 64 字符。'
+    createFieldError.value = t('名字只允许字母、数字、_ . -；首字符须为字母或数字，最多 64 字符。')
     nameField.value?.focus()
     return
   }
@@ -71,7 +72,7 @@ async function submitCreate(): Promise<void> {
   try {
     const created = await createAgent(name, createDescription.value.trim())
     await loadProfiles(true)
-    pushToast(`Agent ${created.agent.name} 已创建`, 'success')
+    pushToast(t('Agent {name} 已创建', { name: created.agent.name }), 'success')
     createOpen.value = false
     void router.push(`/agents/${encodeURIComponent(created.agent.name)}`)
   } catch (error) {
@@ -104,7 +105,7 @@ async function confirmDelete(): Promise<void> {
   try {
     await deleteAgent(target.name)
     await loadProfiles(true)
-    pushToast(`Agent ${target.name} 已删除并归档`, 'success')
+    pushToast(t('Agent {name} 已删除并归档', { name: target.name }), 'success')
     deleteTarget.value = null
   } catch (error) {
     reportError(normalizeError(error), { toast: true })
@@ -122,7 +123,7 @@ async function refresh(): Promise<void> {
   if (profilesError.value) {
     reportError(profilesError.value)
   } else {
-    pushToast('Agent 清单已刷新', 'success')
+    pushToast(t('Agent 清单已刷新'), 'success')
   }
   refreshing.value = false
 }
@@ -153,41 +154,41 @@ onMounted(() => {
     <PageHeader
       eyebrow="Agent registry / 03"
       title="Agents"
-      description="丢一个目录、填一段描述，Agent 就上线——不需要重启进程。点卡片进入详情可看文件、聊天、查记忆。"
+      :description="t('丢一个目录、填一段描述，Agent 就上线——不需要重启进程。点卡片进入详情可看文件、聊天、查记忆。')"
     >
       <template #actions>
         <span class="registry-caption mono">{{ agentCount }} agents</span>
         <button type="button" class="btn btn--secondary btn--sm" :disabled="refreshing" @click="refresh">
           <AppIcon name="refresh" size="14" :class="{ spinning: refreshing || profilesLoading }" />
-          {{ refreshing ? '刷新中' : '刷新' }}
+          {{ refreshing ? t('刷新中') : t('刷新') }}
         </button>
         <button type="button" class="btn btn--primary btn--sm" @click="openCreate">
           <AppIcon name="plus" size="14" />
-          新建 Agent
+          {{ t('新建 Agent') }}
         </button>
       </template>
     </PageHeader>
 
-    <section v-if="agentCount > 0" class="registry-strip" aria-label="Agent 注册摘要">
+    <section v-if="agentCount > 0" class="registry-strip" :aria-label="t('Agent 注册摘要')">
       <div class="registry-cell">
-        <span class="registry-cell__label">已注册 Agent</span>
+        <span class="registry-cell__label">{{ t('已注册 Agent') }}</span>
         <strong class="registry-cell__value mono">{{ agentCount }}</strong>
       </div>
       <div class="registry-cell">
-        <span class="registry-cell__label">关联工具</span>
+        <span class="registry-cell__label">{{ t('关联工具') }}</span>
         <strong class="registry-cell__value mono">{{ toolCount }}</strong>
       </div>
       <div class="registry-cell">
-        <span class="registry-cell__label">定时声明</span>
+        <span class="registry-cell__label">{{ t('定时声明') }}</span>
         <strong class="registry-cell__value mono">{{ scheduleCount }}</strong>
       </div>
       <div class="registry-cell registry-cell--note">
-        <span class="registry-cell__label">录入方式</span>
-        <span class="registry-cell__text">API 创建 / 往 agents/ 丢目录 / 页面上改，三条路径殊途同归</span>
+        <span class="registry-cell__label">{{ t('录入方式') }}</span>
+        <span class="registry-cell__text">{{ t('API 创建 / 往 agents/ 丢目录 / 页面上改，三条路径殊途同归') }}</span>
       </div>
     </section>
 
-    <div v-if="profilesLoading && agentCount === 0" class="profile-grid" aria-label="Agent 加载中">
+    <div v-if="profilesLoading && agentCount === 0" class="profile-grid" :aria-label="t('Agent 加载中')">
       <article v-for="index in 3" :key="index" class="profile-card profile-card--skeleton">
         <div class="profile-card__head">
           <SkeletonBlock width="46%" height="20px" />
@@ -203,7 +204,7 @@ onMounted(() => {
 
     <ErrorState
       v-else-if="profilesError && agentCount === 0"
-      title="Agent 清单加载失败"
+      :title="t('Agent 清单加载失败')"
       :error="profilesError"
       @retry="refresh"
       @inspect="openDiagnostics(profilesError)"
@@ -211,9 +212,9 @@ onMounted(() => {
 
     <EmptyState
       v-else-if="agentCount === 0"
-      title="还没有 Agent"
-      description="点「新建 Agent」填一个名字和一句描述，系统会按模板脚手架出完整目录。"
-      action-label="新建 Agent"
+      :title="t('还没有 Agent')"
+      :description="t('点「新建 Agent」填一个名字和一句描述，系统会按模板脚手架出完整目录。')"
+      :action-label="t('新建 Agent')"
       icon="agents"
       @action="openCreate"
     />
@@ -226,7 +227,7 @@ onMounted(() => {
           <span class="inline-alert__trace">traceId: {{ profilesError.traceId || '—' }}</span>
         </span>
         <button type="button" class="inline-alert__action" @click="openDiagnostics(profilesError)">
-          诊断
+          {{ t('诊断') }}
         </button>
       </div>
 
@@ -241,12 +242,12 @@ onMounted(() => {
             </div>
             <span class="profile-state">
               <span class="status-dot" aria-hidden="true" />
-              已注册
+              {{ t('已注册') }}
             </span>
           </header>
 
           <p class="profile-description" :class="{ 'profile-description--empty': !agent.description }">
-            {{ agent.description || '该 Agent 未提供描述。' }}
+            {{ agent.description || t('该 Agent 未提供描述。') }}
           </p>
 
           <dl class="profile-meta">
@@ -259,7 +260,7 @@ onMounted(() => {
               <dd class="mono">{{ agent.model || '—' }}</dd>
             </div>
             <div class="profile-meta__item">
-              <dt>定时</dt>
+              <dt>{{ t('定时') }}</dt>
               <dd class="mono">{{ agent.schedules.length }}</dd>
             </div>
           </dl>
@@ -272,20 +273,20 @@ onMounted(() => {
             <div v-if="agent.tools.length > 0" class="chip-row">
               <span v-for="tool in agent.tools" :key="tool" class="chip">{{ tool }}</span>
             </div>
-            <p v-else class="profile-empty-line">未挂载工具</p>
+            <p v-else class="profile-empty-line">{{ t('未挂载工具') }}</p>
           </div>
 
           <footer class="profile-card__foot">
             <button type="button" class="btn btn--danger-ghost btn--sm" @click="openDelete(agent)">
               <AppIcon name="close" size="12" />
-              删除
+              {{ t('删除') }}
             </button>
             <RouterLink
               class="btn btn--accent-ghost btn--sm"
               :to="`/agents/${encodeURIComponent(agent.name)}`"
             >
               <AppIcon name="play" size="12" />
-              打开
+              {{ t('打开') }}
             </RouterLink>
           </footer>
         </article>
@@ -302,9 +303,9 @@ onMounted(() => {
       <div class="dialog__head">
         <div>
           <div class="eyebrow">New agent</div>
-          <h2 id="create-dialog-title" class="dialog__title">新建 Agent</h2>
+          <h2 id="create-dialog-title" class="dialog__title">{{ t('新建 Agent') }}</h2>
         </div>
-        <button type="button" class="icon-button" aria-label="关闭" :disabled="createPending" @click="closeCreate">
+        <button type="button" class="icon-button" :aria-label="t('关闭')" :disabled="createPending" @click="closeCreate">
           <AppIcon name="close" size="16" />
         </button>
       </div>
@@ -312,37 +313,37 @@ onMounted(() => {
       <div class="dialog__body">
         <p class="invoke-note">
           <AppIcon name="info" size="14" />
-          只需名字与描述；系统按模板生成 AGENT.md、REFERENCE.md 与示例脚本，立即注册、不用重启。
+          {{ t('只需名字与描述；系统按模板生成 AGENT.md、REFERENCE.md 与示例脚本，立即注册、不用重启。') }}
         </p>
 
         <div class="form-field">
-          <label class="form-label" for="create-name">名字</label>
+          <label class="form-label" for="create-name">{{ t('名字') }}</label>
           <input
             id="create-name"
             ref="nameField"
             v-model="createName"
             class="input mono"
-            placeholder="例如 weather-daily"
+            :placeholder="t('例如 weather-daily')"
             :disabled="createPending"
             :aria-invalid="Boolean(createFieldError)"
             @input="createFieldError = ''"
           />
-          <p class="field-hint">字母、数字、_ . -；首字符须为字母或数字，最多 64 字符。</p>
+          <p class="field-hint">{{ t('字母、数字、_ . -；首字符须为字母或数字，最多 64 字符。') }}</p>
         </div>
 
         <div class="form-field">
           <label class="form-label" for="create-description">
-            描述
+            {{ t('描述') }}
             <span class="char-count mono">
-              {{ createDescription.length.toLocaleString('zh-CN') }} /
-              {{ MAX_DESCRIPTION_CHARS.toLocaleString('zh-CN') }}
+              {{ createDescription.length.toLocaleString(localeTag()) }} /
+              {{ MAX_DESCRIPTION_CHARS.toLocaleString(localeTag()) }}
             </span>
           </label>
           <textarea
             id="create-description"
             v-model="createDescription"
             class="textarea"
-            placeholder="例如：每天早上九点查北京天气，把穿搭建议发到团队群"
+            :placeholder="t('例如：每天早上九点查北京天气，把穿搭建议发到团队群')"
             :disabled="createPending"
           />
         </div>
@@ -356,9 +357,9 @@ onMounted(() => {
       </div>
 
       <div class="dialog__footer">
-        <button type="button" class="btn btn--secondary" :disabled="createPending" @click="closeCreate">取消</button>
+        <button type="button" class="btn btn--secondary" :disabled="createPending" @click="closeCreate">{{ t('取消') }}</button>
         <button type="button" class="btn btn--primary" :disabled="!canCreate" @click="submitCreate">
-          {{ createPending ? '创建中…' : '创建' }}
+          {{ createPending ? t('创建中…') : t('创建') }}
         </button>
       </div>
     </dialog>
@@ -368,17 +369,17 @@ onMounted(() => {
         <div>
           <div class="eyebrow">Delete agent</div>
           <h2 id="delete-dialog-title" class="dialog__title">
-            删除 <span class="mono">{{ deleteTarget.name }}</span>？
+            {{ t('删除') }} <span class="mono">{{ deleteTarget.name }}</span>{{ t('？') }}
           </h2>
         </div>
       </div>
       <div class="dialog__body">
-        <p>删除会先停掉它的定时、再移出注册表，最后把整个目录移到 <code>archive/</code>（不物理删）。</p>
+        <p>{{ t('删除会先停掉它的定时、再移出注册表，最后把整个目录移到') }} <code>archive/</code>{{ t('（不物理删）。') }}</p>
       </div>
       <div class="dialog__footer">
-        <button type="button" class="btn btn--secondary" :disabled="deletePending" @click="closeDelete">取消</button>
+        <button type="button" class="btn btn--secondary" :disabled="deletePending" @click="closeDelete">{{ t('取消') }}</button>
         <button type="button" class="btn btn--danger" :disabled="deletePending" @click="confirmDelete">
-          {{ deletePending ? '删除中…' : '确认删除' }}
+          {{ deletePending ? t('删除中…') : t('确认删除') }}
         </button>
       </div>
     </dialog>

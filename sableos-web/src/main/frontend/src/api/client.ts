@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import type { ApiEnvelope } from '../types/api'
 
 const configuredBase = import.meta.env.VITE_API_BASE?.trim()
@@ -82,7 +83,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       try {
         payload = JSON.parse(raw) as unknown
       } catch {
-        throw new ApiError('响应不是合法 JSON', {
+        throw new ApiError(t('响应不是合法 JSON'), {
           httpStatus: response.status,
         })
       }
@@ -90,7 +91,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
     if (!isEnvelope(payload)) {
       throw new ApiError(
-        response.ok ? '后端响应缺少统一信封' : `请求失败（HTTP ${response.status}）`,
+        response.ok
+          ? t('后端响应缺少统一信封')
+          : t('请求失败（HTTP {status}）', { status: response.status }),
         { httpStatus: response.status },
       )
     }
@@ -99,19 +102,23 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       return payload.data as T
     }
 
-    throw new ApiError(payload.message || `请求失败（HTTP ${response.status}）`, {
-      httpStatus: response.status,
-      code: payload.code,
-      traceId: payload.traceId,
-    })
+    throw new ApiError(
+      // 后端 message 原样透传，只有兜底文案走翻译
+      payload.message || t('请求失败（HTTP {status}）', { status: response.status }),
+      {
+        httpStatus: response.status,
+        code: payload.code,
+        traceId: payload.traceId,
+      },
+    )
   } catch (error) {
     if (error instanceof ApiError) {
       throw error
     }
     if (timedOut || (error instanceof DOMException && error.name === 'AbortError')) {
-      throw new ApiError(`请求超时（${Math.round(timeoutMs / 1000)} 秒）`)
+      throw new ApiError(t('请求超时（{seconds} 秒）', { seconds: Math.round(timeoutMs / 1000) }))
     }
-    throw new ApiError(error instanceof Error ? error.message : '网络请求失败')
+    throw new ApiError(error instanceof Error ? error.message : t('网络请求失败'))
   } finally {
     window.clearTimeout(timer)
   }
@@ -122,7 +129,7 @@ export function normalizeError(error: unknown): ApiError {
     return error
   }
   if (error instanceof Error) {
-    return new ApiError(error.message || '未知错误')
+    return new ApiError(error.message || t('未知错误'))
   }
-  return new ApiError('未知错误')
+  return new ApiError(t('未知错误'))
 }

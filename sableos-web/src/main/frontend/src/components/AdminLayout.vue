@@ -12,6 +12,7 @@ import {
   systemInfo,
 } from '../composables/useSystemStatus'
 import { pushToast, reportError } from '../composables/useUiFeedback'
+import { locale, t, toggleLocale } from '../i18n'
 import { formatClock } from '../utils/format'
 
 interface NavItem {
@@ -20,14 +21,15 @@ interface NavItem {
   icon: IconName
 }
 
-const navItems: NavItem[] = [
-  { label: '总览', path: '/', icon: 'overview' },
-  { label: '会话', path: '/sessions', icon: 'sessions' },
+// 必须在 computed 里取 t()：放在普通数组里只会算一次，切语言时导航不跟着变。
+const navItems = computed<NavItem[]>(() => [
+  { label: t('总览'), path: '/', icon: 'overview' },
+  { label: t('会话'), path: '/sessions', icon: 'sessions' },
   { label: 'Agents', path: '/agents', icon: 'agents' },
-  { label: '定时任务', path: '/schedules', icon: 'clock' },
-  { label: '工具', path: '/tools', icon: 'tools' },
-  { label: '记忆', path: '/memory', icon: 'memory' },
-]
+  { label: t('定时任务'), path: '/schedules', icon: 'clock' },
+  { label: t('工具'), path: '/tools', icon: 'tools' },
+  { label: t('记忆'), path: '/memory', icon: 'memory' },
+])
 
 const route = useRoute()
 const sidebarOpen = ref(false)
@@ -36,29 +38,35 @@ const menuButton = ref<HTMLButtonElement | null>(null)
 const sidebar = ref<HTMLElement | null>(null)
 
 const currentTitle = computed(() =>
-  typeof route.meta.title === 'string' ? route.meta.title : '控制台',
+  typeof route.meta.title === 'string' ? t(route.meta.title) : t('控制台'),
 )
 
 const versionText = computed(() =>
-  systemInfo.value?.version ? `v${systemInfo.value.version}` : '版本 —',
+  systemInfo.value?.version ? `v${systemInfo.value.version}` : t('版本 —'),
 )
 
 const healthLabel = computed(() => {
   switch (healthState.value) {
     case 'checking':
-      return '检查中'
+      return t('检查中')
     case 'ok':
-      return '运行正常'
+      return t('运行正常')
     case 'down':
-      return '后端离线'
+      return t('后端离线')
     default:
-      return '待探测'
+      return t('待探测')
   }
 })
 
 const lastRefreshTitle = computed(() =>
-  systemInfo.value ? `最后刷新 ${formatClock(lastRefreshedAt.value)}` : '刷新系统状态',
+  systemInfo.value
+    ? t('最后刷新 {time}', { time: formatClock(lastRefreshedAt.value) })
+    : t('刷新系统状态'),
 )
+
+/** 切换按钮上显示的是「点一下会切到哪个语言」，避免用户看不出当前状态。 */
+const switchLabel = computed(() => (locale.value === 'zh' ? 'EN' : '中'))
+const switchTitle = computed(() => t('切换语言'))
 
 function isActive(path: string): boolean {
   return path === '/' ? route.path === '/' : route.path.startsWith(path)
@@ -73,9 +81,9 @@ async function handleGlobalRefresh(): Promise<void> {
   const issue = result.infoError ?? result.healthError
   if (issue) {
     reportError(issue, { toast: false })
-    pushToast('刷新未完全成功，请查看诊断信息', 'error')
+    pushToast(t('刷新未完全成功，请查看诊断信息'), 'error')
   } else {
-    pushToast('控制台数据已刷新', 'success')
+    pushToast(t('控制台数据已刷新'), 'success')
   }
   refreshing.value = false
 }
@@ -113,7 +121,7 @@ onMounted(() => {
           ref="menuButton"
           type="button"
           class="icon-button topbar__menu"
-          aria-label="打开导航"
+          :aria-label="t('打开导航')"
           :aria-expanded="sidebarOpen"
           aria-controls="primary-navigation"
           @click="sidebarOpen = !sidebarOpen"
@@ -121,16 +129,27 @@ onMounted(() => {
           <AppIcon :name="sidebarOpen ? 'close' : 'menu'" size="18" />
         </button>
 
-        <RouterLink to="/" class="brand" aria-label="SableOS 管理台首页">
+        <RouterLink to="/" class="brand" :aria-label="t('SableOS 管理台首页')">
           <span class="brand__mark" aria-hidden="true">S</span>
           <span class="brand__name">SableOS</span>
           <span class="brand__divider" aria-hidden="true" />
-          <span class="brand__product">管理台</span>
+          <span class="brand__product">{{ t('管理台') }}</span>
         </RouterLink>
         <span class="topbar__section">{{ currentTitle }}</span>
       </div>
 
       <div class="topbar__actions">
+        <button
+          type="button"
+          class="locale-toggle"
+          :aria-label="switchTitle"
+          :title="switchTitle"
+          :data-locale="locale"
+          @click="toggleLocale"
+        >
+          <AppIcon name="language" size="14" />
+          <span class="locale-toggle__label">{{ switchLabel }}</span>
+        </button>
         <span class="version-chip" :title="versionText">{{ versionText }}</span>
         <span class="health" :class="`health--${healthState}`" :title="healthLabel">
           <span class="status-dot" aria-hidden="true" />
@@ -145,7 +164,7 @@ onMounted(() => {
           @click="handleGlobalRefresh"
         >
           <AppIcon name="refresh" size="14" :class="{ spinning: refreshing }" />
-          <span class="topbar__refresh-label">{{ refreshing ? '刷新中' : '刷新' }}</span>
+          <span class="topbar__refresh-label">{{ refreshing ? t('刷新中') : t('刷新') }}</span>
         </button>
       </div>
     </header>
@@ -163,7 +182,7 @@ onMounted(() => {
         ref="sidebar"
         class="sidebar"
         :class="{ 'sidebar--open': sidebarOpen }"
-        aria-label="主导航"
+        :aria-label="t('主导航')"
       >
         <div class="sidebar__inner">
           <div class="sidebar__heading">
@@ -191,7 +210,7 @@ onMounted(() => {
           <span class="sidebar__footer-mark" aria-hidden="true" />
           <div class="sidebar__footer-copy">
             <span>CORE STAGE</span>
-            <span>内网 · 无认证</span>
+            <span>{{ t('内网 · 无认证') }}</span>
           </div>
         </div>
       </aside>
@@ -339,6 +358,41 @@ onMounted(() => {
 
 .topbar__refresh {
   flex: 0 0 auto;
+}
+
+.locale-toggle {
+  display: inline-flex;
+  height: 24px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  line-height: var(--lh-16);
+  white-space: nowrap;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.locale-toggle:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.locale-toggle__label {
+  min-width: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
 }
 
 .spinning {
@@ -595,6 +649,16 @@ onMounted(() => {
   .topbar__refresh {
     width: 32px;
     padding: 0;
+  }
+
+  .locale-toggle {
+    width: 32px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .locale-toggle__label {
+    display: none;
   }
 
   .sidebar {

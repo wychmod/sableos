@@ -11,6 +11,7 @@ import { loadProfiles, profiles, profilesError, profilesLoading } from '../compo
 import { refreshTick } from '../composables/useRefreshSignal'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
 import type { MemoryView } from '../types/api'
+import { t } from '../i18n'
 import { formatClock } from '../utils/format'
 
 interface MemorySection {
@@ -79,10 +80,10 @@ const lastLoadedLabel = computed(() =>
 
 function sectionMeta(section: MemorySection): string {
   if (section.bullets.length > 0 && section.paragraphs.length === 0) {
-    return `${section.bullets.length} 条记录`
+    return t('{count} 条记录', { count: section.bullets.length })
   }
   const lines = section.raw.split('\n').filter((line) => line.trim().length > 0).length
-  return `${lines} 行`
+  return t('{count} 行', { count: lines })
 }
 
 function selectProfile(name: string): void {
@@ -93,7 +94,7 @@ function selectProfile(name: string): void {
 async function loadMemory(name: string, options: { silent?: boolean } = {}): Promise<void> {
   const profile = name.trim()
   if (!profile) {
-    fieldError.value = '请输入 Agent 名称。'
+    fieldError.value = t('请输入 Agent 名称。')
     profileField.value?.focus()
     return
   }
@@ -123,7 +124,7 @@ async function refresh(): Promise<void> {
   await loadProfiles(true)
   await loadMemory(activeProfile.value, { silent: true })
   if (!error.value) {
-    pushToast('长期记忆已刷新', 'success')
+    pushToast(t('长期记忆已刷新'), 'success')
   }
   refreshing.value = false
 }
@@ -165,13 +166,13 @@ watch(
   <div class="page-shell page-stack memory-page">
     <PageHeader
       eyebrow="Long-term memory / 05"
-      title="长期记忆"
-      description="查看 Agent 已写入的长期记忆全文。记忆由 Agent 在运行期自行写入，控制台不提供任何修改入口。"
+      :title="t('长期记忆')"
+      :description="t('查看 Agent 已写入的长期记忆全文。记忆由 Agent 在运行期自行写入，控制台不提供任何修改入口。')"
     >
       <template #actions>
         <span class="readonly-badge">
           <AppIcon name="info" size="12" />
-          只读视图
+          {{ t('只读视图') }}
         </span>
         <button
           type="button"
@@ -180,12 +181,12 @@ watch(
           @click="refresh"
         >
           <AppIcon name="refresh" size="14" :class="{ spinning: refreshing || loading }" />
-          {{ refreshing ? '刷新中' : '刷新' }}
+          {{ refreshing ? t('刷新中') : t('刷新') }}
         </button>
       </template>
     </PageHeader>
 
-    <section class="panel memory-selector" aria-label="选择 Profile">
+    <section class="panel memory-selector" :aria-label="t('选择 Profile')">
       <form class="memory-form" @submit.prevent="loadCurrent">
         <div class="form-field memory-form__field">
           <label class="form-label" for="memory-profile">Agent</label>
@@ -206,7 +207,7 @@ watch(
         </div>
         <button type="submit" class="btn btn--primary memory-form__submit" :disabled="loading">
           <AppIcon name="memory" size="14" />
-          {{ loading ? '读取中…' : '读取记忆' }}
+          {{ loading ? t('读取中…') : t('读取记忆') }}
         </button>
       </form>
 
@@ -215,15 +216,15 @@ watch(
       <div v-if="profilesError" class="inline-alert inline-alert--danger">
         <AppIcon name="alert" size="15" />
         <span>
-          Agent 清单加载失败：{{ profilesError.message }}
+          {{ t('Agent 清单加载失败：{message}', { message: profilesError.message }) }}
           <span class="inline-alert__trace">traceId: {{ profilesError.traceId || '—' }}</span>
         </span>
-        <button type="button" class="inline-alert__action" @click="loadProfiles(true)">重试</button>
+        <button type="button" class="inline-alert__action" @click="loadProfiles(true)">{{ t('重试') }}</button>
       </div>
 
       <div class="profile-shortcuts">
         <span class="profile-shortcuts__label">
-          {{ profilesLoading ? '正在加载 Agent 清单…' : '已注册 Agent' }}
+          {{ profilesLoading ? t('正在加载 Agent 清单…') : t('已注册 Agent') }}
         </span>
         <div v-if="profiles.length > 0" class="chip-row">
           <button
@@ -238,7 +239,7 @@ watch(
           </button>
         </div>
         <span v-else-if="!profilesLoading" class="profile-shortcuts__empty">
-          没有可选 Agent，可直接手动输入 profile 名。
+          {{ t('没有可选 Agent，可直接手动输入 profile 名。') }}
         </span>
       </div>
     </section>
@@ -247,12 +248,12 @@ watch(
       <span class="memory-meta__item mono">profile: {{ memory?.profile || activeProfile }}</span>
       <span class="memory-meta__item mono">{{ charCount.toLocaleString('zh-CN') }} chars</span>
       <span class="memory-meta__item mono">{{ sectionCount }} sections</span>
-      <span class="memory-meta__item">最后读取 {{ lastLoadedLabel }}</span>
-      <span class="memory-meta__item memory-meta__hint">内容原样展示，不做改写</span>
+      <span class="memory-meta__item">{{ t('最后读取 {time}', { time: lastLoadedLabel }) }}</span>
+      <span class="memory-meta__item memory-meta__hint">{{ t('内容原样展示，不做改写') }}</span>
     </div>
 
     <section class="panel memory-panel">
-      <div v-if="loading" class="memory-loading" aria-label="记忆加载中">
+      <div v-if="loading" class="memory-loading" :aria-label="t('记忆加载中')">
         <SkeletonBlock width="28%" height="18px" />
         <SkeletonBlock width="86%" height="12px" />
         <SkeletonBlock width="64%" height="12px" />
@@ -261,7 +262,7 @@ watch(
 
       <ErrorState
         v-else-if="error"
-        title="长期记忆读取失败"
+        :title="t('长期记忆读取失败')"
         :error="error"
         @retry="loadMemory(activeProfile)"
         @inspect="openDiagnostics(error)"
@@ -269,9 +270,9 @@ watch(
 
       <EmptyState
         v-else-if="!hasContent"
-        title="该 Agent 还没有写入长期记忆"
-        description="后端返回了空内容，这是正常状态，不代表读取失败。Agent 在运行期写入记忆后会出现在这里。"
-        action-label="重新读取"
+        :title="t('该 Agent 还没有写入长期记忆')"
+        :description="t('后端返回了空内容，这是正常状态，不代表读取失败。Agent 在运行期写入记忆后会出现在这里。')"
+        :action-label="t('重新读取')"
         icon="memory"
         @action="loadMemory(activeProfile)"
       />
@@ -282,7 +283,7 @@ watch(
             <span class="eyebrow">Memory transcript</span>
             <h2 class="memory-doc__title mono">{{ memory?.profile }}</h2>
           </div>
-          <span class="memory-doc__note">全文 · 只读</span>
+          <span class="memory-doc__note">{{ t('全文 · 只读') }}</span>
         </header>
 
         <div v-if="parsed.intro" class="memory-intro">{{ parsed.intro }}</div>
@@ -317,7 +318,7 @@ watch(
 
         <footer class="memory-doc__foot">
           <AppIcon name="memory" size="13" />
-          记忆全文由后端返回，控制台不支持编辑、清空或检索。
+          {{ t('记忆全文由后端返回，控制台不支持编辑、清空或检索。') }}
         </footer>
       </article>
     </section>
