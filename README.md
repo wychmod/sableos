@@ -8,14 +8,14 @@
 
 # SableOS
 
-![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-%E6%96%87%E6%A1%A3%E5%85%88%E8%A1%8C%E9%98%B6%E6%AE%B5-yellow.svg)
+![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-%E9%98%B6%E6%AE%B5%E4%B8%80%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E6%A0%B8-brightgreen.svg)
 ![JDK](https://img.shields.io/badge/JDK-21%2B-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F.svg)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 
 > 一个目录定义一个 Agent，一个底座运行一群 Agent。
 
-**项目状态：文档先行。** 仓库当前包含设计文档（`docs/`）与 Maven 多模块骨架（9 个模块，`mvn clean package` 可通过），业务代码尚未开始编写；技术方案已定稿，实现节奏见[路线图](#路线图)。
+**项目状态：阶段一（单机运行时内核）已实现。** 仓库包含设计文档（`docs/`）与 9 个 Maven 模块的完整实现：配置即 Agent、多 Agent 并存、REST API、MCP 接入、定时任务、记忆系统、沙箱白名单与 Vue 管理台均已跑通，`mvn clean verify` 全绿。实现节奏与后续阶段见[路线图](#路线图)。
 
 ## 什么是 SableOS
 
@@ -117,7 +117,7 @@ Maven 多模块项目，共 14 个模块（以[《技术方案》第 10 章](doc
 
 ## 快速开始
 
-> 当前仓库处于文档先行阶段，以下命令以[《技术方案》](docs/TechnicalSolution.md)为准，核心阶段实现后可用。骨架阶段即已可验证：`mvn clean package` 后运行 `java -jar sableos-cli/target/sableos-cli-0.1.0-SNAPSHOT-all.jar`，会打印 SableOS 版本信息。
+> 以下命令均可直接用。技术细节以[《技术方案》](docs/TechnicalSolution.md)为准；只想验证环境是否就绪，可 `mvn clean package` 后运行 `java -jar sableos-cli/target/sableos-cli-0.1.0-SNAPSHOT-all.jar`，会打印 SableOS 版本信息。
 
 环境要求：
 
@@ -332,7 +332,7 @@ curl -s -X POST $B/api/v1/notify-channels \
 
 SableOS 由 [sable-labs](docs/sable-labs.md) 社区发起——一个 AI coding 驱动的 AI 探索社区：用 AI 写代码、做设计、推进工程，把想法变成能跑的东西并开源出来。欢迎围绕 Agent 方向发起或加入项目。
 
-当前仓库处于文档先行阶段，欢迎通过 Issue / PR 参与讨论与共建：
+当前处于阶段一（单机运行时内核）实现完成状态，欢迎通过 Issue / PR 参与讨论与共建：
 
 - 对设计文档提出问题与修正；文档之间出现修订不同步时，以[《技术方案》](docs/TechnicalSolution.md)为准
 - 开发流程按 Spec-Kit 驱动（准备阶段产出宪章、spec、plan，按 user story 实施，每个 user story 结束后做一致性检查），见[《AI 编程指南》](docs/AiProgrammingGuide.md)

@@ -12,14 +12,16 @@
 
 | 编号     | 标题                          | 类型      | 严重性 | 状态    | 必须处理的时间点              |
 | ------ | --------------------------- | ------- | --- | ----- | --------------------- |
-| TD-001 | 单会话并发：同一 `session_id` 的并发读写 | 缺陷      | 高   | 暂缓  | 第 26 节 Web Service 落地前 |
+| TD-001 | 单会话并发：同一 `session_id` 的并发读写 | 缺陷      | 高   | 进行中 | 第 26 节 Web Service 落地前 |
 | TD-002 | 会话身份无「实例」维度，缺「新建会话」能力     | 设计缺口    | 中   | 暂缓  | 支持「并行多对话」时           |
+| TD-003 | 单实例假设：条纹锁 / 调度器 / 内存态 Registry / SQLite 单写者 | 设计缺口 | 中 | 暂缓 | 多副本部署前 |
+| TD-004 | HTTP 工具曾跟随 30x 重定向绕过域名白名单（已修） | 缺陷 | 高 | 已解决 | —（2026-11-03 已修，附回归测试） |
 
 ---
 
 ## TD-001 · 单会话并发：同一 `session_id` 的并发读写
 
-**记录日期**：2026-10-26 ｜ **发现于**：第 18 节代码走读（`JpaSessionManager`）｜ **决定**：先不改（风险当前休眠）
+**记录日期**：2026-10-26 ｜ **发现于**：第 18 节代码走读（`JpaSessionManager`）｜ **决定**：先不改（风险当前休眠）｜ **最近复核**：2026-11-03（应用层已缓解，见下）
 
 ### 一句话
 
@@ -42,9 +44,29 @@ session_id = channel : user : profile
 
 > 结论：真正的判据是「**有几个写者指向同一个 `session_id`**」，不是「开了几个会话」。两个真正不同的会话是安全的；危险的是「以为开了两个、其实是一个」。
 
-### 为什么现在不炸
+### 为什么现在不炸（**已过时，请读下文「2026-11-03 复核」**）
+
+> 下面这段是 2026-10-26 的论证，其前提（单进程、单线程、单一入口）在后续章节已被打破。保留原文是为了留下判断依据的演变，**不要把它当现状**。
 
 `getOrCreate` 的唯一生产调用点是 `CliChannel.run`，位于 `while` 循环**外面**，只调一次；`save` 的唯一调用点是 `AgentService.process`，每轮一次。单进程、单线程、逐行串行 → 天然无并发。**任何单请求的手工测试都复现不出来。**
+
+### 2026-11-03 复核：应用层已缓解，文档原先未销账
+
+上面「单线程单入口」的前提**已经不成立**——现在有 CLI、Web（`/api/v1/sessions/{id}/messages`）、
+定时任务（`AgentScheduler`）三个入口都会调到 `AgentService.process`，并发是真实存在的。
+
+实际上 TD-001-B（lost update）**已在应用层修复**，只是当时没登记到这里：
+
+| 项 | 状态 | 证据 |
+| --- | --- | --- |
+| **B 写入路径 lost update** | ✅ **已缓解**（应用层） | `AgentService` 用 64 条条纹锁串行化同一会话：`LOCK_STRIPES = 64`、`lockFor(session.id())`、锁内 `refreshFromStore()` 对齐快照。提交 `1a0aa45 fix(agent): 修复同一会话并发请求丢失更新的问题` |
+| **C SQLite busy_timeout** | ✅ **已解决** | `application.yaml` 的 datasource url 已带 `busy_timeout: 5000`，与 `LightDbConfig` 一致 |
+| **A 创建路径 TOCTOU** | ⚠️ **仍有理论窗口** | `getOrCreate` 的「读-判-写」未加锁；但 Web/CLI 都先经 `AgentService` 取锁再进入，实际暴露面已大幅缩小 |
+| **DB 层兜底（`@Version` / append-only）** | ❌ 仍缺 | 字段层面无乐观锁；当前依赖应用层锁，**只在单实例成立** |
+| **并发验收测试** | ❌ 仍缺 | `sableos-storage` 下无 `*concurren*` 测试 |
+
+**结论：TD-001 从「三重缺陷全开」降级为「应用层已缓解，DB 层兜底与并发验收测试仍缺」。**
+若将来多实例部署，应用层条纹锁失效（锁在进程内），B 会立即复现——这是必须先补 DB 层兜底或状态外置的地方。
 
 ### 三层缺陷与验收判据
 
@@ -93,6 +115,10 @@ ls sableos-storage/src/test/java/com/sableos/storage/ | grep -i "concurren"
 ```
 
 > 2026-10-26 基线：上述四条**全部无输出**，故 TD-001-A/B/C 均未解决。
+>
+> **2026-11-03 复核结果**：C 项已命中（`busy_timeout: 5000` 已配）→ **C 已解决**；B 项仍无 `@Version`/`@Lock`，
+> 但 lost update 已由 `AgentService` 的应用层条纹锁缓解（grep 看不到，需读 `AgentService`）；
+> A 项仍无 `saveAndFlush` 兜底；并发验收测试仍缺。**故当前状态为：B 应用层缓解、C 已解决、A 与 DB 层兜底仍开放**。
 >
 > **注意**：上面的 grep 只是**启发式**——命中通常意味着「很可能已修」，但**没命中不等于没修**（例如 B 若改用 append-only SQL 或 turn coordinator，就不会出现 `@Version`）。**权威判据永远是验收测试**：测试能在并发下证明不丢消息、不撞主键，才算真正解决。
 
@@ -163,9 +189,79 @@ try {
 
 ---
 
+## TD-003 · 单实例假设：五处结构在水平扩展时集体失效
+
+**记录日期**：2026-11-03 ｜ **发现于**：全项目审计 ｜ **决定**：暂缓（产品定位就是单机）
+
+### 一句话
+
+多处核心结构直接建立在「单进程」前提上。单机跑没问题，一旦部署两个副本就会同时出现定时任务双跑、
+同一会话丢更新、Agent 目录不同步。**这不是当前缺陷**——但它决定了「加机器」不能作为扩容手段。
+
+### 清单与失效后果
+
+| # | 结构 | 位置 | 多副本下的后果 |
+| --- | --- | --- | --- |
+| 1 | 64 条条纹锁（`ReentrantLock`） | `AgentService.LOCK_STRIPES` | 锁在进程内，同一会话的并发请求落在两个实例上 → lost update 复现（TD-001-B） |
+| 2 | 调度器 `ConcurrentHashMap<Long, ScheduledFuture>` | `AgentScheduler` | 无分布式协调，两个实例各自跑同一份 cron → **定时任务双跑** |
+| 3 | SQLite 单写者 | `application.yaml` datasource | 并发写靠 `busy_timeout: 5000` 兜底，超时即失败；无法分库 |
+| 4 | `ProfileRegistry` 内存态 + `WatchService` | `AgentService` / Agent 目录监听 | Agent 变更不跨实例传播，各副本看到不同目录 |
+| 5 | `TraceContext` 的 `ThreadLocal` | `TraceContext.CURRENT` | 跨实例链路需靠 traceparent 传播（已有 `TraceParent` 类，说明考虑过） |
+
+### 验收判据（什么时候算解决）
+
+- [ ] 会话串行化改为状态外置（DB 行锁 / 分布式锁 / turn coordinator），不再依赖进程内锁
+- [ ] 调度器接入分布式调度或选主，同一 cron 全网只跑一次
+- [ ] 数据源换成支持多写者的库，或明确分片方案
+- [ ] `ProfileRegistry` 改为共享存储 + 变更广播
+- [ ] 有多副本集成测试能证明上述不变量（至少覆盖 #1 与 #2）
+
+### 现在为什么不处理
+
+产品定位是「个人 / 企业私有单机 Agent OS」，单副本是正常形态而非降级。
+登记此条的目的不是催修，而是**防止将来有人以为「加两台机器就能扛更多」**——
+真要走分布式，这五处是必须先解决的地基，不是运维调优能绕过的。
+
+> 与 TD-001 的关系：TD-001 是单实例内的并发丢更新（已应用层缓解）；TD-003 #1 是它在多实例下失效的原因。
+
+---
+
+## TD-004 · HTTP 工具跟随 30x 重定向绕过域名白名单（SSRF）
+
+**记录日期**：2026-11-03 ｜ **发现于**：全项目审计 ｜ **状态**：✅ 已解决
+
+### 一句话
+
+`http_get` / `http_post` / `notify` 只在发请求前校验一次域名白名单，而底层 `HttpURLConnection`
+默认跟随重定向，导致白名单内主机用 302 即可把请求引到任意内网地址，沙箱形同虚设。
+
+### 原缺陷与实测证据
+
+`ToolConfiguration` 原用 `SimpleClientHttpRequestFactory`（基于 `HttpURLConnection`），
+其实例级 `getInstanceFollowRedirects()` 默认返回 `true`。实测：白名单主机返回 `302` → `Location: http://127.0.0.1:18889/...`，
+客户端自动跟过去并返回目标内容 `INTERNAL_SECRET_LEAKED`，全程未再过白名单。
+
+值得注意的是 provider 层**已经**正确禁用了重定向（`ProviderChatModelFactory`、`HttpProviderHealthProbe`
+均为 `HttpClient.Redirect.NEVER`），只有工具层漏了同一处理。
+
+### 修复
+
+`ToolConfiguration.restClient` 改用 JDK `HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER)`
++ `JdkClientHttpRequestFactory`，由客户端统一设定，一处生效。
+
+### 验收判据
+
+- [x] 白名单主机 302 到另一端口时，目标服务**一次都不被访问**
+- [x] `HttpClientRedirectTest` 用原子计数器直接断言「目标服务 0 次命中」，删掉修复后该测试失败（已实测）
+
+---
+
 ## 变更记录
 
 | 日期         | 编号     | 变更                                        |
 | ---------- | ------ | ----------------------------------------- |
 | 2026-10-26 | TD-001 | 建档。三层缺陷（A TOCTOU / B lost update / C SQLite 配置）均未解决，决定暂缓 |
 | 2026-10-26 | TD-002 | 建档。设计缺口，待单独立项                             |
+| 2026-11-03 | TD-001 | 复核并销账：B 已由 `AgentService` 条纹锁在应用层缓解（`1a0aa45`）、C 的 `busy_timeout` 已配置；更新「为什么现在不炸」的过时论证；A 与 DB 层兜底、并发验收测试仍开放 |
+| 2026-11-03 | TD-003 | 新建档：单实例假设清单（条纹锁/调度器/内存态 Registry/SQLite 单写者）——多副本部署前必须先解决 |
+| 2026-11-03 | TD-004 | 新建档：HTTP 工具曾跟随 30x 重定向绕过域名白名单（已修，附回归测试） |
