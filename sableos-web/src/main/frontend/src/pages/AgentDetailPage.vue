@@ -45,6 +45,8 @@ const agentName = computed(() => String(route.params.name ?? ''))
 
 const detail = shallowRef<AgentDetailView | null>(null)
 const loading = ref(false)
+/** 当前正在加载的目标名，用于区分「重复请求」与「切换目标」两种情况。 */
+let loadingTarget = ''
 const loadError = shallowRef<ApiError | null>(null)
 const activeTab = ref<TabKey>('basic')
 
@@ -53,18 +55,34 @@ const agentFiles = computed<FileNode[]>(() => detail.value?.files ?? [])
 
 // ---------------------------------------------------------------- 载入
 
+/**
+ * 请求序号：每次发起加载自增。响应回来时若序号已过期，说明用户已经切到别的 Agent，
+ * 这一份数据必须丢弃——否则会出现「标题是 b、内容是 a」。
+ */
+let loadToken = 0
+
 async function load(force = false): Promise<void> {
   if (!agentName.value) return
-  if (loading.value && !force) return
+  // 只在「同一目标的重入」时跳过；切换 Agent 必须放行，否则新目标永远不加载。
+  // 判断依据是目标名不变而非 loading 标志，后者会让路由切换被当成重复请求吞掉。
+  if (!force && loading.value && loadingTarget === agentName.value) return
+  const target = agentName.value
+  const token = ++loadToken
+  loadingTarget = target
   loading.value = true
   loadError.value = null
   try {
-    detail.value = await getAgent(agentName.value)
+    const result = await getAgent(target)
+    if (token !== loadToken) return
+    detail.value = result
   } catch (error) {
+    if (token !== loadToken) return
     loadError.value = normalizeError(error)
     detail.value = null
   } finally {
-    loading.value = false
+    if (token === loadToken) {
+      loading.value = false
+    }
   }
 }
 
@@ -257,6 +275,8 @@ async function removeAgent(): Promise<void> {
 }
 
 watch(agentName, () => {
+  // 使旧请求的响应失效：切换后即使旧响应晚到也不会写回
+  loadToken++
   detail.value = null
   session.value = null
   memoryText.value = ''
@@ -265,6 +285,8 @@ watch(agentName, () => {
   fileContent.value = ''
   originalContent.value = ''
   activeTab.value = 'basic'
+  loadingTarget = ''
+  loading.value = false
   void load()
 })
 
