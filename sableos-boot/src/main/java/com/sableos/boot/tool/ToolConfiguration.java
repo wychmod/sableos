@@ -21,6 +21,7 @@ import com.sableos.tool.sandbox.Sandbox;
 import com.sableos.tool.sandbox.ShellSandboxProperties;
 import com.sableos.tool.web.DuckDuckGoSearchProvider;
 import com.sableos.tool.web.SearchProvider;
+import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +29,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -57,13 +58,26 @@ public class ToolConfiguration {
    *
    * <p>定时任务在调度线程池上跑（池大小 4），一个挂死的对端会长期占住池内线程，正是「一处卡死拖垮整根线程」的场景，故必须 有界（课件 28 节 §2.4）。同一实例供 {@code
    * http_get} / {@code http_post} / {@code notify} / web search 共用。
+   *
+   * <p><b>必须禁用自动重定向</b>：{@code http_*} 与 {@code notify} 只在发请求前校验一次域名白名单（ {@code
+   * sandbox.enforce(HTTP_REQUEST, url)}）。若客户端自行跟随 30x，第二跳的 {@code Location} 就绕过了白名单——白名单域名可以 302 到
+   * {@code 169.254.169.254} 或任意内网地址，沙箱形同虚设。 这与 provider 层口径一致（{@code ProviderChatModelFactory} /
+   * {@code HttpProviderHealthProbe} 均为 {@code HttpClient.Redirect.NEVER}）。
+   *
+   * <p>不用 {@code SimpleClientHttpRequestFactory}：它基于 {@code HttpURLConnection}，其实例级 {@code
+   * getInstanceFollowRedirects()} 默认就是 {@code true}，且必须逐请求在 {@code prepareConnection} 里关，容易漏。改用 JDK
+   * {@code HttpClient} 后由客户端统一设定，一处生效。
    */
   @Bean
   public RestClient restClient(
       @Value("${sableos.http.connect-timeout:10s}") Duration connectTimeout,
       @Value("${sableos.http.read-timeout:30s}") Duration readTimeout) {
-    SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-    requestFactory.setConnectTimeout(connectTimeout);
+    HttpClient httpClient =
+        HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .connectTimeout(connectTimeout)
+            .build();
+    JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
     requestFactory.setReadTimeout(readTimeout);
     return RestClient.builder().requestFactory(requestFactory).build();
   }
