@@ -1,8 +1,11 @@
 package com.sableos.tool.sandbox;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -68,7 +71,7 @@ public class WhitelistSandbox implements Sandbox {
   private static List<Path> toRoots(List<String> rawPaths) {
     return rawPaths.stream()
         .filter(path -> !path.isBlank())
-        .map(path -> Path.of(path).toAbsolutePath().normalize())
+        .map(path -> resolveRealPath(Path.of(path).toAbsolutePath().normalize()))
         .toList();
   }
 
@@ -125,10 +128,49 @@ public class WhitelistSandbox implements Sandbox {
     } catch (InvalidPathException e) {
       throw new SandboxViolationException("路径无法解析: " + rawPath);
     }
-    boolean allowed = current.allowedRoots().stream().anyMatch(target::startsWith);
+    // 必须解析符号链接后再判定。normalize() 只是字符串层面的规约，不碰文件系统：
+    // 白名单目录下的一个软链若指向白名单外，normalize 后仍然落在白名单里，而
+    // 后续 Files.readString/writeString 会跟随软链读到真实目标——这是沙箱逃逸。
+    Path resolved = resolveRealPath(target);
+    boolean allowed = current.allowedRoots().stream().anyMatch(resolved::startsWith);
     if (!allowed) {
       throw new SandboxViolationException("路径不在白名单内: " + rawPath);
     }
+  }
+
+  /**
+   * 取 {@code target} 的真实路径（解析途中所有符号链接）。
+   *
+   * <p>目标不存在时（典型场景是 {@code write_file} 写新文件）无法直接 {@code toRealPath}，退到最近的已存在祖先取真实路径，再把跳过的相对段拼回去。
+   * 若不这么退让而直接返回 normalize 结果，那么「先在白名单内建一个指向外部的软链目录、再往里写新文件」就能绕过校验—— 因为路径的最后一段此时尚不存在。
+   *
+   * <p>整条路径都不存在（连根都没有）时返回原 {@code target}，由调用方按白名单拒绝。
+   */
+  private static Path resolveRealPath(Path target) {
+    Path existing = target;
+    Deque<Path> missing = new ArrayDeque<>();
+    while (existing != null) {
+      try {
+        Path real = existing.toRealPath();
+        Path result = real;
+        for (Path segment : missing) {
+          result = result.resolve(segment);
+        }
+        return result;
+      } catch (IOException e) {
+        Path parent = existing.getParent();
+        Path name = existing.getFileName();
+        // 根路径没有父也没有文件名（getParent/getFileName 均为 null），到此无法再向上退，
+        // 直接返回原路径交给调用方按白名单拒绝。
+        if (parent == null || name == null) {
+          break;
+        }
+        // addFirst 保证出栈顺序与路径自顶向下的顺序一致
+        missing.addFirst(name);
+        existing = parent;
+      }
+    }
+    return target;
   }
 
   private void checkShellCommand(WhitelistPolicy current, String command) {
