@@ -12,6 +12,8 @@ import com.sableos.core.sandbox.WhitelistEntry;
 import com.sableos.core.sandbox.WhitelistEntryNotFoundException;
 import com.sableos.core.sandbox.WhitelistType;
 import com.sableos.core.sandbox.WhitelistValidationException;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -58,6 +60,22 @@ class SandboxWhitelistAdminTest {
         () ->
             sandbox.enforce(
                 new SandboxAction(ActionType.FILE_READ, dir.resolve("note.txt").toString())));
+  }
+
+  @Test
+  @DisplayName("白名单根以软链登记：根与待查路径都解析成真实路径后放行")
+  void symlinkedRootEntry_isAllowedByResolvedPath(@TempDir Path dir) throws IOException {
+    Path real = Files.createDirectory(dir.resolve("real"));
+    Files.writeString(real.resolve("note.txt"), "内容");
+    Path link = Files.createSymbolicLink(dir.resolve("link"), real);
+
+    admin.add(new WhitelistCommand(WhitelistType.FILE_PATH, link.toString(), "link-root"));
+
+    // 只解析待查路径、不解析白名单根时，real/note.txt 不会 startsWith link，会被误判越界
+    assertDoesNotThrow(
+        () ->
+            sandbox.enforce(
+                new SandboxAction(ActionType.FILE_READ, link.resolve("note.txt").toString())));
   }
 
   @Test
