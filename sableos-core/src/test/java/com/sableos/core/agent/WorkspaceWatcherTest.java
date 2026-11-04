@@ -166,6 +166,33 @@ class WorkspaceWatcherTest {
   }
 
   @Test
+  @DisplayName("子目录里的 AGENT.md 改动经 dispatch 转发为刷新（大小写不敏感）")
+  void childDirectory_agentFileModifyIsDispatched() throws IOException {
+    Path agentDir = writeAgent("edit-dispatch", "edit-dispatch");
+    AgentLifecycleService spied = mock(AgentLifecycleService.class);
+    WorkspaceWatcher watcher = new WorkspaceWatcher(spied, workspace, Runnable::run);
+
+    watcher.dispatch(null, agentDir, agentDir.resolve("AGENT.md"), ENTRY_MODIFY);
+    watcher.dispatch(null, agentDir, agentDir.resolve("agent.md"), ENTRY_MODIFY);
+
+    // 两个大小写都要命中：AGENT.md 与 agent.md 在大小写不敏感文件系统上是同一个文件
+    verify(spied, org.mockito.Mockito.times(2)).refresh(agentDir);
+  }
+
+  @Test
+  @DisplayName("子目录里的 AGENT.md 删除经 dispatch 转发为注销")
+  void childDirectory_agentFileDeleteIsDispatched() throws IOException {
+    Path agentDir = writeAgent("delete-dispatch", "delete-dispatch");
+    AgentLifecycleService spied = mock(AgentLifecycleService.class);
+    WorkspaceWatcher watcher = new WorkspaceWatcher(spied, workspace, Runnable::run);
+
+    watcher.dispatch(null, agentDir, agentDir.resolve("AGENT.md"), ENTRY_DELETE);
+
+    verify(spied).unregisterByDir(agentDir);
+    verify(spied, never()).refresh(any());
+  }
+
+  @Test
   @DisplayName("端到端：真 WatchService 收到新目录事件后 Agent 出现在注册表")
   void realWatchService_registersNewDirectory() throws Exception {
     try (ExecutorServiceHolder holder = new ExecutorServiceHolder()) {

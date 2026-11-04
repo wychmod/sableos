@@ -45,6 +45,9 @@ public class WorkspaceWatcher {
   /** Agent 定义文件名：只有它的增 / 改 / 删才牵动该 Agent 的注册状态。 */
   private static final String AGENT_FILE = "AGENT.md";
 
+  /** 小写形态：{@link #isAgentFile} 的比较两边都必须小写，拿大写常量去比小写化的文件名恒为 false。 */
+  private static final String AGENT_FILE_LOWER = "agent.md";
+
   /** 新目录登记的重试次数与间隔：覆盖「mkdir 先到、AGENT.md 后落盘」的时序。 */
   private static final int NEW_DIR_ATTEMPTS = 5;
 
@@ -172,6 +175,9 @@ public class WorkspaceWatcher {
    *
    * <p>用 {@link Locale#ROOT} 显式小写比较而非 {@code equalsIgnoreCase}：后者是 findsecbugs {@code
    * IMPROPER_UNICODE} 的固定报点，而这里的语义恰恰是「大小写不敏感文件系统上的同一文件」，属该规则的误报；改成全小写比较既保留语义又不引入 locale 相关的隐式转换。
+   *
+   * <p><b>比较的两边都必须是小写</b>：拿 {@code "AGENT.md"}（大写）去比 {@code "agent.md"} 恒为 false，会让子目录里
+   * 定义文件的改动被静默忽略——这正是本方法上一版的实际状态，已由 {@code WorkspaceWatcherTest} 的 dispatch 用例钉住。
    */
   @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
       value = "IMPROPER_UNICODE",
@@ -183,7 +189,7 @@ public class WorkspaceWatcher {
     if (fileName == null) {
       return false;
     }
-    return AGENT_FILE.equals(fileName.toString().toLowerCase(java.util.Locale.ROOT));
+    return AGENT_FILE_LOWER.equals(fileName.toString().toLowerCase(java.util.Locale.ROOT));
   }
 
   /** 补挂对新 Agent 目录的监听；挂不上只记 WARN、不拖垮监听线程。 */
