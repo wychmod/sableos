@@ -222,6 +222,7 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
   - **播种判据是独立标记表 `sandbox_whitelist_seed`**（行存在即已导入），不是条目表判空——否则删光条目后重启会把 `application.yaml` 再插一遍。
   - **`WhitelistSandbox` 不再标 `@Component`**：初始策略必须"先导入/从库恢复再构造"，组件扫描无法表达该顺序且会尝试无参实例化而失败；改由 `SableOsRuntime` 的 `@Bean` 显式创建，并额外以 `Sandbox` 接口类型暴露同一实例供工具注入。
   - FILE_PATH 入库形态 = `Path.normalize()` + 分隔符统一 `/`（盘符大小写不归一）；HTTP_DOMAIN 只接受 ASCII（口径见上一条）。
+  - **白名单根的运行时形态 = 真实路径**（2026-11-05 补）：`WhitelistPolicy` 构造器对 `allowedRoots` 统一走 `resolveRealPath`（已存在的祖先 `toRealPath`，不存在的段拼回），与 `WhitelistSandbox#checkFilePath` 对**待查路径**的解析共用同一函数。两侧只要有一侧不解析就会误判越界：Windows 的 8.3 短名（CI 临时目录 `RUNNER~1`）与 macOS 的 `/var → /private/var` 软链各挂过一次（`SandboxWhitelistAdminTest` 4 例 / `WhitelistPolicyRefreshTest` 2 例）。入库形态不变，解析只发生在策略快照构造时（非校验热路径）。
   - 本 feature 只写操作日志（`DefaultSandboxWhitelistAdmin.logChange`），**不建白名单审计表**（设计稿 §11 口径）。
 - **定时任务调度（009-lesson25-scheduler，2026-10-29 落地）**：第三触发源按 §8.5 落 `sableos-core` 的 `AgentScheduler`（`registerAll` / `runOnce`），由 `serve` / `gateway` 启动后显式注册，`chat` 不调度（§8.6）。四条需记住：
   - **`sableos-core` 自本节起 compile 依赖 `spring-context`**（仅用 `TaskScheduler` / `CronTrigger`），core 不再是「零 Spring」模块；依据是 §8.5 明定该类归 core 并使用 Spring 调度能力。
