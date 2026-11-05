@@ -28,7 +28,6 @@ public class AgentStore {
   /** Agent 名只能是安全目录段：首字符字母数字，其余允许字母数字与 {@code _ . -}，总长 ≤ 64。 */
   private static final Pattern SAFE_NAME = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_.-]{0,63}");
 
-  private static final String AGENT_FILE = "AGENT.md";
   private static final String AGENTS_DIR = "agents";
   private static final String ARCHIVE_DIR = "archive";
   private static final String PATH_SEPARATOR = "/";
@@ -86,8 +85,14 @@ public class AgentStore {
     Path dir = agentDir(name);
     try {
       Files.createDirectories(dir);
+      Path existingDefinition = existingDefinition(dir);
       for (Map.Entry<String, String> entry : files.entrySet()) {
         Path target = writableTarget(dir, entry.getKey());
+        // 大小写敏感文件系统上 AGENT.md 与 agent.md 是两个文件：目录里已有变体时按变体写，
+        // 否则一次「保存」会留下两份定义，读哪份取决于遍历顺序。
+        if (existingDefinition != null && isDefinitionTarget(dir, target)) {
+          target = existingDefinition;
+        }
         Path parent = target.getParent();
         if (parent != null) {
           Files.createDirectories(parent);
@@ -98,6 +103,21 @@ public class AgentStore {
     } catch (IOException e) {
       throw new UncheckedIOException("写入 Agent 目录失败：" + name, e);
     }
+  }
+
+  /** 目录下已有的定义文件（含大小写变体）；没有则为 null。 */
+  private static Path existingDefinition(Path dir) {
+    try {
+      return AgentDefinitionFile.locate(dir).orElse(null);
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
+  /** 该目标是否就是 Agent 目录下的主定义文件（相对路径只有一段且大小写不敏感等于 AGENT.md）。 */
+  private static boolean isDefinitionTarget(Path dir, Path target) {
+    Path relative = dir.relativize(target);
+    return relative.getNameCount() == 1 && AgentDefinitionFile.matchesPath(relative);
   }
 
   /** 回滚删除本次刚创建的目录；不存在时静默（回滚路径必须幂等）。 */
@@ -136,11 +156,19 @@ public class AgentStore {
     return target;
   }
 
-  /** 读 {@code agents/<name>/AGENT.md}。 */
+  /** 读该 Agent 的主定义文件（{@code AGENT.md} 或其大小写变体）。 */
   public String read(String name) {
-    Path file = agentDir(name).resolve(AGENT_FILE);
-    if (!Files.isRegularFile(file)) {
-      throw new IllegalStateException("Agent 目录缺少 " + AGENT_FILE + "：" + name);
+    Path dir = agentDir(name);
+    Path file;
+    try {
+      file =
+          AgentDefinitionFile.locate(dir)
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Agent 目录缺少 " + AgentDefinitionFile.FILE_NAME + "：" + name));
+    } catch (IOException e) {
+      throw new UncheckedIOException("读取 Agent 目录失败：" + name, e);
     }
     try {
       return Files.readString(file, StandardCharsets.UTF_8);

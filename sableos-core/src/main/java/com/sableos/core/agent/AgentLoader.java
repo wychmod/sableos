@@ -28,7 +28,6 @@ public class AgentLoader {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentLoader.class);
 
-  private static final String AGENT_FILE_NAME = "AGENT.md";
   private static final String FRONTMATTER_FENCE = "---";
   private static final String CRLF = "\r\n";
   private static final String LINE_BREAK = "\n";
@@ -107,10 +106,10 @@ public class AgentLoader {
    * @throws IllegalArgumentException 结构或引用违规（消息点名原因）
    */
   public Profile deriveProfile(Path agentDir) throws IOException {
-    Path agentFile = agentDir.resolve(AGENT_FILE_NAME);
-    if (!Files.isRegularFile(agentFile)) {
-      throw new IllegalArgumentException("目录下缺少 " + AGENT_FILE_NAME);
-    }
+    Path agentFile =
+        AgentDefinitionFile.locate(agentDir)
+            .orElseThrow(
+                () -> new IllegalArgumentException("目录下缺少 " + AgentDefinitionFile.FILE_NAME));
     String markdown = Files.readString(agentFile, StandardCharsets.UTF_8);
     Profile profile = deriveProfile(dirName(agentDir), markdown);
     warnUnknownTools(profile);

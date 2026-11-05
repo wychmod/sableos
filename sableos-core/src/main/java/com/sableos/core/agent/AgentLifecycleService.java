@@ -40,7 +40,7 @@ public class AgentLifecycleService {
 
   private static final Logger LOG = LoggerFactory.getLogger(AgentLifecycleService.class);
 
-  private static final String AGENT_FILE = "AGENT.md";
+  private static final String AGENT_FILE = AgentDefinitionFile.FILE_NAME;
   private static final String REFERENCE_FILE = "REFERENCE.md";
   private static final String SCRIPT_PATH = "scripts/example.py";
   private static final String AUTHOR_PROFILE_NAME = "agent-author";
@@ -253,21 +253,53 @@ public class AgentLifecycleService {
   }
 
   /**
-   * 保存一组 Agent 文件并即时生效：先校验 AGENT.md 可解析（非法 400、不写坏目录）→ 写入 → 重注册。
+   * 保存一组 Agent 文件并即时生效：先校验定义可解析（非法 400、不写坏目录）→ 写入 → 重注册。
+   *
+   * <p>键名按 {@link AgentDefinitionFile#matches(String)} 认定义文件：前端或调用方提交 {@code agent.md} 这类大小写
+   * 变体同样算「含定义」，落到磁盘时沿用目录里已有的那份文件名（见 {@link AgentStore#writeAll}），不会在 Linux 上多出第二份。
    *
    * @param name Agent 名
-   * @param files 相对路径 → 内容（必须含 AGENT.md）
+   * @param files 相对路径 → 内容（必须含定义文件，大小写不敏感）
    * @return 更新后的 Profile
    */
   public Profile saveFiles(String name, Map<String, String> files) {
     requireValidName(name);
-    String agentMarkdown = files == null ? null : files.get(AGENT_FILE);
+    String agentMarkdown = definitionContent(files);
     if (agentMarkdown == null || agentMarkdown.isBlank()) {
-      throw new IllegalArgumentException("缺少 AGENT.md 内容");
+      throw new IllegalArgumentException("缺少 " + AgentDefinitionFile.FILE_NAME + " 内容");
     }
     agentLoader.parse(agentMarkdown, name); // 先校验再落盘：非法定义不写进目录
     Path agentDir = agentStore.writeAll(name, files);
     return refresh(agentDir);
+  }
+
+  /** 从提交的多文件里取定义文件内容（大小写不敏感；同名变体并存时优先规范名）。 */
+  private static String definitionContent(Map<String, String> files) {
+    if (files == null || files.isEmpty()) {
+      return null;
+    }
+    String exact = files.get(AgentDefinitionFile.FILE_NAME);
+    if (exact != null) {
+      return exact;
+    }
+    return files.entrySet().stream()
+        .filter(entry -> AgentDefinitionFile.matches(fileNameOf(entry.getKey())))
+        .map(Map.Entry::getValue)
+        .findFirst()
+        .orElse(null);
+  }
+
+  /** 相对路径里的纯文件名（只取末段；{@code path/file} 不是定义文件）。 */
+  private static String fileNameOf(String relativePath) {
+    if (relativePath == null) {
+      return null;
+    }
+    Path normalized = Path.of(relativePath.replace('\\', '/')).normalize();
+    if (normalized.getNameCount() != 1) {
+      return null;
+    }
+    Path fileName = normalized.getFileName();
+    return fileName == null ? null : fileName.toString();
   }
 
   // ---------------------------------------------------------------- 删除

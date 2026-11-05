@@ -1,5 +1,6 @@
 package com.sableos.cli.command;
 
+import com.sableos.core.agent.AgentDefinitionFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -97,8 +98,8 @@ public class ProfileCommand implements Runnable {
         System.err.println(e.getMessage());
         return;
       }
-      Path markdown = dir.resolve("AGENT.md");
-      if (Files.exists(markdown)) {
+      Path markdown = dir.resolve(AgentDefinitionFile.FILE_NAME);
+      if (AgentDefinitionFile.existsIn(dir)) {
         System.out.printf("Agent 已存在，不覆盖：%s%n", markdown.toAbsolutePath());
         return;
       }
@@ -134,9 +135,14 @@ public class ProfileCommand implements Runnable {
     public void run() {
       Path markdown;
       try {
-        markdown = agentDir(name).resolve("AGENT.md");
+        markdown =
+            AgentDefinitionFile.locate(agentDir(name))
+                .orElseGet(() -> agentDir(name).resolve(AgentDefinitionFile.FILE_NAME));
       } catch (IllegalArgumentException e) {
         System.err.println(e.getMessage());
+        return;
+      } catch (IOException e) {
+        System.err.println("读取 Agent 定义失败: " + e.getMessage());
         return;
       }
       if (!Files.isRegularFile(markdown)) {
@@ -146,7 +152,7 @@ public class ProfileCommand implements Runnable {
       try {
         System.out.print(Files.readString(markdown, StandardCharsets.UTF_8));
       } catch (IOException e) {
-        System.err.println("读取 AGENT.md 失败: " + e.getMessage());
+        System.err.println("读取 Agent 定义失败: " + e.getMessage());
       }
     }
   }

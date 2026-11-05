@@ -193,6 +193,24 @@ class WorkspaceWatcherTest {
   }
 
   @Test
+  @DisplayName("大小写变体（Agent.MD / aGeNt.Md）同样触发刷新，非定义文件仍忽略")
+  void childDirectory_allCaseVariantsAreDispatched() throws IOException {
+    Path agentDir = writeAgent("case-dispatch", "case-dispatch");
+    AgentLifecycleService spied = mock(AgentLifecycleService.class);
+    WorkspaceWatcher watcher = new WorkspaceWatcher(spied, workspace, Runnable::run);
+
+    watcher.dispatch(null, agentDir, agentDir.resolve("Agent.MD"), ENTRY_MODIFY);
+    watcher.dispatch(null, agentDir, agentDir.resolve("aGeNt.Md"), ENTRY_CREATE);
+    // 这几类是常见的「长得像但不是定义」的文件名，必须继续忽略
+    watcher.dispatch(null, agentDir, agentDir.resolve("AGENTS.md"), ENTRY_MODIFY);
+    watcher.dispatch(null, agentDir, agentDir.resolve("CLAUDE.md"), ENTRY_MODIFY);
+    watcher.dispatch(null, agentDir, agentDir.resolve("AGENT.md.bak"), ENTRY_MODIFY);
+
+    verify(spied, org.mockito.Mockito.times(2)).refresh(agentDir);
+    verify(spied, never()).unregisterByDir(any());
+  }
+
+  @Test
   @DisplayName("端到端：真 WatchService 收到新目录事件后 Agent 出现在注册表")
   void realWatchService_registersNewDirectory() throws Exception {
     try (ExecutorServiceHolder holder = new ExecutorServiceHolder()) {

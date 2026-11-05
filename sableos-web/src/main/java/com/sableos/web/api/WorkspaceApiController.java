@@ -1,5 +1,6 @@
 package com.sableos.web.api;
 
+import com.sableos.core.agent.AgentDefinitionFile;
 import com.sableos.core.agent.AgentLifecycleService;
 import com.sableos.core.agent.AgentStore;
 import com.sableos.core.profile.ProfileRegistry;
@@ -16,7 +17,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,10 +45,8 @@ import org.springframework.web.bind.annotation.RestController;
             + "防校验后被换成外向软链。")
 public class WorkspaceApiController {
 
-  private static final String AGENT_FILE = "AGENT.md";
-
-  /** 大小写不敏感比较用的预小写形式，避免每次比较都做一次转换。 */
-  private static final String AGENT_FILE_LC = "agent.md";
+  /** 规范文件名：比较与判定统一走 {@link AgentDefinitionFile}，本类不再自持一份规则。 */
+  private static final String AGENT_FILE = AgentDefinitionFile.FILE_NAME;
 
   private static final String AGENTS_DIR = "agents";
   private static final String PATH_SEPARATOR = "/";
@@ -176,18 +174,13 @@ public class WorkspaceApiController {
   }
 
   /**
-   * 文件名是否就是 {@code AGENT.md}（大小写不敏感）。
+   * 文件名是否就是主定义文件（{@code AGENT.md}，大小写不敏感）。
    *
-   * <p>用 {@link Locale#ROOT} 显式小写比较而非 {@code equalsIgnoreCase}：后者是 findsecbugs {@code
-   * IMPROPER_UNICODE} 的固定报点，而这里的语义恰恰是「大小写不敏感文件系统上的同一文件」，属该规则的误报；改成全小写比较既保留语义又不引入 locale 相关的隐式转换。
+   * <p>判定收敛在 {@link AgentDefinitionFile#matches(String)}：与 {@code AgentLoader} 等读取侧共用同一规则，否则 {@code
+   * agent.md} 这类变体在 Linux 上会被本接口认作「定义文件」走重注册链路，却被派生判成「缺少 AGENT.md」。
    */
-  @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
-      value = "IMPROPER_UNICODE",
-      justification =
-          "AGENT.md 是 ASCII 保留文件名；此处的产物就是「按大小写不敏感文件系统语义比较同一文件名」，"
-              + "不存在 Unicode 混淆风险。撤销条件：把该比较用于用户可控的自由文本。")
   private static boolean isAgentDefinition(String fileName) {
-    return AGENT_FILE_LC.equals(fileName.toLowerCase(Locale.ROOT));
+    return AgentDefinitionFile.matches(fileName);
   }
 
   private static FileNode treeOf(Path dir, String relativePath) {

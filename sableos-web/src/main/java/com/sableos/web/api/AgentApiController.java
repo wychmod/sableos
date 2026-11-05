@@ -1,5 +1,6 @@
 package com.sableos.web.api;
 
+import com.sableos.core.agent.AgentDefinitionFile;
 import com.sableos.core.agent.AgentLifecycleService;
 import com.sableos.core.agent.AgentStore;
 import com.sableos.core.memory.MemoryProvider;
@@ -57,7 +58,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AgentApiController {
 
   private static final String INVOKE_USER_PREFIX = "invoke-";
-  private static final String AGENT_FILE = "AGENT.md";
   private static final String PATH_SEPARATOR = "/";
   private static final String BACKSLASH = "\\";
 
@@ -284,8 +284,8 @@ public class AgentApiController {
     return base.relativize(file).toString().replace(BACKSLASH, PATH_SEPARATOR);
   }
 
-  /** 该 Agent 是否有主定义文件（详情页展示用；缺文件时前端应提示）。 */
+  /** 该 Agent 是否有主定义文件（详情页展示用；缺文件时前端应提示）。大小写变体也算有。 */
   static boolean hasDefinition(Path agentDir) {
-    return Files.isRegularFile(agentDir.resolve(AGENT_FILE));
+    return AgentDefinitionFile.existsIn(agentDir);
   }
 }
