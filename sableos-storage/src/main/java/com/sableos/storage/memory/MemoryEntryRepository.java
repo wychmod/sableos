@@ -25,7 +25,7 @@ public interface MemoryEntryRepository extends ListCrudRepository<MemoryEntryEnt
 
   @Query(
       value =
-          "SELECT * FROM memory_entries WHERE profile_name = :profileName AND scope = 'ARCHIVAL' AND content LIKE :keyword ORDER BY created_at DESC",
+          "SELECT * FROM memory_entries WHERE profile_name = :profileName AND scope = 'ARCHIVAL' AND content LIKE :keyword ESCAPE '!' ORDER BY created_at DESC",
       nativeQuery = true)
   List<MemoryEntryEntity> searchArchivalByProfile(
       @Param("profileName") String profileName, @Param("keyword") String keyword);

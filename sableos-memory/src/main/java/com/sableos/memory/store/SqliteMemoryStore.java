@@ -47,9 +47,22 @@ public class SqliteMemoryStore implements LongTermMemoryStore {
     Objects.requireNonNull(keyword, "keyword 不能为空");
     Objects.requireNonNull(profileName, "profileName 不能为空");
 
-    return repository.searchArchivalByProfile(profileName, "%" + keyword + "%").stream()
+    return repository.searchArchivalByProfile(profileName, "%" + escapeLike(keyword) + "%").stream()
         .map(MemoryEntryEntity::getContent)
         .collect(Collectors.toList());
+  }
+
+  /**
+   * 转义 SQL {@code LIKE} 的通配符，使其按字面量匹配。
+   *
+   * <p>不转义时用户搜 {@code %} 会命中全部归档、搜 {@code _} 会匹配任意单字符（通配符逃逸）。 转义符选用 {@code !} 而非反斜杠：SQLite 的 {@code
+   * ESCAPE} 子句要求单字符，而 Java 字符串里的 {@code "\\"} 在两个解析层（Java 字面量 → SQL 文本）各缩一次，极易写成一个空字符或两个字符，导致运行时报
+   * {@code ESCAPE expression must be a single character}。{@code !} 无转义歧义，且不是 LIKE 元字符。
+   *
+   * <p>转义符自身必须先被转义，因此 {@code !} 要放在替换链最前。
+   */
+  private static String escapeLike(String keyword) {
+    return keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
   }
 
   private String render(List<MemoryEntryEntity> entries) {

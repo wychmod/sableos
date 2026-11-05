@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -345,6 +347,67 @@ class WhitelistSandboxTest {
         SandboxViolationException.class,
         () ->
             whitelist.enforce(new SandboxAction(ActionType.HTTP_REQUEST, "https://example.com/x")));
+  }
+
+  // ---------- 符号链接逃逸（P1 回归锁）----------
+
+  @Test
+  @DisplayName("文件路径_白名单内软链指向白名单外_拒绝")
+  void symlinkEscapingWhitelist_isRejected(@TempDir Path root) throws IOException {
+    Path allowed = Files.createDirectory(root.resolve("allowed"));
+    Path secret = root.resolve("secret.txt");
+    Files.writeString(secret, "机密内容");
+    // 白名单目录里放一个指向外部的软链；normalize() 只能看到软链自身的路径，看不到真实目标
+    Path link = Files.createSymbolicLink(allowed.resolve("escape.txt"), secret);
+
+    WhitelistSandbox whitelist = fileSandbox(allowed);
+
+    SandboxViolationException failure =
+        assertThrows(
+            SandboxViolationException.class,
+            () -> whitelist.enforce(new SandboxAction(ActionType.FILE_READ, link.toString())));
+    assertTrue(failure.getMessage().contains("路径不在白名单内"), failure.getMessage());
+  }
+
+  @Test
+  @DisplayName("文件路径_白名单外的软链目录下写新文件_拒绝")
+  void writeThroughSymlinkedDirectory_isRejected(@TempDir Path root) throws IOException {
+    Path allowed = Files.createDirectory(root.resolve("allowed"));
+    Path outside = Files.createDirectory(root.resolve("outside"));
+    // 白名单内建一个指向外部目录的软链目录，再往它下面写一个尚不存在的新文件：
+    // 目标文件不存在时 toRealPath 会失败，必须有「退到已存在祖先」的逻辑才能拦住这条路
+    Path linkDir = Files.createSymbolicLink(allowed.resolve("jump"), outside);
+    String newFile = linkDir.resolve("planted.txt").toString();
+
+    WhitelistSandbox whitelist = fileSandbox(allowed);
+
+    assertThrows(
+        SandboxViolationException.class,
+        () -> whitelist.enforce(new SandboxAction(ActionType.FILE_WRITE, newFile)));
+  }
+
+  @Test
+  @DisplayName("文件路径_白名单内新建不存在的文件_放行")
+  void newFileInsideWhitelist_isAllowed(@TempDir Path dir) {
+    WhitelistSandbox whitelist = fileSandbox(dir);
+
+    // 写新文件时目标尚不存在，不能因为 toRealPath 失败就一律拒绝
+    assertDoesNotThrow(
+        () ->
+            whitelist.enforce(
+                new SandboxAction(ActionType.FILE_WRITE, dir.resolve("brand-new.txt").toString())));
+  }
+
+  @Test
+  @DisplayName("文件路径_白名单内多级不存在的子目录_放行")
+  void deeplyMissingSubdirectory_isAllowed(@TempDir Path dir) {
+    WhitelistSandbox whitelist = fileSandbox(dir);
+
+    assertDoesNotThrow(
+        () ->
+            whitelist.enforce(
+                new SandboxAction(
+                    ActionType.FILE_WRITE, dir.resolve("a/b/c/deep.txt").toString())));
   }
 
   // ---------- 配置边界 ----------

@@ -21,6 +21,7 @@ import { loadProfiles, profiles, profilesError, profilesLoading } from '../compo
 import { refreshTick } from '../composables/useRefreshSignal'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
 import type { SessionMessage, SessionSummary, SessionView } from '../types/api'
+import { t } from '../i18n'
 import { formatDateTime } from '../utils/format'
 
 const MAX_HISTORY = 100
@@ -72,7 +73,7 @@ const canSend = computed(
 )
 
 const statusLabel = computed(() =>
-  currentSession.value?.status === 'archived' ? 'archived · 已归档' : 'active · 活跃',
+  currentSession.value?.status === 'archived' ? t('archived · 已归档') : t('active · 活跃'),
 )
 const statusTone = computed(() =>
   currentSession.value?.status === 'archived' ? 'warning' : 'success',
@@ -128,7 +129,7 @@ async function scrollTimelineToBottom(): Promise<void> {
 async function openById(rawId: string = sessionInput.value): Promise<void> {
   const id = rawId.trim()
   if (!id) {
-    sessionInputError.value = '请输入完整的会话 ID。'
+    sessionInputError.value = t('请输入完整的会话 ID。')
     sessionInputField.value?.focus()
     return
   }
@@ -165,7 +166,7 @@ async function refreshCurrentSession(silent = false): Promise<boolean> {
     currentSession.value = session
     rememberSession(session.id)
     await scrollTimelineToBottom()
-    if (!silent) pushToast('会话已刷新', 'success')
+    if (!silent) pushToast(t('会话已刷新'), 'success')
     return true
   } catch (error) {
     reportError(normalizeError(error), { toast: true })
@@ -175,7 +176,7 @@ async function refreshCurrentSession(silent = false): Promise<boolean> {
 
 async function createSessionAndOpen(): Promise<void> {
   if (!createProfile.value) {
-    createError.value = new ApiError('请选择 profile。')
+    createError.value = new ApiError(t('请选择 profile。'))
     return
   }
 
@@ -198,11 +199,11 @@ async function createSessionAndOpen(): Promise<void> {
     messageDraft.value = ''
     rememberSession(session.id)
     createNotice.value = reused
-      ? `已复用既有会话，载入 ${session.messages.length} 条历史。`
-      : '会话已创建并打开。'
+      ? t('已复用既有会话，载入 {count} 条历史。', { count: session.messages.length })
+      : t('会话已创建并打开。')
 
     void router.replace({ name: 'sessions', query: { id: session.id } })
-    pushToast(reused ? '已复用既有会话' : '会话已创建', 'success')
+    pushToast(reused ? t('已复用既有会话') : t('会话已创建'), 'success')
     await scrollTimelineToBottom()
     await loadServerSessions(true)
     await nextTick()
@@ -229,9 +230,9 @@ async function sendMessage(): Promise<void> {
     const refreshed = await refreshCurrentSession(true)
     await loadServerSessions(true)
     if (refreshed) {
-      pushToast('消息已发送，会话历史已更新', 'success')
+      pushToast(t('消息已发送，会话历史已更新'), 'success')
     } else {
-      pushToast('消息已发送，但历史刷新失败', 'error')
+      pushToast(t('消息已发送，但历史刷新失败'), 'error')
     }
   } catch (error) {
     const apiError = normalizeError(error)
@@ -251,7 +252,7 @@ async function confirmArchive(): Promise<void> {
     await archiveSession(currentSession.value.id)
     currentSession.value = { ...currentSession.value, status: 'archived' }
     archiveOpen.value = false
-    pushToast('会话已归档', 'success')
+    pushToast(t('会话已归档'), 'success')
     await refreshCurrentSession(true)
     await loadServerSessions(true)
   } catch (error) {
@@ -292,9 +293,9 @@ function handleComposerKeydown(event: KeyboardEvent): void {
 }
 
 function roleLabel(role: SessionMessage['role']): string {
-  if (role === 'USER') return '用户输入'
-  if (role === 'ASSISTANT') return 'Agent 回复'
-  return '工具结果'
+  if (role === 'USER') return t('用户输入')
+  if (role === 'ASSISTANT') return t('Agent 回复')
+  return t('工具结果')
 }
 
 function roleMark(role: SessionMessage['role']): string {
@@ -304,9 +305,9 @@ function roleMark(role: SessionMessage['role']): string {
 }
 
 function toolStatusLabel(message: SessionMessage): string {
-  if (message.success === true) return '执行成功'
-  if (message.success === false) return '执行失败'
-  return '状态未知'
+  if (message.success === true) return t('执行成功')
+  if (message.success === false) return t('执行失败')
+  return t('状态未知')
 }
 
 function toolStatusTone(message: SessionMessage): 'success' | 'failure' | 'neutral' {
@@ -353,28 +354,28 @@ onMounted(async () => {
   <div class="page-shell page-stack sessions-page">
     <PageHeader
       eyebrow="Session workspace / 02"
-      title="会话工作台"
-      description="打开既有会话或创建新会话，查看最近历史并向 Agent 发送消息。"
+      :title="t('会话工作台')"
+      :description="t('打开既有会话或创建新会话，查看最近历史并向 Agent 发送消息。')"
     >
       <template #actions>
-        <span class="history-note">历史接口最多返回最近 {{ MAX_HISTORY }} 条</span>
+        <span class="history-note">{{ t('历史接口最多返回最近 {count} 条', { count: MAX_HISTORY }) }}</span>
       </template>
     </PageHeader>
 
     <div class="session-layout">
-      <aside class="panel session-rail" aria-label="会话入口">
+      <aside class="panel session-rail" :aria-label="t('会话入口')">
         <section class="rail-section">
           <div class="rail-section__head">
             <div>
               <span class="eyebrow">Open by id</span>
-              <h2 class="rail-title">打开会话</h2>
+              <h2 class="rail-title">{{ t('打开会话') }}</h2>
             </div>
             <span class="rail-index">01</span>
           </div>
 
           <form class="rail-form" @submit.prevent="openById()">
             <div class="form-field">
-              <label class="form-label" for="session-id-input">会话 ID</label>
+              <label class="form-label" for="session-id-input">{{ t('会话 ID') }}</label>
               <input
                 id="session-id-input"
                 ref="sessionInputField"
@@ -389,11 +390,11 @@ onMounted(async () => {
             </div>
             <button type="submit" class="btn btn--primary rail-submit">
               <AppIcon name="arrow-right" size="14" />
-              打开会话
+              {{ t('打开会话') }}
             </button>
           </form>
           <p id="session-id-help" class="field-help">
-            路径参数会自动编码，支持包含冒号的完整 ID。
+            {{ t('路径参数会自动编码，支持包含冒号的完整 ID。') }}
           </p>
           <p v-if="sessionInputError" id="session-id-error" class="field-error">
             {{ sessionInputError }}
@@ -403,13 +404,13 @@ onMounted(async () => {
             <div class="recent-block__head">
               <div>
                 <span class="eyebrow">Recent sessions</span>
-                <span class="recent-block__count">最近 {{ serverSessions.length }} 条</span>
+                <span class="recent-block__count">{{ t('最近 {count} 条', { count: serverSessions.length }) }}</span>
               </div>
               <button
                 type="button"
                 class="icon-button"
-                aria-label="刷新会话列表"
-                title="刷新会话列表"
+                :aria-label="t('刷新会话列表')"
+                :title="t('刷新会话列表')"
                 :disabled="sessionsLoading"
                 @click="loadServerSessions()"
               >
@@ -417,7 +418,7 @@ onMounted(async () => {
               </button>
             </div>
 
-            <div v-if="sessionsLoading" class="recent-loading" aria-label="会话列表加载中">
+            <div v-if="sessionsLoading" class="recent-loading" :aria-label="t('会话列表加载中')">
               <SkeletonBlock v-for="index in 3" :key="index" width="100%" height="38px" />
             </div>
             <div v-else-if="sessionsError" class="inline-alert inline-alert--danger rail-alert">
@@ -425,12 +426,12 @@ onMounted(async () => {
               <span>
                 {{ sessionsError.message }}
                 <button type="button" class="inline-alert__action" @click="loadServerSessions()">
-                  重试
+                  {{ t('重试') }}
                 </button>
               </span>
             </div>
             <p v-else-if="serverSessions.length === 0" class="field-help">
-              还没有会话，创建一条后这里会出现。
+              {{ t('还没有会话，创建一条后这里会出现。') }}
             </p>
             <div v-else class="recent-list">
               <button
@@ -445,7 +446,7 @@ onMounted(async () => {
                 <span class="recent-item__body">
                   <span class="recent-item__id mono">{{ session.id }}</span>
                   <span class="recent-item__meta">
-                    {{ session.profileName }} · {{ session.messageCount }} 条 ·
+                    {{ session.profileName }} · {{ t('{count} 条', { count: session.messageCount }) }} ·
                     {{ formatDateTime(session.lastActiveAt) }}
                   </span>
                 </span>
@@ -461,7 +462,7 @@ onMounted(async () => {
           <div class="rail-section__head">
             <div>
               <span class="eyebrow">Create session</span>
-              <h2 class="rail-title">新建会话</h2>
+              <h2 class="rail-title">{{ t('新建会话') }}</h2>
             </div>
             <span class="rail-index">02</span>
           </div>
@@ -471,7 +472,7 @@ onMounted(async () => {
             <span>
               {{ profilesError.message }}
               <span class="inline-alert__trace">traceId: {{ profilesError.traceId || '—' }}</span>
-              <button type="button" class="inline-alert__action" @click="loadProfiles(true)">重试</button>
+              <button type="button" class="inline-alert__action" @click="loadProfiles(true)">{{ t('重试') }}</button>
             </span>
           </div>
 
@@ -485,8 +486,8 @@ onMounted(async () => {
                 class="select"
                 :disabled="creating || profilesLoading || profiles.length === 0"
               >
-                <option v-if="profilesLoading" value="" disabled>正在加载 Agent…</option>
-                <option v-else-if="profiles.length === 0" value="" disabled>尚未加载任何 Agent</option>
+                <option v-if="profilesLoading" value="" disabled>{{ t('正在加载 Agent…') }}</option>
+                <option v-else-if="profiles.length === 0" value="" disabled>{{ t('尚未加载任何 Agent') }}</option>
                 <option v-for="profile in profiles" :key="profile.name" :value="profile.name">
                   {{ profile.name }}
                 </option>
@@ -495,7 +496,7 @@ onMounted(async () => {
             <div class="form-field">
               <label class="form-label" for="create-user-id">
                 userId
-                <span class="optional-label">可选</span>
+                <span class="optional-label">{{ t('可选') }}</span>
               </label>
               <input
                 id="create-user-id"
@@ -512,11 +513,11 @@ onMounted(async () => {
               :disabled="creating || !createProfile"
             >
               <AppIcon name="plus" size="14" />
-              {{ creating ? '正在创建…' : '创建并打开' }}
+              {{ creating ? t('正在创建…') : t('创建并打开') }}
             </button>
           </form>
 
-          <p class="field-help">同一 profile + userId 会复用既有会话。</p>
+          <p class="field-help">{{ t('同一 profile + userId 会复用既有会话。') }}</p>
           <p v-if="createNotice" class="create-notice">{{ createNotice }}</p>
           <div v-if="createError" class="inline-alert inline-alert--danger rail-alert">
             <AppIcon name="alert" size="15" />
@@ -525,14 +526,14 @@ onMounted(async () => {
               <span class="inline-alert__trace">traceId: {{ createError.traceId || '—' }}</span>
             </span>
             <button type="button" class="inline-alert__action" @click="openDiagnostics(createError)">
-              诊断
+              {{ t('诊断') }}
             </button>
           </div>
         </section>
       </aside>
 
       <section class="panel session-workspace">
-        <div v-if="sessionLoading" class="workspace-loading" aria-label="会话加载中">
+        <div v-if="sessionLoading" class="workspace-loading" :aria-label="t('会话加载中')">
           <SkeletonBlock width="42%" height="18px" />
           <SkeletonBlock width="72%" height="28px" />
           <div class="workspace-loading__meta">
@@ -543,19 +544,19 @@ onMounted(async () => {
 
         <div v-else-if="sessionError?.code === 404" class="error-state session-missing" role="alert">
           <span class="empty-state__mark"><AppIcon name="alert" size="18" /></span>
-          <h2 class="error-state__title">会话不存在</h2>
+          <h2 class="error-state__title">{{ t('会话不存在') }}</h2>
           <p class="error-state__description">{{ sessionError.message }}</p>
           <p class="error-state__trace">traceId: {{ sessionError.traceId || '—' }}</p>
           <div class="button-row">
-            <button type="button" class="btn btn--secondary" @click="openById()">重新打开</button>
-            <button type="button" class="btn btn--ghost" @click="clearSessionView">清空当前会话</button>
-            <button type="button" class="btn btn--primary" @click="startNewSession">新建会话</button>
+            <button type="button" class="btn btn--secondary" @click="openById()">{{ t('重新打开') }}</button>
+            <button type="button" class="btn btn--ghost" @click="clearSessionView">{{ t('清空当前会话') }}</button>
+            <button type="button" class="btn btn--primary" @click="startNewSession">{{ t('新建会话') }}</button>
           </div>
         </div>
 
         <ErrorState
           v-else-if="sessionError"
-          title="无法加载会话"
+          :title="t('无法加载会话')"
           :error="sessionError"
           @retry="openById()"
           @inspect="openDiagnostics(sessionError)"
@@ -563,9 +564,9 @@ onMounted(async () => {
 
         <EmptyState
           v-else-if="!currentSession"
-          title="没有打开的会话"
-          description="从左侧最近的会话里选一条，或输入完整会话 ID / 新建会话加载运行时上下文。"
-          action-label="输入会话 ID"
+          :title="t('没有打开的会话')"
+          :description="t('从左侧最近的会话里选一条，或输入完整会话 ID / 新建会话加载运行时上下文。')"
+          :action-label="t('输入会话 ID')"
           icon="sessions"
           @action="focusSessionInput"
         />
@@ -585,13 +586,13 @@ onMounted(async () => {
                   @click="archiveOpen = true"
                 >
                   <AppIcon name="archive" size="14" />
-                  归档
+                  {{ t('归档') }}
                 </button>
                 <button
                   type="button"
                   class="icon-button"
-                  aria-label="刷新当前会话"
-                  title="刷新当前会话"
+                  :aria-label="t('刷新当前会话')"
+                  :title="t('刷新当前会话')"
                   @click="refreshCurrentSession()"
                 >
                   <AppIcon name="refresh" size="15" />
@@ -601,7 +602,7 @@ onMounted(async () => {
 
             <div class="session-id-line">
               <code>{{ currentSession.id }}</code>
-              <CopyButton :value="currentSession.id" label="复制会话 ID" />
+              <CopyButton :value="currentSession.id" :label="t('复制会话 ID')" />
             </div>
 
             <dl class="session-meta">
@@ -630,23 +631,23 @@ onMounted(async () => {
 
           <div v-if="currentSession.status === 'archived'" class="inline-alert inline-alert--warning archive-banner">
             <AppIcon name="archive" size="16" />
-            <span>该会话已归档。归档是软归档，历史仍可查看；后端不会阻止继续发消息。</span>
+            <span>{{ t('该会话已归档。归档是软归档，历史仍可查看；后端不会阻止继续发消息。') }}</span>
           </div>
 
           <div class="timeline-block">
             <div class="timeline-head">
               <div class="timeline-head__title">
                 <span class="eyebrow">Transcript</span>
-                <span class="timeline-head__count mono">{{ messages.length }} 条</span>
+                <span class="timeline-head__count mono">{{ t('{count} 条', { count: messages.length }) }}</span>
               </div>
-              <span class="timeline-head__limit">仅展示最近 {{ MAX_HISTORY }} 条</span>
+              <span class="timeline-head__limit">{{ t('仅展示最近 {count} 条', { count: MAX_HISTORY }) }}</span>
             </div>
 
             <div ref="timeline" class="session-messages">
               <div v-if="messages.length === 0" class="timeline-empty">
                 <span class="empty-state__mark"><AppIcon name="terminal" size="18" /></span>
-                <h3 class="empty-state__title">会话还没有消息</h3>
-                <p class="empty-state__description">在下方输入内容，Agent 的回复与工具结果会依次出现在这里。</p>
+                <h3 class="empty-state__title">{{ t('会话还没有消息') }}</h3>
+                <p class="empty-state__description">{{ t('在下方输入内容，Agent 的回复与工具结果会依次出现在这里。') }}</p>
               </div>
 
               <article
@@ -670,9 +671,9 @@ onMounted(async () => {
                     </p>
                     <p v-else-if="message.role === 'ASSISTANT'" class="message-placeholder">
                       <AppIcon name="pulse" size="14" />
-                      模型发起了工具调用
+                      {{ t('模型发起了工具调用') }}
                     </p>
-                    <p v-else class="message-placeholder">（空消息）</p>
+                    <p v-else class="message-placeholder">{{ t('（空消息）') }}</p>
                   </template>
 
                   <div
@@ -684,7 +685,7 @@ onMounted(async () => {
                       <span class="tool-result__name mono">{{ message.toolName || 'unknown_tool' }}</span>
                       <StatusChip :label="toolStatusLabel(message)" :tone="toolStatusTone(message)" />
                     </div>
-                    <pre class="tool-result__content">{{ message.content || '（无工具输出）' }}</pre>
+                    <pre class="tool-result__content">{{ message.content || t('（无工具输出）') }}</pre>
                   </div>
                 </div>
               </article>
@@ -693,7 +694,7 @@ onMounted(async () => {
 
           <footer class="session-composer">
             <div class="composer-head">
-              <label class="form-label" for="session-message-input">发送消息</label>
+              <label class="form-label" for="session-message-input">{{ t('发送消息') }}</label>
               <span class="char-count mono" :class="{ 'char-count--over': overLimit }">
                 {{ charCount.toLocaleString('zh-CN') }} / {{ MAX_MESSAGE_CHARS.toLocaleString('zh-CN') }}
               </span>
@@ -703,18 +704,18 @@ onMounted(async () => {
               ref="messageField"
               v-model="messageDraft"
               class="textarea composer-input"
-              placeholder="输入要发送给 Agent 的消息…"
+              :placeholder="t('输入要发送给 Agent 的消息…')"
               :disabled="sending"
               :aria-invalid="overLimit"
               aria-describedby="message-limit-help"
               @keydown="handleComposerKeydown"
             />
             <p v-if="overLimit" class="field-error">
-              消息超过 32,768 字符上限，请删减后再发送。
+              {{ t('消息超过 32,768 字符上限，请删减后再发送。') }}
             </p>
             <div v-if="sending" class="composer-progress" aria-live="polite">
               <div class="loading-rule" />
-              <span>Agent 处理中，最长等待约 60 秒。</span>
+              <span>{{ t('Agent 处理中，最长等待约 60 秒。') }}</span>
             </div>
             <div v-if="sendError" class="inline-alert inline-alert--danger">
               <AppIcon name="alert" size="15" />
@@ -723,14 +724,14 @@ onMounted(async () => {
                 <span class="inline-alert__trace">traceId: {{ sendError.traceId || '—' }}</span>
               </span>
               <button type="button" class="inline-alert__action" @click="openDiagnostics(sendError)">
-                诊断
+                {{ t('诊断') }}
               </button>
             </div>
             <div class="composer-footer">
-              <span id="message-limit-help" class="field-help">Ctrl / ⌘ + Enter 发送</span>
+              <span id="message-limit-help" class="field-help">{{ t('Ctrl / ⌘ + Enter 发送') }}</span>
               <button type="button" class="btn btn--primary" :disabled="!canSend" @click="sendMessage">
                 <AppIcon name="send" size="14" />
-                {{ sending ? 'Agent 处理中' : '发送' }}
+                {{ sending ? t('Agent 处理中') : t('发送') }}
               </button>
             </div>
           </footer>
@@ -740,9 +741,9 @@ onMounted(async () => {
 
     <ConfirmDialog
       :open="archiveOpen"
-      title="归档当前会话？"
-      description="归档是软归档，会话仍可查看；后端不会阻止继续发消息。"
-      confirm-label="确认归档"
+      :title="t('归档当前会话？')"
+      :description="t('归档是软归档，会话仍可查看；后端不会阻止继续发消息。')"
+      :confirm-label="t('确认归档')"
       :pending="archiving"
       danger
       @cancel="archiveOpen = false"
@@ -755,7 +756,7 @@ onMounted(async () => {
           <span class="inline-alert__trace">traceId: {{ archiveError.traceId || '—' }}</span>
         </span>
         <button type="button" class="inline-alert__action" @click="openDiagnostics(archiveError)">
-          诊断
+          {{ t('诊断') }}
         </button>
       </div>
     </ConfirmDialog>

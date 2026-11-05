@@ -1,9 +1,9 @@
 import { ref, shallowRef } from 'vue'
 import { normalizeError, type ApiError } from '../api/client'
-import { listProfiles } from '../api/endpoints'
-import type { ProfileView } from '../types/api'
+import { listAgents } from '../api/endpoints'
+import type { AgentView } from '../types/api'
 
-export const profiles = ref<ProfileView[]>([])
+export const profiles = ref<AgentView[]>([])
 export const profilesLoading = ref(false)
 export const profilesError = shallowRef<ApiError | null>(null)
 export const profilesLoaded = ref(false)
@@ -22,7 +22,7 @@ export async function loadProfiles(force = false): Promise<void> {
     profilesLoading.value = true
     profilesError.value = null
     try {
-      profiles.value = await listProfiles()
+      profiles.value = await listAgents()
       profilesLoaded.value = true
     } catch (error) {
       profilesError.value = normalizeError(error)

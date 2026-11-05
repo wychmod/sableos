@@ -11,8 +11,10 @@ import com.sableos.core.tool.SableTool;
 import com.sableos.core.tool.ToolCatalog;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -36,9 +38,38 @@ public final class PromptBuilder {
   private final MemoryProvider memoryProvider;
 
   /**
+   * 写进提示词的「当前时间」所用时区（恒非 null）。
+   *
+   * <p><b>为什么必须显式带入时区</b>：原实现用 {@code LocalDateTime.now()}，取的是 JVM 默认时区； 而定时任务的实际触发时区是 profile 里配的
+   * {@code ScheduleConfig.zone}（{@code CronTrigger} 按它计算）。两者不一致时， 模型看到的「现在几点」与任务真实触发时间会错位（UTC
+   * 容器里默认时区下会差 8 小时），模型据此推理的「今天 / 明天」全部偏移。
+   *
+   * <p>时区由装配层一次性确定（{@code sableos.timezone} → 未配置则回落系统默认），不在每次 {@code build} 时重复解析。
+   */
+  private final ZoneId zone;
+
+  /**
    * @param contextLoader 读取 system prompt 的来源加载器
    * @param toolCatalog 本次 Profile 可用工具的目录
    * @param memoryProvider 长期记忆段来源；可为 null（整段省略）
+   */
+  public PromptBuilder(
+      ContextLoader contextLoader, ToolCatalog toolCatalog, MemoryProvider memoryProvider) {
+    this(contextLoader, toolCatalog, memoryProvider, ZoneId.systemDefault());
+  }
+
+  /**
+   * 带显式时区的装配（{@code sableos.timezone} 已配置时走这里）。
+   *
+   * <p>EI_EXPOSE_REP2 抑制说明沿用原构造器：{@code ContextLoader} 是无状态的只读协作者（final 类，仅持三个 final Path 字段， 无任何
+   * mutator），此处按依赖注入保存其引用，并非把可变内部表示暴露出去（本类无返回该字段的 getter）。依赖注入本就必须持有协作 者引用，不引入多余抽象接口即可规避该报告属
+   * SpotBugs 对「注入具体类」的固有误判。撤销条件：一旦 ContextLoader 变为可变 （新增 setter / 非 final
+   * 可变字段）或其引用被对外暴露，须重新评估并移除本抑制。
+   *
+   * @param contextLoader 读取 system prompt 的来源加载器
+   * @param toolCatalog 本次 Profile 可用工具的目录
+   * @param memoryProvider 长期记忆段来源；可为 null（整段省略）
+   * @param zone 提示词里「当前时间」所用时区，不得为 null
    */
   @SuppressFBWarnings(
       value = "EI_EXPOSE_REP2",
@@ -49,10 +80,14 @@ public final class PromptBuilder {
               + "「注入具体类」的固有误判。撤销条件：一旦 ContextLoader 变为可变（新增 setter / 非 final 可变字段）"
               + "或其引用被对外暴露，须重新评估并移除本抑制。")
   public PromptBuilder(
-      ContextLoader contextLoader, ToolCatalog toolCatalog, MemoryProvider memoryProvider) {
+      ContextLoader contextLoader,
+      ToolCatalog toolCatalog,
+      MemoryProvider memoryProvider,
+      ZoneId zone) {
     this.contextLoader = contextLoader;
     this.toolCatalog = toolCatalog;
     this.memoryProvider = memoryProvider;
+    this.zone = Objects.requireNonNull(zone, "zone 不能为空");
   }
 
   /**
@@ -66,7 +101,10 @@ public final class PromptBuilder {
 
     String systemPrompt = contextLoader.systemPrompt(profile);
     content.append(systemPrompt);
-    content.append(LINE_BREAK).append(TIME_PREFIX).append(LocalDateTime.now().format(TIME_FORMAT));
+    content
+        .append(LINE_BREAK)
+        .append(TIME_PREFIX)
+        .append(LocalDateTime.now(zone).format(TIME_FORMAT));
 
     String memory = (memoryProvider == null) ? null : memoryProvider.memorySection(profile);
     if (memory != null && !memory.isBlank()) {

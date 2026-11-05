@@ -170,7 +170,7 @@ class HumanTriggerFlowIT {
         "/api/v1/sessions/" + firstSession + "/messages",
         Map.of("content", "请调用 save_memory 工具，把“我在北京，怕冷”写入长期记忆，然后回复已记住。"));
 
-    JsonNode memory = get("/api/v1/memory?profile=memory-agent").path("data");
+    JsonNode memory = get("/api/v1/agents/memory-agent/memory").path("data");
     assertThat(memory.path("content").asText()).contains("北京");
 
     JsonNode second =
@@ -262,7 +262,7 @@ class HumanTriggerFlowIT {
 
     JsonNode list = get("/api/v1/sessions").path("data");
     assertThat(findById(list, cliSessionId)).isPresent();
-    assertThat(get("/api/v1/memory?profile=mock-agent").path("data").path("content").asText())
+    assertThat(get("/api/v1/agents/mock-agent/memory").path("data").path("content").asText())
         .contains("美式咖啡");
   }
 

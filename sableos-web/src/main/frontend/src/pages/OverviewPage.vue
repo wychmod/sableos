@@ -17,6 +17,7 @@ import {
 } from '../composables/useSystemStatus'
 import { openDiagnostics, pushToast, reportError } from '../composables/useUiFeedback'
 import type { ProviderStatus } from '../types/api'
+import { t } from '../i18n'
 import { formatClock, formatLatency } from '../utils/format'
 
 const router = useRouter()
@@ -36,10 +37,10 @@ const lastRefreshText = computed(() =>
 )
 
 const healthLabel = computed(() => {
-  if (healthState.value === 'checking') return '健康检查中'
-  if (healthState.value === 'ok') return '后端健康'
-  if (healthState.value === 'down') return '后端不可达'
-  return '等待探测'
+  if (healthState.value === 'checking') return t('健康检查中')
+  if (healthState.value === 'ok') return t('后端健康')
+  if (healthState.value === 'down') return t('后端不可达')
+  return t('等待探测')
 })
 
 const healthTone = computed(() => {
@@ -54,7 +55,7 @@ function providerTone(provider: ProviderStatus): 'success' | 'failure' {
 }
 
 function providerLabel(provider: ProviderStatus): string {
-  return provider.reachable ? '可达' : '不可达'
+  return provider.reachable ? t('可达') : t('不可达')
 }
 
 async function refreshOverview(): Promise<void> {
@@ -65,7 +66,7 @@ async function refreshOverview(): Promise<void> {
   if (issue) {
     reportError(issue)
   } else {
-    pushToast('系统状态已刷新', 'success')
+    pushToast(t('系统状态已刷新'), 'success')
   }
   refreshing.value = false
 }
@@ -73,7 +74,7 @@ async function refreshOverview(): Promise<void> {
 function openSession(): void {
   const id = sessionId.value.trim()
   if (!id) {
-    sessionIdError.value = '请输入会话 ID，例如 web:alice:default'
+    sessionIdError.value = t('请输入会话 ID，例如 web:alice:default')
     return
   }
   sessionIdError.value = ''
@@ -85,12 +86,12 @@ function openSession(): void {
   <div class="page-shell page-stack overview-page">
     <PageHeader
       eyebrow="System overview / 01"
-      title="系统总览"
-      description="SableOS 运行控制面：查看应用身份、Provider 连通态势与常用操作入口。"
+      :title="t('系统总览')"
+      :description="t('SableOS 运行控制面：查看应用身份、Provider 连通态势与常用操作入口。')"
     >
       <template #actions>
         <StatusChip :label="healthLabel" :tone="healthTone" />
-        <span class="refresh-caption">最后同步 {{ lastRefreshText }}</span>
+        <span class="refresh-caption">{{ t('最后同步 {time}', { time: lastRefreshText }) }}</span>
         <button
           type="button"
           class="btn btn--secondary btn--sm"
@@ -98,12 +99,12 @@ function openSession(): void {
           @click="refreshOverview"
         >
           <AppIcon name="refresh" size="14" :class="{ spinning: refreshing }" />
-          {{ refreshing ? '刷新中' : '刷新' }}
+          {{ refreshing ? t('刷新中') : t('刷新') }}
         </button>
       </template>
     </PageHeader>
 
-    <section class="summary-strip" aria-label="系统摘要">
+    <section class="summary-strip" :aria-label="t('系统摘要')">
       <article class="summary-card">
         <span class="summary-card__index">01 / INSTANCE</span>
         <template v-if="infoLoading && !systemInfo">
@@ -112,7 +113,7 @@ function openSession(): void {
         </template>
         <template v-else>
           <strong class="summary-card__value truncate">{{ systemInfo?.app || '—' }}</strong>
-          <span class="summary-card__note">应用实例</span>
+          <span class="summary-card__note">{{ t('应用实例') }}</span>
         </template>
       </article>
 
@@ -124,7 +125,7 @@ function openSession(): void {
         </template>
         <template v-else>
           <strong class="summary-card__value mono truncate">{{ systemInfo?.version || '—' }}</strong>
-          <span class="summary-card__note">后端版本</span>
+          <span class="summary-card__note">{{ t('后端版本') }}</span>
         </template>
       </article>
 
@@ -136,7 +137,7 @@ function openSession(): void {
         </template>
         <template v-else>
           <strong class="summary-card__value mono">{{ providerCount }}</strong>
-          <span class="summary-card__note">已配置 Provider</span>
+          <span class="summary-card__note">{{ t('已配置 Provider') }}</span>
         </template>
       </article>
 
@@ -151,7 +152,13 @@ function openSession(): void {
             {{ reachableCount }}<span class="summary-card__denominator"> / {{ providerCount }}</span>
           </strong>
           <span class="summary-card__note">
-            {{ allReachable ? '全链路可达' : providerCount === 0 ? '尚未配置 Provider' : '需要检查连通性' }}
+            {{
+              allReachable
+                ? t('全链路可达')
+                : providerCount === 0
+                  ? t('尚未配置 Provider')
+                  : t('需要检查连通性')
+            }}
           </span>
         </template>
       </article>
@@ -162,12 +169,12 @@ function openSession(): void {
         <div class="panel__head">
           <div class="panel__title-group">
             <span class="eyebrow">Connectivity matrix</span>
-            <h2 class="panel__title">Provider 连通态势</h2>
+            <h2 class="panel__title">{{ t('Provider 连通态势') }}</h2>
           </div>
-          <span class="panel__meta">实时 HTTP 探测 · 最后同步 {{ lastRefreshText }}</span>
+          <span class="panel__meta">{{ t('实时 HTTP 探测 · 最后同步 {time}', { time: lastRefreshText }) }}</span>
         </div>
 
-        <div v-if="infoLoading && !systemInfo" class="skeleton-table" aria-label="Provider 加载中">
+        <div v-if="infoLoading && !systemInfo" class="skeleton-table" :aria-label="t('Provider 加载中')">
           <div v-for="index in 3" :key="index" class="skeleton-row">
             <SkeletonBlock width="32%" height="14px" />
             <SkeletonBlock width="16%" height="22px" />
@@ -178,7 +185,7 @@ function openSession(): void {
 
         <ErrorState
           v-else-if="infoError && !systemInfo"
-          title="系统信息加载失败"
+          :title="t('系统信息加载失败')"
           :error="infoError"
           @retry="refreshOverview"
           @inspect="openDiagnostics(infoError)"
@@ -192,26 +199,26 @@ function openSession(): void {
               <span class="inline-alert__trace">traceId: {{ infoError.traceId || '—' }}</span>
             </span>
             <button type="button" class="inline-alert__action" @click="openDiagnostics(infoError)">
-              诊断
+              {{ t('诊断') }}
             </button>
           </div>
 
           <EmptyState
             v-if="providers.length === 0"
-            title="尚未配置 Provider"
-            description="当前应用没有可探测的模型提供方。添加配置后，重新探测即可看到连通状态。"
-            action-label="重新探测"
+            :title="t('尚未配置 Provider')"
+            :description="t('当前应用没有可探测的模型提供方。添加配置后，重新探测即可看到连通状态。')"
+            :action-label="t('重新探测')"
             icon="pulse"
             @action="refreshOverview"
           />
 
-          <div v-else class="provider-table" role="table" aria-label="Provider 列表">
+          <div v-else class="provider-table" role="table" :aria-label="t('Provider 列表')">
             <div class="provider-table__head" role="row">
               <span role="columnheader">Provider</span>
-              <span role="columnheader">类型</span>
-              <span role="columnheader">连通性</span>
-              <span role="columnheader" class="is-right">延迟</span>
-              <span role="columnheader">诊断</span>
+              <span role="columnheader">{{ t('类型') }}</span>
+              <span role="columnheader">{{ t('连通性') }}</span>
+              <span role="columnheader" class="is-right">{{ t('延迟') }}</span>
+              <span role="columnheader">{{ t('诊断') }}</span>
             </div>
 
             <div
@@ -223,20 +230,20 @@ function openSession(): void {
               <span class="provider-cell provider-name mono" role="cell" data-label="Provider">
                 {{ provider.name }}
               </span>
-              <span class="provider-cell" role="cell" data-label="类型">
+              <span class="provider-cell" role="cell" :data-label="t('类型')">
                 <span class="chip">{{ provider.type || '—' }}</span>
               </span>
-              <span class="provider-cell" role="cell" data-label="连通性">
+              <span class="provider-cell" role="cell" :data-label="t('连通性')">
                 <StatusChip :label="providerLabel(provider)" :tone="providerTone(provider)" />
               </span>
-              <span class="provider-cell provider-latency mono" role="cell" data-label="延迟">
+              <span class="provider-cell provider-latency mono" role="cell" :data-label="t('延迟')">
                 {{ formatLatency(provider.latencyMs) }}
               </span>
               <span
                 class="provider-cell provider-error"
                 :class="{ 'provider-error--none': !provider.error }"
                 role="cell"
-                data-label="诊断"
+                :data-label="t('诊断')"
               >
                 {{ provider.error || '—' }}
               </span>
@@ -249,12 +256,12 @@ function openSession(): void {
         <div class="panel__head">
           <div class="panel__title-group">
             <span class="eyebrow">Command deck</span>
-            <h2 class="panel__title">控制入口</h2>
+            <h2 class="panel__title">{{ t('控制入口') }}</h2>
           </div>
         </div>
         <div class="command-panel__body">
           <form class="session-jump" @submit.prevent="openSession">
-            <label class="form-label" for="overview-session-id">按 ID 打开会话</label>
+            <label class="form-label" for="overview-session-id">{{ t('按 ID 打开会话') }}</label>
             <div class="session-jump__row">
               <input
                 id="overview-session-id"
@@ -265,9 +272,9 @@ function openSession(): void {
                 :aria-invalid="Boolean(sessionIdError)"
                 aria-describedby="overview-session-help overview-session-error"
               />
-              <button type="submit" class="btn btn--primary">打开</button>
+              <button type="submit" class="btn btn--primary">{{ t('打开') }}</button>
             </div>
-            <p id="overview-session-help" class="field-help">支持带冒号的完整会话 ID。</p>
+            <p id="overview-session-help" class="field-help">{{ t('支持带冒号的完整会话 ID。') }}</p>
             <p v-if="sessionIdError" id="overview-session-error" class="field-error">
               {{ sessionIdError }}
             </p>
@@ -277,31 +284,31 @@ function openSession(): void {
             <RouterLink :to="{ name: 'sessions', query: { action: 'new' } }" class="quick-link">
               <span class="quick-link__icon"><AppIcon name="plus" size="16" /></span>
               <span class="quick-link__copy">
-                <strong>新建会话</strong>
-                <span>选择 profile 与用户标识</span>
+                <strong>{{ t('新建会话') }}</strong>
+                <span>{{ t('选择 profile 与用户标识') }}</span>
               </span>
               <AppIcon name="arrow-right" size="15" class="quick-link__arrow" />
             </RouterLink>
             <RouterLink :to="{ name: 'tools' }" class="quick-link">
               <span class="quick-link__icon"><AppIcon name="tools" size="16" /></span>
               <span class="quick-link__copy">
-                <strong>查看工具</strong>
-                <span>浏览已注册工具与入参 Schema</span>
+                <strong>{{ t('查看工具') }}</strong>
+                <span>{{ t('浏览已注册工具与入参 Schema') }}</span>
               </span>
               <AppIcon name="arrow-right" size="15" class="quick-link__arrow" />
             </RouterLink>
             <RouterLink :to="{ name: 'memory' }" class="quick-link">
               <span class="quick-link__icon"><AppIcon name="memory" size="16" /></span>
               <span class="quick-link__copy">
-                <strong>查看记忆</strong>
-                <span>读取 Agent 的长期记忆全文</span>
+                <strong>{{ t('查看记忆') }}</strong>
+                <span>{{ t('读取 Agent 的长期记忆全文') }}</span>
               </span>
               <AppIcon name="arrow-right" size="15" class="quick-link__arrow" />
             </RouterLink>
           </div>
 
           <p class="command-note">
-            后端不提供会话列表接口。会话入口仅支持 ID 打开、最近访问与本页新建。
+            {{ t('后端不提供会话列表接口。会话入口仅支持 ID 打开、最近访问与本页新建。') }}
           </p>
         </div>
       </aside>

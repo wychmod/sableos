@@ -8,14 +8,14 @@
 
 # SableOS
 
-![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-%E6%96%87%E6%A1%A3%E5%85%88%E8%A1%8C%E9%98%B6%E6%AE%B5-yellow.svg)
+![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-%E9%98%B6%E6%AE%B5%E4%B8%80%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E6%A0%B8-brightgreen.svg)
 ![JDK](https://img.shields.io/badge/JDK-21%2B-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F.svg)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 
 > 一个目录定义一个 Agent，一个底座运行一群 Agent。
 
-**项目状态：文档先行。** 仓库当前包含设计文档（`docs/`）与 Maven 多模块骨架（9 个模块，`mvn clean package` 可通过），业务代码尚未开始编写；技术方案已定稿，实现节奏见[路线图](#路线图)。
+**项目状态：阶段一（单机运行时内核）已实现。** 仓库包含设计文档（`docs/`）与 9 个 Maven 模块的完整实现：配置即 Agent、多 Agent 并存、REST API、MCP 接入、定时任务、记忆系统、沙箱白名单与 Vue 管理台均已跑通，`mvn clean verify` 全绿。实现节奏与后续阶段见[路线图](#路线图)。
 
 ## 什么是 SableOS
 
@@ -88,7 +88,7 @@ Claude 生态里真正的对标物不是 Skill 而是 Subagent。**SableOS Agent
 | ReAct 循环 | 自实现的推理引擎：LLM 决定调不调工具、调哪个，执行后回填结果继续推理，直到给出最终响应或达到最大迭代次数（默认 10） |
 | Memory 记忆 | 统一门面提供会话记忆与长期记忆；长期记忆默认落 `.sableos/memory/MEMORY.md`，后端可插拔（Markdown / SQLite / 自托管 Mem0） |
 | Tool 体系 | 九个内置 Tool（文件、Shell、HTTP、记忆、通知五组）加 Plugin Tool 三档接入；MCP Client 对接外部工具；文件、Shell、HTTP 与通知类调用经 `Sandbox` 白名单校验，全部调用落 `tool_invocations` 审计 |
-| Web Service | 所有能力经 REST API 对外暴露，核心阶段 11 个端点；业务系统用任何语言经 HTTP 接入，`/admin` 管理台与接口同进程托管 |
+| Web Service | 所有能力经 REST API 对外暴露，核心阶段 11 个端点 + 第 30 节 14 个 Agent 管理端点；业务系统用任何语言经 HTTP 接入，`/admin` 管理台与接口同进程托管 |
 
 > 引擎与能力之间、能力与外部之间都通过抽象接口解耦：扩展阶段加新 Channel、新 Provider、新 Tool 只需在边缘扩展，不动核心引擎。
 
@@ -117,7 +117,7 @@ Maven 多模块项目，共 14 个模块（以[《技术方案》第 10 章](doc
 
 ## 快速开始
 
-> 当前仓库处于文档先行阶段，以下命令以[《技术方案》](docs/TechnicalSolution.md)为准，核心阶段实现后可用。骨架阶段即已可验证：`mvn clean package` 后运行 `java -jar sableos-cli/target/sableos-cli-0.1.0-SNAPSHOT-all.jar`，会打印 SableOS 版本信息。
+> 以下命令均可直接用。技术细节以[《技术方案》](docs/TechnicalSolution.md)为准；只想验证环境是否就绪，可 `mvn clean package` 后运行 `java -jar sableos-cli/target/sableos-cli-0.1.0-SNAPSHOT-all.jar`，会打印 SableOS 版本信息。
 
 环境要求：
 
@@ -179,7 +179,7 @@ Skill 绑定通过 Agent 目录下 `skills/` 的相对软连接表达，不写�
 
 ## REST API
 
-`sableos serve` 默认在 `8080` 暴露 `/api/v1`，核心阶段 11 个端点：
+`sableos serve` 默认在 `8080` 暴露 `/api/v1`，核心阶段 11 个端点
 
 | 资源 | 端点 | 说明 |
 | --- | --- | --- |
@@ -189,10 +189,23 @@ Skill 绑定通过 Agent 目录下 `skills/` 的相对软连接表达，不写�
 | 会话管理 | `GET /api/v1/sessions/{id}` | 查历史 |
 | 会话管理 | `DELETE /api/v1/sessions/{id}` | 归档会话 |
 | Agent 调用 | `POST /api/v1/agents/{name}/invoke` | 无状态调用 |
-| 信息查询 | `GET /api/v1/profiles`、`GET /api/v1/memory`、`GET /api/v1/tools` | Profile / 长期记忆 / 工具清单 |
+| 信息查询 | `GET /api/v1/profiles`、`GET /api/v1/tools` | Profile / 工具清单 |
+| 记忆查询 | `GET /api/v1/agents/{name}/memory` | 该 Agent 的专属记忆（第 30 节；原全局 `GET /api/v1/memory` 已移除） |
 | 系统状态 | `GET /api/v1/health`、`GET /api/v1/info` | 健康检查 / 运行信息 |
 
-除上述 11 个核心端点外，第 28 节另有两组管理面（不计入 11 的计数）：
+第 30 节补齐 Agent 管理面（14 个端点，含创建/查询/更新/删除、一句话生成、固定会话、记忆查询与工作区文件读写）：
+
+| 资源 | 端点 | 说明 |
+| --- | --- | --- |
+| Agent 管理 | `POST /api/v1/agents` | 创建（name + description，按模板脚手架出完整目录，失败回滚） |
+| Agent 管理 | `GET /api/v1/agents`、`GET /api/v1/agents/{name}` | 列表 / 详情（含该目录文件树） |
+| Agent 管理 | `PUT /api/v1/agents/{name}`、`DELETE /api/v1/agents/{name}` | 覆写 AGENT.md / 删除（注销定时 → 移出索引 → 归档） |
+| Agent 生成 | `POST /api/v1/agents/{name}/generate-files` | 一句话生成文件草稿（不落盘；需 `sableos.author.model`，未配置返回 503） |
+| Agent 文件 | `POST /api/v1/agents/{name}/files` | 保存一组文件、写入即生效 |
+| 固定会话 | `GET /api/v1/agents/{name}/session`、`POST /api/v1/agents/{name}/session/messages` | 管理台与该 Agent 的固定会话 |
+| 工作区 | `GET /api/v1/workspace/tree`、`GET/POST /api/v1/workspace/file` | 目录树 / 读 / 写（只放行 `agents/` 与 `archive/`，越界 400） |
+
+除上述核心端点外，第 28 节另有两组管理面（不计入核心端点计数）：
 
 | 资源 | 端点 | 说明 |
 | --- | --- | --- |
@@ -319,7 +332,7 @@ curl -s -X POST $B/api/v1/notify-channels \
 
 SableOS 由 [sable-labs](docs/sable-labs.md) 社区发起——一个 AI coding 驱动的 AI 探索社区：用 AI 写代码、做设计、推进工程，把想法变成能跑的东西并开源出来。欢迎围绕 Agent 方向发起或加入项目。
 
-当前仓库处于文档先行阶段，欢迎通过 Issue / PR 参与讨论与共建：
+当前处于阶段一（单机运行时内核）实现完成状态，欢迎通过 Issue / PR 参与讨论与共建：
 
 - 对设计文档提出问题与修正；文档之间出现修订不同步时，以[《技术方案》](docs/TechnicalSolution.md)为准
 - 开发流程按 Spec-Kit 驱动（准备阶段产出宪章、spec、plan，按 user story 实施，每个 user story 结束后做一致性检查），见[《AI 编程指南》](docs/AiProgrammingGuide.md)

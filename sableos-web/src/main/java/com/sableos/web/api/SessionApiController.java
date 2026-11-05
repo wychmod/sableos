@@ -112,7 +112,8 @@ public class SessionApiController {
     return ApiResponse.ok(null);
   }
 
-  private static SessionView toView(Session session) {
+  /** 包级可见：第 30 节的 Agent 固定会话端点复用同一份会话视图转换，避免两套序列化口径。 */
+  static SessionView toView(Session session) {
     List<SessionMessage> messages = session.messages();
     int from = Math.max(0, messages.size() - ApiConstraints.MAX_HISTORY_MESSAGES);
     List<MessageView> views =

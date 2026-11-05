@@ -1,5 +1,6 @@
 package com.sableos.core.context;
 
+import com.sableos.core.agent.AgentDefinitionFile;
 import com.sableos.core.profile.Profile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -30,7 +31,6 @@ public final class ContextLoader {
 
   private static final Logger LOG = LoggerFactory.getLogger(ContextLoader.class);
 
-  private static final String AGENT_FILE_NAME = "AGENT.md";
   private static final String SKILL_FILE_NAME = "SKILL.md";
   private static final String SKILLS_DIR_NAME = "skills";
   private static final String FRONTMATTER_FENCE = "---";
@@ -77,9 +77,18 @@ public final class ContextLoader {
   }
 
   private String agentBody(String agentName) {
-    Path agentFile = agentsDir.resolve(agentName).resolve(AGENT_FILE_NAME);
-    if (!Files.isRegularFile(agentFile)) {
-      LOG.warn("Agent 定义正文缺失，已跳过：name={} file={}", safe(agentName), safe(agentFile.toString()));
+    Path agentDir = agentsDir.resolve(agentName);
+    Path agentFile;
+    try {
+      agentFile = AgentDefinitionFile.locate(agentDir).orElse(null);
+    } catch (IOException e) {
+      agentFile = null;
+    }
+    if (agentFile == null) {
+      LOG.warn(
+          "Agent 定义正文缺失，已跳过：name={} file={}",
+          safe(agentName),
+          safe(agentDir.resolve(AgentDefinitionFile.FILE_NAME).toString()));
       return null;
     }
     return stripFrontmatter(readFile(agentFile));

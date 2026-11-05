@@ -400,7 +400,7 @@ Web Service 是 SableOS 的对外完整门面，业务系统通过 REST API 接�
 
 **OpenAPI 文档模块。** 通过 `springdoc-openapi` 自动生成 OpenAPI 3.0 文档，暴露在 `/swagger-ui`。
 
-### 7.2 核心阶段 11 个端点
+### 7.2 核心阶段 11 个端点（+ 第 30 节补齐 14 个 Agent 管理端点）
 
 **会话管理（5 个）：**
 
@@ -414,22 +414,40 @@ Web Service 是 SableOS 的对外完整门面，业务系统通过 REST API 接�
 
 1. `POST /api/v1/agents/{name}/invoke`（无状态调用）
 
-**Profile / Memory / Tool 信息（3 个）：**
+**Profile / Tool 信息（2 个）：**
 
 1. `GET /api/v1/profiles`
-2. `GET /api/v1/memory`
-3. `GET /api/v1/tools`
+2. `GET /api/v1/tools`
+
+> 全局 `GET /api/v1/memory` 已于第 30 节移除：记忆按 Agent 隔离后，全局查询语义含混，改由 `GET /api/v1/agents/{name}/memory` 提供（见下）。
 
 **系统状态（2 个）：**
 
 1. `GET /api/v1/health`
 2. `GET /api/v1/info`
 
+**Agent 管理（第 30 节，14 个）：**
+
+1. `POST /api/v1/agents`（创建：name + description，按模板脚手架出完整目录）
+2. `GET /api/v1/agents`（列表）
+3. `GET /api/v1/agents/{name}`（详情 + 文件树）
+4. `PUT /api/v1/agents/{name}`（覆写 AGENT.md）
+5. `DELETE /api/v1/agents/{name}`（注销定时 → 移出索引 → 归档）
+6. `GET /api/v1/agents/{name}/memory`（该 Agent 专属记忆）
+7. `GET /api/v1/agents/{name}/session`（固定管理台会话）
+8. `POST /api/v1/agents/{name}/session/messages`（往固定会话发消息）
+9. `POST /api/v1/agents/{name}/generate-files`（一句话生成文件草稿，不落盘）
+10. `POST /api/v1/agents/{name}/files`（保存一组文件、写入即生效）
+11. `GET /api/v1/workspace/tree`（agents/ + archive/ 目录树）
+12. `GET /api/v1/workspace/file?path=`（读文本，防目录穿越）
+13. `POST /api/v1/workspace/file`（写文本；AGENT.md 走更新链路）
+14. 端点 1~5 与 11~13 已覆盖「上传 / 查看 / 更新 / 删除」全链路
+
 ### 7.3 扩展阶段补齐的端点
 
-**`Agent` 目录的上传/查看/更新/删除**（业务方通过 API 而不是手动把目录丢进 `.sableos/agents/` 来创建新 Agent，含一句话生成 `AGENT.md`，这才是"纯 API 定义一个新 Agent"的完整闭环）；Memory 的 append/clear/search；Tool describe 和调用历史；LLM call 历史和 token 统计；**`AgentScheduler` 的调度管理**（增删查改某个 Agent frontmatter 的 `schedules`，不用改文件重启进程）；Webhook 触发；SSE 流式响应；Prometheus metrics；OpenAPI spec。
+**Memory 的 append/clear/search**；Tool describe 和调用历史；LLM call 历史和 token 统计；**`AgentScheduler` 的调度管理**（增删查改某个 Agent frontmatter 的 `schedules`，不用改文件重启进程）；Webhook 触发；SSE 流式响应；Prometheus metrics；OpenAPI spec；带脚本的 zip / multipart 上传；Agent 启停状态位；创建时 dry-run 试跑；版本历史；多轮追问式生成。
 
-> **核心阶段为什么不做：** 核心阶段"定义一个 Agent"的路径是业务方手写一个 `.sableos/agents/<name>/` 目录（`AGENT.md`[+ 脚本 / 子指令]）、重启或热加载生效（`ContextLoader` 每次组装 prompt 都重新读取，不需要重启也能生效，见 8.3），Web Service 核心阶段的端点都只做查询，不做创建，这跟"业务系统通过 API 动态创建新 Agent"是两件事——后者需要 Agent 目录上传接口（含一句话生成）、`AgentScheduler` 的运行时增删接口一起补齐，缺了这条链路就不完整，所以放在同一批扩展阶段一起做，不拆开先做一半。
+> **核心阶段为什么不做：** 「Agent 目录的上传/查看/更新/删除」与「一句话生成 `AGENT.md`」原本记在这里，已随第 30 节前移进核心阶段（见 7.2 的 Agent 管理端点）——它是「纯 API 定义一个新 Agent」的完整闭环，只有补齐才能让管理台真正可用。第 30 节同时确立了三条录入路径殊途同归（API 创建 / 目录监听 / 启动扫描），因此「热加载生效」不再依赖 `ContextLoader` 每次重读（那只覆盖 system prompt 组装）。
 
 ### 7.4 关键设计点
 

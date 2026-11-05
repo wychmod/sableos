@@ -197,4 +197,81 @@ class AgentSchedulerRegisterTest {
 
     assertThat(store.list()).isEmpty();
   }
+
+  // ---------------------------------------------------------------- 第 30 节：注销
+
+  @Test
+  @DisplayName("unregisterProfile 后句柄消失、任务退役")
+  void unregisterProfile_cancelsHandlesAndRetires() {
+    Profile profile = profile("morning", "noon");
+    AgentScheduler scheduler = scheduler();
+    ScheduledFuture<?> morning = mock(ScheduledFuture.class);
+    ScheduledFuture<?> noon = mock(ScheduledFuture.class);
+    doReturn(morning)
+        .doReturn(noon)
+        .when(taskScheduler)
+        .schedule(any(Runnable.class), any(Trigger.class));
+
+    scheduler.registerProfile(profile);
+    List<Long> ids = store.list().stream().map(ScheduledTaskView::scheduleId).toList();
+    assertThat(ids).hasSize(2).allMatch(scheduler::hasScheduledTask);
+
+    scheduler.unregisterProfile(profile);
+
+    assertThat(ids).noneMatch(scheduler::hasScheduledTask);
+    assertThat(store.list()).isEmpty(); // list 只返回未退役项
+    verify(morning).cancel(false);
+    verify(noon).cancel(false);
+  }
+
+  @Test
+  @DisplayName("unregisterProfile 只影响该 Agent 的任务")
+  void unregisterProfile_onlyTouchesItsOwnAgent() {
+    Profile mine = profile("mine");
+    Profile other =
+        new Profile(
+            "other",
+            "另一个 Agent",
+            null,
+            new Profile.ProviderRef("deepseek", "deepseek-chat", null),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(new Profile.ScheduleConfig("theirs", "0 0 9 * * *", ZONE, "到点")),
+            List.of(),
+            new Profile.Settings(null, null));
+    AgentScheduler scheduler = scheduler();
+    doReturn(mock(ScheduledFuture.class))
+        .when(taskScheduler)
+        .schedule(any(Runnable.class), any(Trigger.class));
+
+    scheduler.registerProfile(mine);
+    scheduler.registerProfile(other);
+    long mineId =
+        store.list().stream()
+            .filter(v -> v.profileName().equals(PROFILE_NAME))
+            .findFirst()
+            .orElseThrow()
+            .scheduleId();
+    long otherId =
+        store.list().stream()
+            .filter(v -> v.profileName().equals("other"))
+            .findFirst()
+            .orElseThrow()
+            .scheduleId();
+
+    scheduler.unregisterProfile(mine);
+
+    assertThat(scheduler.hasScheduledTask(mineId)).isFalse();
+    assertThat(scheduler.hasScheduledTask(otherId)).isTrue();
+  }
+
+  @Test
+  @DisplayName("unregisterProfile 对未注册的 Agent 幂等")
+  void unregisterProfile_unknownAgent_isIdempotent() {
+    AgentScheduler scheduler = scheduler();
+    scheduler.unregisterProfile(profile("never"));
+    scheduler.unregisterProfile(null);
+    assertThat(store.list()).isEmpty();
+  }
 }

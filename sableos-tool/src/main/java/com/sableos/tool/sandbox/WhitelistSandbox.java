@@ -65,6 +65,7 @@ public class WhitelistSandbox implements Sandbox {
     return new WhitelistSandbox(initialPolicy);
   }
 
+  /** 根的解析（软链 / 8.3 短名）统一在 {@link WhitelistPolicy} 构造器里做，这里只做绝对化与词法规约。 */
   private static List<Path> toRoots(List<String> rawPaths) {
     return rawPaths.stream()
         .filter(path -> !path.isBlank())
@@ -125,7 +126,12 @@ public class WhitelistSandbox implements Sandbox {
     } catch (InvalidPathException e) {
       throw new SandboxViolationException("路径无法解析: " + rawPath);
     }
-    boolean allowed = current.allowedRoots().stream().anyMatch(target::startsWith);
+    // 必须解析符号链接后再判定。normalize() 只是字符串层面的规约，不碰文件系统：
+    // 白名单目录下的一个软链若指向白名单外，normalize 后仍然落在白名单里，而
+    // 后续 Files.readString/writeString 会跟随软链读到真实目标——这是沙箱逃逸。
+    // 与策略根的解析共用同一函数（WhitelistPolicy#resolveRealPath），两侧形态才一致。
+    Path resolved = WhitelistPolicy.resolveRealPath(target);
+    boolean allowed = current.allowedRoots().stream().anyMatch(resolved::startsWith);
     if (!allowed) {
       throw new SandboxViolationException("路径不在白名单内: " + rawPath);
     }

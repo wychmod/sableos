@@ -3,6 +3,7 @@ import { nextTick, ref, watch } from 'vue'
 import AppIcon from './AppIcon.vue'
 import CopyButton from './CopyButton.vue'
 import { closeDiagnostics, diagnosticError, diagnosticOpen } from '../composables/useUiFeedback'
+import { t } from '../i18n'
 
 const dialog = ref<HTMLDialogElement | null>(null)
 
@@ -32,24 +33,26 @@ function close(): void {
     <div class="diagnostic-dialog__head">
       <div>
         <div class="eyebrow">Request diagnostics</div>
-        <h2 id="diagnostic-title" class="diagnostic-dialog__title">诊断信息</h2>
+        <h2 id="diagnostic-title" class="diagnostic-dialog__title">{{ t('诊断信息') }}</h2>
       </div>
-      <button type="button" class="icon-button" aria-label="关闭诊断信息" @click="close">
+      <button type="button" class="icon-button" :aria-label="t('关闭诊断信息')" @click="close">
         <AppIcon name="close" size="16" />
       </button>
     </div>
 
     <div class="diagnostic-dialog__body">
       <div class="diagnostic-grid">
-        <span class="diagnostic-grid__label">HTTP 状态</span>
+        <span class="diagnostic-grid__label">{{ t('HTTP 状态') }}</span>
         <span class="diagnostic-grid__value mono">{{ diagnosticError?.httpStatus ?? '—' }}</span>
-        <span class="diagnostic-grid__label">业务 code</span>
+        <span class="diagnostic-grid__label">{{ t('业务 code') }}</span>
         <span class="diagnostic-grid__value mono">{{ diagnosticError?.code ?? '—' }}</span>
       </div>
 
       <div class="diagnostic-block">
         <span class="diagnostic-block__label">message</span>
-        <p class="diagnostic-block__message">{{ diagnosticError?.message || '暂无错误信息' }}</p>
+        <p class="diagnostic-block__message">
+          {{ diagnosticError?.message || t('暂无错误信息') }}
+        </p>
       </div>
 
       <div class="diagnostic-block">
@@ -59,13 +62,13 @@ function close(): void {
           <CopyButton
             v-if="diagnosticError?.traceId"
             :value="diagnosticError.traceId"
-            label="复制 traceId"
+            :label="t('复制 traceId')"
           />
         </div>
       </div>
 
       <p class="diagnostic-note">
-        错误文案来自后端响应，未做二次翻译。前端网络错误或超时不会有 traceId。
+        {{ t('错误文案来自后端响应，未做二次翻译。前端网络错误或超时不会有 traceId。') }}
       </p>
     </div>
   </dialog>

@@ -112,3 +112,38 @@ export interface ScheduleExecution {
   errorMessage: string | null
   durationMs: number
 }
+
+// ---------------------------------------------------------------- 第 30 节：Agent 管理与工作区
+
+export interface ScheduleConfigView {
+  id: string | null
+  cron: string | null
+  zone: string | null
+  message: string | null
+}
+
+export interface AgentView {
+  name: string
+  description: string | null
+  provider: string | null
+  model: string | null
+  tools: string[]
+  channels: string[]
+  schedules: ScheduleConfigView[]
+}
+
+export interface FileNode {
+  name: string
+  path: string
+  directory: boolean
+  children: FileNode[]
+}
+
+export interface AgentDetailView {
+  agent: AgentView
+  files: FileNode[]
+}
+
+export interface GeneratedFilesView {
+  files: Record<string, string>
+}

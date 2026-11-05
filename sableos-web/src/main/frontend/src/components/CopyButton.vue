@@ -3,6 +3,7 @@ import { onBeforeUnmount, ref } from 'vue'
 import AppIcon from './AppIcon.vue'
 import { copyToClipboard } from '../utils/clipboard'
 import { pushToast } from '../composables/useUiFeedback'
+import { t } from '../i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -11,7 +12,8 @@ const props = withDefaults(
     showLabel?: boolean
   }>(),
   {
-    label: '复制',
+    // 置空而不是写死 '复制'：默认值只在模块初始化算一次，切语言不会跟着变。
+    label: '',
     showLabel: false,
   },
 )
@@ -19,10 +21,15 @@ const props = withDefaults(
 const copied = ref(false)
 let resetTimer: number | null = null
 
+/** 已复制优先，其次是调用处传入的标签，最后才是通用「复制」。 */
+function displayLabel(): string {
+  return copied.value ? t('已复制') : props.label || t('复制')
+}
+
 async function copy(): Promise<void> {
   const success = await copyToClipboard(props.value)
   if (!success) {
-    pushToast('复制失败，请手动选择文本', 'error')
+    pushToast(t('复制失败，请手动选择文本'), 'error')
     return
   }
   copied.value = true
@@ -47,13 +54,13 @@ onBeforeUnmount(() => {
     type="button"
     class="copy-button"
     :class="{ 'btn': showLabel, 'btn--ghost': showLabel, 'btn--sm': showLabel }"
-    :aria-label="copied ? '已复制' : label"
-    :title="copied ? '已复制' : label"
+    :aria-label="displayLabel()"
+    :title="displayLabel()"
     @click="copy"
   >
     <AppIcon :name="copied ? 'check' : 'copy'" size="14" />
-    <span v-if="showLabel">{{ copied ? '已复制' : label }}</span>
-    <span v-else class="sr-only">{{ copied ? '已复制' : label }}</span>
+    <span v-if="showLabel">{{ displayLabel() }}</span>
+    <span v-else class="sr-only">{{ displayLabel() }}</span>
   </button>
 </template>
 

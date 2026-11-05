@@ -89,7 +89,7 @@ class MockAgentE2ETest {
     assertThat(summary.path("messageCount").asInt()).isEqualTo(4);
     assertThat(summary.has("messages")).isFalse();
 
-    JsonNode memory = get("/api/v1/memory?profile=" + PROFILE).path("data");
+    JsonNode memory = get("/api/v1/agents/" + PROFILE + "/memory").path("data");
     assertThat(memory.path("content").asText()).contains("美式咖啡");
 
     JsonNode tools = get("/api/v1/tools").path("data");

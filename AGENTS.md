@@ -172,6 +172,16 @@ SableOS 是 Maven 多模块项目，**以《技术方案》第 10 章为准，�
 4. **每个 user story 完成后打 git commit**，方便随时回退到稳定状态。
 5. **不允许 AI agent 自己修改 constitution**；发现 AI 生成代码偏离宪章时，让它重读 constitution 纠正。
 6. 跨 task 上下文丢失时，回去读 `spec.md` + `plan.md` + 最近的代码，别凭印象接着写。
+7. **顺延项（`【顺延·XX 节后】`）在后续章节被回收时，必须回到原 section 的 `tasks.md` 补勾并写明回收落点**，例如：
+
+   ```markdown
+   - [x] T009 [US3] 【顺延·24 节后】实现 `NotifyTools`（…）
+     - **回收记录（2026-11-01 复核）**：已由 [005 T027](../005-lesson20-tool/tasks.md) 落地；`enforce` 在 `NotifyTools.java:100`、`send` 在 `:101`。
+   ```
+
+   并在原 spec 的 `acceptance-report.md` 里注明“第二批 harness 已回收”及其实跑结果。
+
+   > **为什么必须做**：`tasks.md` 的勾选状态是复查时判断“这节到底做完没有”的唯一依据。顺延项不补勾，后续复查会把已完成的工作误判为未完成（`004` 的 T009/T010、`011` 全节、`014` 全节都实际踩过这个坑）；补勾而不写回收落点，则下次复核又要重新追一遍来源。
 
 ## 9. 改 `docs/` 时的格式约定
 
@@ -212,6 +222,7 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
   - **播种判据是独立标记表 `sandbox_whitelist_seed`**（行存在即已导入），不是条目表判空——否则删光条目后重启会把 `application.yaml` 再插一遍。
   - **`WhitelistSandbox` 不再标 `@Component`**：初始策略必须"先导入/从库恢复再构造"，组件扫描无法表达该顺序且会尝试无参实例化而失败；改由 `SableOsRuntime` 的 `@Bean` 显式创建，并额外以 `Sandbox` 接口类型暴露同一实例供工具注入。
   - FILE_PATH 入库形态 = `Path.normalize()` + 分隔符统一 `/`（盘符大小写不归一）；HTTP_DOMAIN 只接受 ASCII（口径见上一条）。
+  - **白名单根的运行时形态 = 真实路径**（2026-11-05 补）：`WhitelistPolicy` 构造器对 `allowedRoots` 统一走 `resolveRealPath`（已存在的祖先 `toRealPath`，不存在的段拼回），与 `WhitelistSandbox#checkFilePath` 对**待查路径**的解析共用同一函数。两侧只要有一侧不解析就会误判越界：Windows 的 8.3 短名（CI 临时目录 `RUNNER~1`）与 macOS 的 `/var → /private/var` 软链各挂过一次（`SandboxWhitelistAdminTest` 4 例 / `WhitelistPolicyRefreshTest` 2 例）。入库形态不变，解析只发生在策略快照构造时（非校验热路径）。
   - 本 feature 只写操作日志（`DefaultSandboxWhitelistAdmin.logChange`），**不建白名单审计表**（设计稿 §11 口径）。
 - **定时任务调度（009-lesson25-scheduler，2026-10-29 落地）**：第三触发源按 §8.5 落 `sableos-core` 的 `AgentScheduler`（`registerAll` / `runOnce`），由 `serve` / `gateway` 启动后显式注册，`chat` 不调度（§8.6）。四条需记住：
   - **`sableos-core` 自本节起 compile 依赖 `spring-context`**（仅用 `TaskScheduler` / `CronTrigger`），core 不再是「零 Spring」模块；依据是 §8.5 明定该类归 core 并使用 Spring 调度能力。
@@ -248,3 +259,13 @@ npx -y markdownlint-cli --disable MD013 MD025 -- *.md
   - **`AgentScheduler.registerProfile(Profile)` + `scheduledTasks` 句柄表**：`registerAll` 改为逐条委派；句柄表键为 `long scheduleId`（本仓库 `schedule_id` 是自增 `long`，不用课件写法的 `String`）；重复登记时 `reconcile` 复用同一 id，旧句柄 `cancel(false)`——不中断正在执行的那次，只阻止后续触发。退役时同步清理句柄表，否则 `hasScheduledTask` 会误报。
   - **`skills/` 只接受软连接**（实测后果）：放普通 `.md` 会让 `ContextLoader` 在组装 system prompt 时抛「Skill 绑定越界（目标不在 Skill 根目录内）」，**整个 Agent 跑不起来**。课件 §1.3 的示例代码块用了普通文件写法，属笔误；按技术方案 §11.1「软连接集合是唯一绑定真相源」执行。示例夹具因此**不含** `skills/` 目录（git 存不了空目录，且 `core.symlinks=false` 的机器上入库软连接会被还原成普通文件），由测试在复制后的临时根里建链；真实工作区按 quickstart §4 用 `mklink /D`（Windows）或 `ln -s` 建链。
   - **harness**：`AgentLoaderTest` / `DeriveProfileTest` / `AgentScanRegisterTest` / `ProfileRegistryRuntimeTest` / `AgentSchedulerRegisterTest` / `ProgressiveDisclosureTest` 全部随 `mvn clean verify` 跑，无 key。示例 Agent 的 `AGENT.md` / `REFERENCE.md` / `scripts/reconcile.py` 三件在 `sableos-core/src/test/resources/agents/daily-reconcile/`，子指令规范在 `sableos-core/src/test/resources/skills/report-format/SKILL.md`，一份两用（夹具 + 手动抄写范本），不写入运行期工作区。
+- **动态管理 Agent（014-lesson30-dynamic-agent，2026-10-31 落地）**：把"定义一个 Agent"从"手工放目录 + 重启"升为**三条录入路径殊途同归**（API 创建 / `WatchService` 实时监听 / 启动扫描），全部汇到 `AgentLifecycleService.register(Path)`。新类全部落 core（`AgentStore` / `AgentLifecycleService` / `WorkspaceWatcher` / `ToolExecutionContext`），web 只做薄门面，装配在 boot 的 `AgentConfiguration`。七条需记住：
+  - **`register(Path)` 是唯一登记入口，`delete` 的顺序不能反**：删除必须「`unregisterProfile` → `registry.remove` → `agentStore.archive`」；先停定时避免窗口期 cron 触发已注销 Agent，归档放最后保证前两步失败时磁盘仍完整（harness 用 `InOrder` 钉死）。
+  - **`AgentScheduler.unregisterProfile(Profile)` 按 Agent 名筛句柄表**：不能按 `profile.schedules()` 反查——旧配置里存在、新配置里已删的那条任务在 `schedules()` 里查不到，只有按名字扫句柄表才能一并停掉并 `retire`。`cancel(false)` 不中断正在执行那次；**不动** `taskLocks`/`sessionLocks`（重注册复用同一把锁）。
+  - **`WatchService` 不递归，必须两层 watch**：根目录盯子目录增删，每个 Agent 子目录各自盯 `AGENT.md`（大小写不敏感）。监听循环跑在**单守护线程**上；`ContextClosedEvent` 里调 `stop()` 关 `WatchService`，否则 `take()` 不醒、执行器停机要等满超时。
+  - **per-agent 记忆靠 `ToolExecutionContext`（core）**：`ThreadLocal<String> agentName`，非 `InheritableThreadLocal`（AGENTS §5.2）。`ToolExecutor` 执行前后置入/清除；`MemoryServiceImpl` 读路径置入并**复原原值**（不是清空，否则抹掉外层上下文）。`MarkdownMemoryStore` 有合法 Agent 上下文落 `agents/<name>/MEMORY.md`，否则回退既有 `memory/<profile>/MEMORY.md`；`LongTermMemoryStore` 接口签名不变，三档契约测试零改动。全局 `GET /api/v1/memory` **已移除**，改 `GET /api/v1/agents/{name}/memory`。
+  - **一句话生成走 `ProviderService.chat` + 临时 Profile**（`name=agent-author`，`sessionId=agent-author:<name>`），天然落 `llm_calls`；新增配置键 `sableos.author.provider`（缺省取 providers 首个）/ `sableos.author.model`（**留空则端点 503**，不向模型端点发空模型名）。生成**不落盘不注册**，`AGENT.md` 走与写盘同一套 `AgentLoader.parse` 校验（草稿能过 = 写盘能过）；产出路径拒绝绝对路径 / `..` / `skills/` 前缀。
+  - **工作区文件接口只放行 `agents/` 与 `archive/`**：边界校验单点在 `AgentStore.resolveWithin`，不另写一套；`message` 固定话术不含用户输入（通用 400 会原样回显）。写 `agents/<name>/AGENT.md` **不裸写盘**，走 `saveFiles`（校验 + 重注册）——macOS 的 `WatchService` 不监听子目录内变更，裸写会变成「保存了但没生效」。
+  - **Windows 路径坑**：`Path.of("/etc/passwd").isAbsolute()` 返回 `false`（缺盘符），只靠 `isAbsolute()` 会让前导斜杠路径绕过校验；`AgentStore` 另做 `looksAbsolute`（前导 `/` 与盘符）判定。
+  - **`AGENT.md` 的文件名口径单点在 `AgentDefinitionFile`**（2026-11-05 补）：`matches` / `matchesPath` / `locate` / `existsIn` 四个方法，监听侧（`WorkspaceWatcher`）、读取侧（`AgentLoader` / `AgentStore` / `ContextLoader`）、web 侧（两个 Controller）、CLI（`profile show`）**全部走它**，不得再各自写 `dir.resolve("AGENT.md")` 或 `equalsIgnoreCase`。理由是吃过一次亏：上一版只改了监听侧的大小写不敏感，读取侧仍精确匹配，于是 Linux（CI 与多数服务器）上「监听命中 → 派生抛『缺少 AGENT.md』」而 Windows / macOS 因文件系统不敏感完全复现不了。写入侧另有约束：目录里已有变体时 `AgentStore#writeAll` 按变体写，否则一次保存在大小写敏感系统上会留下两份定义。`AGENTS.md`（仓库指南）与 `CLAUDE.md` **不是**定义文件，永远不该被这条判定命中。
+  - **harness**：`AgentStoreTest` / `AgentLifecycleServiceTest` / `WorkspaceWatcherTest` / `GenerateTest` / `WorkspaceApiControllerTest` / `AgentApiControllerTest` 随 `mvn clean verify` 跑，无 key。管理台构建链不变：改前端必须手工 `npm ci && npm run build`，产物 `static/admin/**` 入库。

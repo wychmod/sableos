@@ -138,6 +138,23 @@ public final class Session {
     touch();
   }
 
+  /**
+   * 用存储侧的最新历史替换本实例的内存快照（并发串行化拿到锁之后立即调用）。
+   *
+   * <p><b>为什么需要</b>：入口层先 {@code get} 会话再交给 {@code AgentService.process}，拿到的是加载时刻的快照。同一会话的两个并发请求
+   * 各自持有自己的旧快照；即使 {@code process} 内部串行，后一个仍会用旧快照覆盖前一个的新增历史（丢失更新）。所以在拿到会话锁之后、跑循环之前， 必须把本实例刷成存储里的最新态。
+   *
+   * <p>只替换历史，不动时间戳：时间戳由本轮的 {@code append*} → {@code touch()} 推进，刷新不会让时间线倒退。
+   *
+   * @param history 存储侧的最新历史（按序；空历史传空表）
+   */
+  public void replayHistory(List<SessionMessage> history) {
+    messages.clear();
+    if (history != null) {
+      messages.addAll(history);
+    }
+  }
+
   private void touch() {
     lastActiveAt = Instant.now();
   }

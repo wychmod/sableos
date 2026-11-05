@@ -17,6 +17,7 @@ import com.sableos.storage.JpaToolInvocationAuditor;
 import com.sableos.storage.SessionRepository;
 import com.sableos.storage.ToolInvocationRepository;
 import java.nio.file.Path;
+import java.time.ZoneId;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,8 +57,17 @@ public class ReactConfiguration {
 
   @Bean
   public PromptBuilder promptBuilder(
-      ContextLoader contextLoader, ToolCatalog toolCatalog, MemoryProvider memoryProvider) {
-    return new PromptBuilder(contextLoader, toolCatalog, memoryProvider);
+      ContextLoader contextLoader,
+      ToolCatalog toolCatalog,
+      MemoryProvider memoryProvider,
+      @Value("${sableos.timezone:}") String timezone) {
+    // 未配置时回落 JVM 默认时区（兼容现有部署）；配置了就按 IANA 名解析。
+    // 不用 TimeZone.getTimeZone——它对非法 ID 静默回落 GMT，配错时区却毫无提示（同 AgentScheduler 的踩坑记录）。
+    ZoneId zone =
+        (timezone == null || timezone.isBlank())
+            ? ZoneId.systemDefault()
+            : ZoneId.of(timezone.trim());
+    return new PromptBuilder(contextLoader, toolCatalog, memoryProvider, zone);
   }
 
   @Bean

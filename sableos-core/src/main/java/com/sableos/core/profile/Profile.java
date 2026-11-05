@@ -53,12 +53,19 @@ public record Profile(
   /** 运行参数：迭代上限与历史轮数截断（17 节消费），缺省取默认值。 */
   public record Settings(Integer maxIterations, Integer maxHistoryTurns) {
 
-    private static final Integer DEFAULT_MAX_ITERATIONS = 10;
-    private static final Integer DEFAULT_MAX_HISTORY_TURNS = 20;
+    /** 迭代上限默认值（脚手架写 frontmatter 时也取这一处，避免两处常量漂移）。 */
+    public static final int DEFAULT_MAX_ITERATIONS = 10;
+
+    /** 历史轮数默认值。 */
+    public static final int DEFAULT_MAX_HISTORY_TURNS = 20;
 
     public Settings {
-      maxIterations = (maxIterations == null) ? DEFAULT_MAX_ITERATIONS : maxIterations;
-      maxHistoryTurns = (maxHistoryTurns == null) ? DEFAULT_MAX_HISTORY_TURNS : maxHistoryTurns;
+      if (maxIterations == null) {
+        maxIterations = DEFAULT_MAX_ITERATIONS;
+      }
+      if (maxHistoryTurns == null) {
+        maxHistoryTurns = DEFAULT_MAX_HISTORY_TURNS;
+      }
     }
   }
 }

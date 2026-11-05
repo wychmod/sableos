@@ -7,8 +7,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sableos.core.agent.AgentLifecycleService;
 import com.sableos.core.agent.AgentLoader;
 import com.sableos.core.agent.AgentService;
+import com.sableos.core.agent.AgentStore;
 import com.sableos.core.context.ContextLoader;
 import com.sableos.core.profile.ProfileRegistry;
 import com.sableos.core.prompt.PromptBuilder;
@@ -53,8 +55,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
  * 无 key 全链路验收（27 节）：手工装配 ReActLoop + mock provider + 真实工具 / 记忆 / 会话。
  *
  * <p>与 {@link com.sableos.boot.MockAgentE2ETest} 的分工：这里不启动 Spring，几秒内跑完，断言"ReAct 恰两轮、save_memory
- * 恰一次、MEMORY.md 真写入、会话历史完整、审计各一条"，再用同一批服务起 {@code /sessions}、{@code /memory}、{@code /tools}
- * 三个端点，确认管理台读得到这条链路留下的数据。
+ * 恰一次、MEMORY.md 真写入、会话历史完整、审计各一条"，再用同一批服务起 {@code /sessions}、{@code /agents/{name}/memory}、{@code
+ * /tools} 三个端点，确认管理台读得到这条链路留下的数据。
  */
 class MockProviderFlowTest {
 
@@ -95,6 +97,18 @@ class MockProviderFlowTest {
         new ReActLoop(providerService, promptBuilder, new ToolExecutor(toolRegistry, toolAuditor));
     AgentService agentService = new AgentService(profileRegistry, reActLoop, sessionManager);
 
+    AgentStore agentStore = new AgentStore(root);
+    AgentLifecycleService lifecycle =
+        new AgentLifecycleService(
+            new AgentLoader(root.resolve("agents"), Set.of("mock")),
+            profileRegistry,
+            org.mockito.Mockito.mock(com.sableos.core.scheduler.AgentScheduler.class),
+            agentStore,
+            providerService,
+            "mock",
+            "mock",
+            "",
+            List.of());
     AsyncTaskExecutor directExecutor = Runnable::run;
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
@@ -102,7 +116,13 @@ class MockProviderFlowTest {
                     sessionManager,
                     profileRegistry,
                     new AgentCallExecutor(agentService, directExecutor)),
-                new MemoryApiController(profileRegistry, memoryService),
+                new AgentApiController(
+                    sessionManager,
+                    profileRegistry,
+                    lifecycle,
+                    agentStore,
+                    new AgentCallExecutor(agentService, directExecutor),
+                    memoryService),
                 new ToolApiController(toolRegistry))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
@@ -137,7 +157,7 @@ class MockProviderFlowTest {
         .andExpect(jsonPath("$.data[0].id").value(SESSION_ID))
         .andExpect(jsonPath("$.data[0].messageCount").value(4));
 
-    mvc.perform(get("/api/v1/memory").param("profile", PROFILE))
+    mvc.perform(get("/api/v1/agents/" + PROFILE + "/memory"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.content").value(containsString("美式咖啡")));
 
@@ -153,8 +173,9 @@ class MockProviderFlowTest {
     assertThat(toolAuditor.records.get(0).toolName()).isEqualTo("save_memory");
     assertThat(toolAuditor.records.get(0).success()).isTrue();
 
+    // 第 30 节：记忆跟着 Agent 走，落在它自己的目录下，不再是 <root>/memory/<profile>/
     String memoryFile =
-        Files.readString(root.resolve("memory").resolve(PROFILE).resolve("MEMORY.md"));
+        Files.readString(root.resolve("agents").resolve(PROFILE).resolve("MEMORY.md"));
     assertThat(memoryFile).contains(FACT);
 
     Session session = sessionManager.get(SESSION_ID).orElseThrow();

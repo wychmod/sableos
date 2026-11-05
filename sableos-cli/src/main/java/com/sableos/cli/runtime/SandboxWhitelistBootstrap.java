@@ -135,7 +135,8 @@ public final class SandboxWhitelistBootstrap {
   }
 
   /** 与 {@code @ConditionalOnProperty(havingValue = "true", matchIfMissing = true)} 同口径判定。 */
-  private static boolean isAdminEnabled(Environment environment) {
+  // 包内可见：可见给单测（同 ToolConfiguration#resolveUserInteraction 的做法）
+  static boolean isAdminEnabled(Environment environment) {
     String value = environment.getProperty(ADMIN_ENABLED_PROPERTY);
     if (value == null) {
       return true;

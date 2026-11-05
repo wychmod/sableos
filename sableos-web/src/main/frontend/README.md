@@ -1,6 +1,6 @@
 # SableOS 管理台（Admin Console）
 
-SableOS 的控制面前端：只读为主 + 会话 / 定时任务轻交互的管理台。所有业务数据都来自后端 REST 端点（核心 11 个 v1 端点 + 第 28 节的 v2 定时任务管理面），前端不内置 mock 数据，也不提供后端尚未实现的能力入口。
+SableOS 的控制面前端：只读为主 + 会话 / 定时任务轻交互的管理台。所有业务数据都来自后端 REST 端点（核心 11 个 v1 端点 + 第 30 节的 14 个 Agent 管理端点 + 第 28 节的 v2 定时任务管理面），前端不内置 mock 数据，也不提供后端尚未实现的能力入口。
 
 - 技术栈：Vue 3 + Vite + TypeScript（`strict`）+ vue-router
 - 页面：总览、会话、Agents、定时任务、工具、记忆
@@ -68,8 +68,20 @@ src/
 | GET | `/sessions/{id}` | 查询会话与最近历史 | 会话 |
 | DELETE | `/sessions/{id}` | 软归档会话 | 会话 |
 | POST | `/agents/{name}/invoke` | 无状态调用 Agent | Agents |
-| GET | `/profiles` | Agent 清单 | 会话 / Agents / 记忆 |
-| GET | `/memory?profile=...` | 长期记忆全文 | 记忆 |
+| GET | `/profiles` | Agent 清单（简洁视图，Agents 页已改用 `/agents`） | 会话 |
+| GET | `/agents` | Agent 列表 | Agents / 记忆 |
+| GET | `/agents/{name}` | Agent 详情（含文件树） | Agent 详情 |
+| POST | `/agents` | 创建 Agent（name + description） | Agents |
+| PUT | `/agents/{name}` | 覆写 AGENT.md | Agent 详情 |
+| DELETE | `/agents/{name}` | 删除并归档 | Agents / Agent 详情 |
+| POST | `/agents/{name}/generate-files` | 一句话生成文件草稿 | Agent 详情·生成 |
+| POST | `/agents/{name}/files` | 保存一组文件并生效 | Agent 详情·生成 |
+| GET | `/agents/{name}/memory` | 该 Agent 专属记忆 | Agent 详情·记忆 / 记忆 |
+| GET | `/agents/{name}/session` | 固定管理台会话 | Agent 详情·会话 |
+| POST | `/agents/{name}/session/messages` | 往固定会话发消息 | Agent 详情·会话 |
+| GET | `/workspace/tree` | agents/ + archive/ 目录树 | Agent 详情·文件 |
+| GET | `/workspace/file?path=` | 读文件文本（防穿越） | Agent 详情·文件 |
+| POST | `/workspace/file` | 写文件文本（AGENT.md 走更新链路） | Agent 详情·文件 |
 | GET | `/tools` | 工具清单 | 工具 |
 | GET | `/health` | 存活检查 | 全局 / 总览 |
 | GET | `/info` | 系统信息与 Provider 连通状态 | 全局 / 总览 |

@@ -1,5 +1,6 @@
 package com.sableos.memory.store;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -84,6 +86,46 @@ class SqliteMemoryStoreTest {
 
     assertFalse(store.recallByKeyword("banana", "p1").isEmpty());
     assertTrue(store.recallByKeyword("apple", "p1").isEmpty());
+  }
+
+  @Test
+  @DisplayName("recall 把 % 当字面量而非通配符")
+  void recallTreatsPercentAsLiteral() {
+    store.append("alpha 记录", MemoryScope.ARCHIVAL, "p1");
+    store.append("beta 记录", MemoryScope.ARCHIVAL, "p1");
+    store.append("进度 50% 完成", MemoryScope.ARCHIVAL, "p1");
+
+    // 未转义时 LIKE '%%%' 会命中全部 3 条；转义后只命中真正含 '%' 的那条
+    List<String> hits = store.recallByKeyword("%", "p1");
+
+    assertEquals(1, hits.size(), "搜 '%' 应只命中字面量含 % 的记录，实际: " + hits);
+    assertTrue(hits.get(0).contains("50%"));
+  }
+
+  @Test
+  @DisplayName("recall 把 _ 当字面量而非单字符通配符")
+  void recallTreatsUnderscoreAsLiteral() {
+    store.append("abc", MemoryScope.ARCHIVAL, "p1");
+    store.append("xyz", MemoryScope.ARCHIVAL, "p1");
+    store.append("snake_case 命名", MemoryScope.ARCHIVAL, "p1");
+
+    // 未转义时 LIKE '%_%' 会命中任意非空内容（3 条全中）；转义后只命中含 '_' 的那条
+    List<String> hits = store.recallByKeyword("_", "p1");
+
+    assertEquals(1, hits.size(), "搜 '_' 应只命中字面量含 _ 的记录，实际: " + hits);
+    assertTrue(hits.get(0).contains("snake_case"));
+  }
+
+  @Test
+  @DisplayName("recall 把转义符 ! 自身当字面量")
+  void recallTreatsEscapeCharAsLiteral() {
+    store.append("重要!!! 提醒", MemoryScope.ARCHIVAL, "p1");
+    store.append("普通记录", MemoryScope.ARCHIVAL, "p1");
+
+    List<String> hits = store.recallByKeyword("!", "p1");
+
+    assertEquals(1, hits.size(), "搜 '!' 应只命中字面量含 ! 的记录，实际: " + hits);
+    assertTrue(hits.get(0).contains("!!!"));
   }
 
   @Test

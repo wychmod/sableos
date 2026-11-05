@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +30,10 @@ class PromptBuilderTest {
   private static final String BODY_MARKER = "正文标记BODY";
   private static final String MEMORY_MARKER = "记忆段内容MARK";
   private static final String TIMESTAMP_PATTERN = "当前时间：\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
+
+  /** 与 PromptBuilder 内部格式一致，供时区用例独立算出期望值（不引用私有常量）。 */
+  private static final DateTimeFormatter TIME_FORMAT_IN_TEST =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
   private static final ToolCatalog EMPTY_CATALOG =
       new ToolCatalog() {
@@ -133,6 +140,32 @@ class PromptBuilderTest {
     String content = builder(null).build(session, profile(null, null)).content();
 
     assertThat(content).containsPattern(TIMESTAMP_PATTERN + "$");
+  }
+
+  @Test
+  @DisplayName("时间取注入的时区，而非 JVM 默认时区")
+  void build_usesInjectedZone_notJvmDefault() {
+    // 选一个与任何常见默认时区都差开足够远的时区，避免「恰好相等」把用例变成假绿
+    ZoneId zone = ZoneId.of("Pacific/Kiritimati"); // UTC+14
+    PromptBuilder zoned = new PromptBuilder(contextLoader, EMPTY_CATALOG, null, zone);
+    Session session = new Session("s-1", "ops-agent", "cli", "u-1");
+
+    String content = zoned.build(session, profile(null, null)).content();
+
+    String expected = "当前时间：" + LocalDateTime.now(zone).format(TIME_FORMAT_IN_TEST);
+    assertThat(content).contains(expected);
+  }
+
+  @Test
+  @DisplayName("未指定时区时构造不失败，回落到系统默认")
+  void build_withoutExplicitZone_fallsBackToSystemDefault() {
+    Session session = new Session("s-1", "ops-agent", "cli", "u-1");
+
+    String content = builder(null).build(session, profile(null, null)).content();
+
+    String expected =
+        "当前时间：" + LocalDateTime.now(ZoneId.systemDefault()).format(TIME_FORMAT_IN_TEST);
+    assertThat(content).contains(expected);
   }
 
   @Test

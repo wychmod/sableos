@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue'
 import { dismissToast, toasts } from '../composables/useUiFeedback'
+import { t } from '../i18n'
 
 function iconFor(tone: string): 'check' | 'alert' | 'info' {
   if (tone === 'success') return 'check'
@@ -26,7 +27,7 @@ function iconFor(tone: string): 'check' | 'alert' | 'info' {
         <button
           type="button"
           class="toast__close"
-          aria-label="关闭提示"
+          :aria-label="t('关闭提示')"
           @click="dismissToast(toast.id)"
         >
           <AppIcon name="close" size="13" />

@@ -92,7 +92,7 @@ class RestartRecoveryIT {
       JsonNode memory =
           MAPPER
               .readTree(
-                  rest.getForEntity(base + "/api/v1/memory?profile=" + PROFILE, String.class)
+                  rest.getForEntity(base + "/api/v1/agents/" + PROFILE + "/memory", String.class)
                       .getBody())
               .path("data");
       assertThat(memory.path("content").asText()).contains(CONVERSATION_FACT, SCHEDULE_FACT);

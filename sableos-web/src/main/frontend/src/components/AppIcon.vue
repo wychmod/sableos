@@ -26,10 +26,12 @@ export type IconName =
   | 'terminal'
   | 'send'
   | 'external'
+  | 'language'
 
 const props = withDefaults(
   defineProps<{
     name: IconName
+    /** 纯数字（或纯数字字符串）按 px 处理；带单位的字符串（如 `1.25em`）原样保留。 */
     size?: string | number
     label?: string
   }>(),
@@ -75,10 +77,34 @@ const paths: Record<IconName, string[]> = {
   terminal: ['M4 5h16v14H4z', 'M8 9l2 2-2 2', 'M13 14h3'],
   send: ['M21 3 10 14', 'M21 3l-7 18-4-7-7-4 18-7Z'],
   external: ['M14 4h6v6', 'M20 4l-9 9', 'M19 13v6H5V5h6'],
+  // 地球 + 经线：语言 / 地区切换的通用符号
+  language: [
+    'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+    'M3.5 9h17',
+    'M3.5 15h17',
+    'M12 3c2.4 2.4 3.6 5.4 3.6 9s-1.2 6.6-3.6 9c-2.4-2.4-3.6-5.4-3.6-9S9.6 5.4 12 3Z',
+  ],
+}
+
+/**
+ * 图标尺寸归一化。
+ *
+ * <p>模板里 `size="14"` 传进来的是**字符串** `'14'`（不是数字 14），若直接拼进 CSS 变量会得到
+ * `--od-icon-size: 14` —— 无单位，`width: var(...)` 在标准模式下整条声明失效、回退 `auto`，
+ * SVG 于是撑满父容器，表现为「图标过大／错位」。这里统一兜住：纯数字（含纯数字字符串）补 `px`，
+ * 已带单位（`1em` / `1.5rem` / `50%`）原样透传。
+ */
+function normalizeSize(value: string | number): string {
+  if (typeof value === 'number') {
+    return `${value}px`
+  }
+  const trimmed = value.trim()
+  // 纯数字（可含小数、正负号）→ 视为 px
+  return /^-?\d+(\.\d+)?$/.test(trimmed) ? `${trimmed}px` : trimmed
 }
 
 const style = computed(() => ({
-  '--od-icon-size': typeof props.size === 'number' ? `${props.size}px` : props.size,
+  '--od-icon-size': normalizeSize(props.size),
 }))
 </script>
 

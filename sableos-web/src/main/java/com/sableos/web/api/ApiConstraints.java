@@ -23,6 +23,12 @@ final class ApiConstraints {
   /** 会话列表最多返回的最近条数（27 节）。 */
   static final int MAX_SESSION_LIST = 100;
 
+  /** 管理台固定会话的渠道标识（第 30 节）：与 web/cli/scheduler 并列的第四种触发来源。 */
+  static final String ADMIN_CHANNEL = "admin";
+
+  /** 管理台固定会话的用户标识：固定值才能让「同三元组幂等」恒为同一条会话。 */
+  static final String ADMIN_USER = "console";
+
   private ApiConstraints() {}
 
   /** 校验必填文本，返回原值；空白与超长统一抛 400 可定位原因。 */

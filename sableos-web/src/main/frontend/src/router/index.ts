@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { t } from '../i18n'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,12 @@ const router = createRouter({
       meta: { title: '定时任务' },
     },
     {
+      path: '/agents/:name',
+      name: 'agent-detail',
+      component: () => import('../pages/AgentDetailPage.vue'),
+      meta: { title: 'Agent 详情' },
+    },
+    {
       path: '/tools',
       name: 'tools',
       component: () => import('../pages/ToolsPage.vue'),
@@ -48,8 +55,8 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
-  const title = typeof to.meta.title === 'string' ? to.meta.title : '控制台'
-  document.title = `${title} · SableOS 管理台`
+  const title = typeof to.meta.title === 'string' ? t(to.meta.title) : t('控制台')
+  document.title = t('{title} · SableOS 管理台', { title })
 })
 
 export default router

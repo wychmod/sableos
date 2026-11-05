@@ -1,16 +1,29 @@
 package com.sableos.boot.agent;
 
+import com.sableos.core.agent.AgentLifecycleService;
 import com.sableos.core.agent.AgentLoader;
+import com.sableos.core.agent.AgentStore;
+import com.sableos.core.agent.WorkspaceWatcher;
 import com.sableos.core.profile.ProfileRegistry;
+import com.sableos.core.provider.ProviderService;
+import com.sableos.core.scheduler.AgentScheduler;
 import com.sableos.core.tool.SableTool;
 import com.sableos.provider.ProvidersProperties;
 import com.sableos.tool.ToolRegistry;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.ContextClosedEvent;
 
 /** Agent 装配：启动期全量扫描 {@code .sableos/agents/} 并派生 Profile 注册表（坏目录不阻断启动）。 */
 @Configuration
@@ -37,5 +50,100 @@ public class AgentConfiguration {
   @Bean
   public ProfileRegistry profileRegistry(AgentLoader agentLoader) {
     return agentLoader.loadAll();
+  }
+
+  /** Agent 目录的文件读写（第 30 节）：工作区根跟随 {@code workspace.root}，与 agents / skills / SQLite 同一解析结果。 */
+  @Bean
+  public AgentStore agentStore(@Value("${workspace.root:.sableos}") String workspaceRoot) {
+    return new AgentStore(Path.of(workspaceRoot));
+  }
+
+  /**
+   * Agent 生命周期编排（第 30 节）：三条录入路径共用同一段登记代码。
+   *
+   * <p>生成用的 provider 缺省取 {@code sableos.providers} 首个（清单顺序即运维意图，不是类型扫描）；model 必须由 {@code
+   * sableos.author.model} 显式给出——系统没有「默认模型」概念，留空时生成端点返回 503 而不是向模型端点发空模型名。
+   *
+   * @param providerService 按需注入：无 tool / 无 provider 的轻量测试上下文里它可以缺席
+   */
+  @Bean
+  public AgentLifecycleService agentLifecycleService(
+      AgentLoader agentLoader,
+      ProfileRegistry profileRegistry,
+      AgentScheduler agentScheduler,
+      AgentStore agentStore,
+      ProvidersProperties providersProperties,
+      ObjectProvider<ProviderService> providerService,
+      ToolRegistry toolRegistry,
+      @Value("${sableos.author.provider:}") String authorProvider,
+      @Value("${sableos.author.model:}") String authorModel) {
+    String firstProvider =
+        providersProperties.providers().stream()
+            .map(ProvidersProperties.Provider::name)
+            .filter(name -> name != null && !name.isBlank())
+            .min(String::compareToIgnoreCase)
+            .orElse("");
+    List<String> toolNames =
+        toolRegistry.all().stream().map(SableTool::getName).collect(Collectors.toList());
+    return new AgentLifecycleService(
+        agentLoader,
+        profileRegistry,
+        agentScheduler,
+        agentStore,
+        providerService.getIfAvailable(),
+        firstProvider,
+        authorProvider,
+        authorModel,
+        toolNames);
+  }
+
+  /**
+   * 监听循环专属的守护线程执行器（第 30 节）：单线程保证事件顺序，daemon 保证 {@code chat} 跑完进程能退出；{@code serve} / {@code gateway}
+   * 常驻靠主线程保活。
+   *
+   * <p>不用虚拟线程执行器：监听循环是「一次 run 永不返回」的长驻任务，与每请求一虚拟线程的模型不同类。
+   *
+   * <p>不用 {@code Executors.newSingleThreadExecutor}：P3C 的 {@code ThreadPoolCreationRule} 禁工厂方法（无界队列
+   * OOM 风险）。这里显式给参数——单线程 + {@link SynchronousQueue} 直接交接，队列容量恒为 0，不与「无界积压」同类；
+   * 全生命周期只提交一个任务（监听循环），此时队列有无容量无意义，用直接交接反而把「意外重复提交」变成 {@link
+   * java.util.concurrent.RejectedExecutionException} 立即失败，而不是静静排队永不执行。
+   */
+  @Bean(destroyMethod = "shutdown")
+  public ExecutorService workspaceWatcherExecutor() {
+    return new ThreadPoolExecutor(
+        1,
+        1,
+        0L,
+        TimeUnit.MILLISECONDS,
+        new SynchronousQueue<>(),
+        runnable -> {
+          Thread thread = new Thread(runnable, "sableos-workspace-watcher");
+          thread.setDaemon(true);
+          return thread;
+        });
+  }
+
+  /**
+   * 实时监听 {@code agents/}（第 30 节）：启动后的新增 / 改动 / 删除都走同一段登记与注销。
+   *
+   * <p>{@code initMethod=start} 在装配完成后挂载；启动失败只 WARN，不阻断服务启动（工作区根不可写时创建接口仍会在调用时报错）。
+   */
+  @Bean(initMethod = "start")
+  public WorkspaceWatcher workspaceWatcher(
+      AgentLifecycleService agentLifecycleService,
+      ExecutorService workspaceWatcherExecutor,
+      @Value("${workspace.root:.sableos}") String workspaceRoot) {
+    return new WorkspaceWatcher(
+        agentLifecycleService, Path.of(workspaceRoot), workspaceWatcherExecutor);
+  }
+
+  /**
+   * 优雅关闭：{@code ContextClosedEvent} 先于执行器的 SmartLifecycle 停机发布，此处关掉 {@link WatchService} 让监听循环立刻退出；
+   * 否则 {@code take()} 不醒，执行器 stop 要等满超时。
+   */
+  @Bean
+  public ApplicationListener<ContextClosedEvent> watcherGracefulShutdown(
+      ObjectProvider<WorkspaceWatcher> workspaceWatcher) {
+    return event -> workspaceWatcher.ifAvailable(WorkspaceWatcher::stop);
   }
 }
